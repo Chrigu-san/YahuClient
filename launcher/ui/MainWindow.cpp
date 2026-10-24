@@ -111,6 +111,11 @@
 #include "ui/themes/ITheme.h"
 #include "ui/themes/ThemeManager.h"
 #include "ui/widgets/EditableLabel.h"
+#include "ui/yahu/YahuBackdrop.h"
+#include "ui/yahu/YahuFxLayer.h"
+#include "ui/yahu/YahuHero.h"
+#include "ui/yahu/YahuSheetHost.h"
+#include "ui/yahu/YahuSidebar.h"
 
 #include "minecraft/PackProfile.h"
 #include "minecraft/VersionFile.h"
@@ -161,7 +166,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         connect(ui->instanceToolBar, &QToolBar::orientationChanged, this, &MainWindow::updateInstanceToolBarOrientation);
 
         // FIXME: why doesn't this work when done in the UI file?
-        ui->instanceToolBar->setMinimumWidth(140);
+        ui->instanceToolBar->setMinimumWidth(176);
 
         // if you try to add a widget to a toolbar in a .ui file
         // qt designer will delete it when you save the file >:(
@@ -231,6 +236,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     // hide, disable and show stuff
     {
         ui->actionReportBug->setVisible(!BuildConfig.BUG_TRACKER_URL.isEmpty());
+        ui->actionOpenWiki->setVisible(!BuildConfig.WIKI_URL.isEmpty());
+        ui->actionMoreNews->setVisible(!BuildConfig.NEWS_OPEN_URL.isEmpty());
+        ui->actionChangeTheme->setVisible(false);
+        ui->actionViewWidgetThemeFolder->setVisible(false);
+        ui->actionViewIconThemeFolder->setVisible(false);
+        ui->actionViewCatPackFolder->setVisible(false);
+        ui->actionCAT->setVisible(false);
         ui->actionMATRIX->setVisible(!BuildConfig.MATRIX_URL.isEmpty());
         ui->actionDISCORD->setVisible(!BuildConfig.DISCORD_URL.isEmpty());
         ui->actionREDDIT->setVisible(!BuildConfig.SUBREDDIT_URL.isEmpty());
@@ -331,7 +343,37 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         view->setSourceOfGroupCollapseStatus(
             [](const QString& groupName) -> bool { return APPLICATION->instances()->isGroupCollapsed(groupName); });
         connect(view, &InstanceView::groupStateChanged, APPLICATION->instances(), &InstanceList::on_GroupStateChanged);
-        ui->horizontalLayout->addWidget(view);
+
+        // Yahu shell: living backdrop, navigation on the left, stage and library on the right
+        auto* backdrop = new YahuBackdrop(ui->centralWidget);
+        auto* shell = new QHBoxLayout(backdrop);
+        shell->setContentsMargins(0, 0, 0, 0);
+        shell->setSpacing(0);
+
+        m_sidebar = new YahuSidebar(backdrop);
+        m_sidebar->addPage(tr("Library"), QStringLiteral("worlds"), [this] { view->setFocus(); });
+        m_sidebar->addAction(ui->actionAddInstance, tr("New instance"), QStringLiteral("new"));
+        m_sidebar->addAction(ui->actionSettings, tr("Settings"), QStringLiteral("settings"));
+        m_sidebar->addMenu(ui->foldersMenu, tr("Folders"), QStringLiteral("viewfolder"));
+        m_sidebar->addMenu(ui->helpMenu, tr("Help"), QStringLiteral("help"));
+        m_sidebar->setAccountAction(ui->actionAccountsButton, ui->accountsMenu);
+        shell->addWidget(m_sidebar);
+
+        m_hero = new YahuHero(ui->actionLaunchInstance, ui->actionKillInstance, ui->actionEditInstance, ui->actionViewSelectedInstFolder,
+                              { ui->actionRenameInstance, ui->actionChangeInstIcon, ui->actionChangeInstGroup, ui->actionExportInstance,
+                                ui->actionCopyInstance, ui->actionCreateInstanceShortcut, ui->actionDeleteInstance },
+                              backdrop);
+        auto* column = new QVBoxLayout;
+        column->setContentsMargins(0, 0, 0, 0);
+        column->setSpacing(0);
+        column->addWidget(m_hero);
+        column->addWidget(view, 1);
+        shell->addLayout(column, 1);
+
+        view->setParent(backdrop);
+        view->viewport()->setAutoFillBackground(false);
+        view->setAutoFillBackground(false);
+        ui->horizontalLayout->addWidget(backdrop);
     }
     // The cat background
     {
@@ -401,7 +443,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     // auto accounts = APPLICATION->accounts();
 
     // load the news
-    {
+    if (!BuildConfig.NEWS_RSS_URL.isEmpty()) {
         m_newsChecker->reloadNews();
         updateNewsLabel();
     }
@@ -428,6 +470,21 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     view->setFocus();
 
     retranslateUi();
+
+    // Yahu Client shows no Prism-style toolbars, menu bar or status bar; their actions live in the sidebar and hero.
+    for (QToolBar* toolbar : std::initializer_list<QToolBar*>{ ui->mainToolBar, ui->instanceToolBar, ui->newsToolBar }) {
+        removeToolBar(toolbar);
+        toolbar->hide();
+        // a new name keeps restoreState() from bringing them back from an older saved layout
+        toolbar->setObjectName(QStringLiteral("yahuRetired_") + toolbar->objectName());
+    }
+    ui->menuBar->hide();
+    statusBar()->hide();
+    setMinimumSize(980, 640);
+
+    // everything that would open its own window opens inside this one; the effects layer sits on top of it all
+    new YahuSheetHost(this);
+    new YahuFxLayer(this);
 }
 
 // macOS always has a native menu bar, so these fixes are not applicable
@@ -435,10 +492,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 #ifndef Q_OS_MAC
 void MainWindow::keyReleaseEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Alt && !APPLICATION->settings()->get("MenuBarInsteadOfToolBar").toBool())
-        ui->menuBar->setVisible(!ui->menuBar->isVisible());
-    else
-        QMainWindow::keyReleaseEvent(event);
+    QMainWindow::keyReleaseEvent(event);
 }
 #endif
 
@@ -487,7 +541,7 @@ QMenu* MainWindow::createPopupMenu()
 }
 void MainWindow::setStatusBarVisibility(bool state)
 {
-    statusBar()->setVisible(state);
+    statusBar()->setVisible(false);
     APPLICATION->settings()->set("StatusBarVisible", state);
 }
 void MainWindow::lockToolbars(bool state)
@@ -583,8 +637,8 @@ void MainWindow::showInstanceContextMenu(const QPoint& pos)
 
 void MainWindow::updateMainToolBar()
 {
-    ui->menuBar->setVisible(APPLICATION->settings()->get("MenuBarInsteadOfToolBar").toBool());
-    ui->mainToolBar->setVisible(ui->menuBar->isNativeMenuBar() || !APPLICATION->settings()->get("MenuBarInsteadOfToolBar").toBool());
+    ui->menuBar->setVisible(false);
+    ui->mainToolBar->setVisible(false);
 }
 
 void MainWindow::updateLaunchButton()
@@ -943,7 +997,7 @@ void MainWindow::processURLs(QList<QUrl> urls)
                 } else {
                     CustomMessageBox::selectable(
                         this, tr("Error"),
-                        tr("Unsupported Modrinth link.\n\nPrism Launcher currently only supports modpack links such as "
+                        tr("Unsupported Modrinth link.\n\nYahu Client currently only supports modpack links such as "
                            "modrinth://modpack/fabulously-optimized."),
                         QMessageBox::Critical)
                         ->show();
@@ -1215,6 +1269,9 @@ void MainWindow::on_actionChangeInstIcon_triggered()
 
 void MainWindow::iconUpdated(QString icon)
 {
+    if (m_hero) {
+        m_hero->refresh();
+    }
     if (icon == m_currentInstIcon) {
         updateInstanceToolIcon(icon);
     }
@@ -1683,6 +1740,7 @@ void MainWindow::instanceChanged(const QModelIndex& current, [[maybe_unused]] co
         updateInstanceToolIcon(m_selectedInstance->iconKey());
 
         updateLaunchButton();
+        m_hero->setInstance(m_selectedInstance);
 
         APPLICATION->settings()->set("SelectedInstance", m_selectedInstance->id());
 
@@ -1719,6 +1777,7 @@ void MainWindow::selectionBad()
     ui->instanceToolBar->setEnabled(false);
     setInstanceActionsEnabled(false);
     updateLaunchButton();
+    m_hero->setInstance(nullptr);
     m_nameLabel->setText(tr("No Instance Selected"));
     updateInstanceToolIcon("default");
 

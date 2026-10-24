@@ -155,6 +155,9 @@
 #endif
 #else
 #include "updater/PrismExternalUpdater.h"
+
+#include "ui/yahu/YahuAnimator.h"
+#include "ui/yahu/YahuStyle.h"
 #endif
 
 #if defined Q_OS_WIN32
@@ -720,7 +723,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         m_settings->registerSetting("JsonEditor", QString());
 
         // Language
-        m_settings->registerSetting("Language", QString());
+        m_settings->registerSetting("Language", QStringLiteral("en_US"));
         m_settings->registerSetting("UseSystemLocale", false);
 
         // Console
@@ -813,7 +816,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 
         m_settings->registerSetting("StatusBarVisible", true);
 
-        m_settings->registerSetting("ToolbarsLocked", false);
+        m_settings->registerSetting("ToolbarsLocked", true);
 
         // Instance
         m_settings->registerSetting("InstSortMode", "Name");
@@ -919,7 +922,6 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
             m_globalSettingsProvider = std::make_unique<GenericPageProvider>(tr("Settings"));
             m_globalSettingsProvider->addPage<LauncherPage>();
             m_globalSettingsProvider->addPage<LanguagePage>();
-            m_globalSettingsProvider->addPage<AppearancePage>();
             m_globalSettingsProvider->addPage<MinecraftPage>();
             m_globalSettingsProvider->addPage<JavaPage>();
             m_globalSettingsProvider->addPage<AccountListPage>();
@@ -969,7 +971,9 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
     }
 
     // Themes
+    YahuStyle::loadFonts();
     m_themeManager = std::make_unique<ThemeManager>();
+    YahuAnimator::install(this);
 
 #ifdef Q_OS_MACOS
     // for macOS: getting directory settings will generate URL security-scoped bookmarks if needed and not present
@@ -1097,7 +1101,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
                               "\n"
                               "This likely means that a update attempt failed. Please ensure your installation is in working order before "
                               "proceeding.\n"
-                              "Check the Prism Launcher updater log at: \n"
+                              "Check the updater log at: \n"
                               "%7\n"
                               "for details on the last update attempt.\n"
                               "\n"
@@ -1137,7 +1141,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
                               "\n"
                               "Please ensure your installation is in working order before "
                               "proceeding.\n"
-                              "Check the Prism Launcher updater log at: \n"
+                              "Check the updater log at: \n"
                               "%1\n"
                               "for details on the last update attempt.")
                                .arg(updateLogPath);
@@ -1172,7 +1176,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
             auto infoMsg = tr("Update succeeded\n"
                               "\n"
                               "You are now running %1 .\n"
-                              "Check the Prism Launcher updater log at: \n"
+                              "Check the updater log at: \n"
                               "%2\n"
                               "for details.")
                                .arg(BuildConfig.printableVersionString())
@@ -1261,61 +1265,25 @@ bool Application::createSetupWizard()
     }();
     bool askjava = BuildConfig.JAVA_DOWNLOADER_ENABLED && !javaRequired && !settings()->get("AutomaticJavaDownload").toBool() &&
                    !settings()->get("AutomaticJavaSwitch").toBool() && !settings()->get("UserAskedAboutAutomaticJavaDownload").toBool();
-    bool languageRequired = settings()->get("Language").toString().isEmpty();
-    bool pasteInterventionRequired = settings()->get("PastebinURL") != "";
-    bool validWidgets = m_themeManager->isValidApplicationTheme(settings()->get("ApplicationTheme").toString());
-    bool validIcons = m_themeManager->isValidIconTheme(settings()->get("IconTheme").toString());
-    bool login = !m_accounts->anyAccountIsValid() && (capabilities().testAnyFlags(Application::SupportsMSA));
-    bool themeInterventionRequired = !validWidgets || !validIcons;
-    bool wizardRequired = javaRequired || languageRequired || pasteInterventionRequired || themeInterventionRequired || askjava || login;
+    // Yahu Client has exactly one look for now.
+    settings()->set("ApplicationTheme", QStringLiteral("yahu"));
+    settings()->set("IconTheme", QStringLiteral("yahu"));
+    if (settings()->get("Language").toString().isEmpty()) {
+        settings()->set("Language", QStringLiteral("en_US"));
+    }
+
+    // Only Java problems still need a wizard; signing in happens inside the main window.
+    bool wizardRequired = javaRequired || askjava;
     if (wizardRequired) {
-        const bool darkMode = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
-        // set default theme after going into theme wizard
-        if (!validIcons) {
-            QString defaultIconTheme;
-            if (QApplication::style()->name() == "breeze") {
-                defaultIconTheme = darkMode ? "breeze_dark" : "breeze_light";
-            } else {
-                defaultIconTheme = darkMode ? "flat_white" : "flat";
-            }
-
-            settings()->set("IconTheme", defaultIconTheme);
-        }
-        if (!validWidgets) {
-#if defined(Q_OS_LINUX)
-            const QString style = "system";
-#else
-            const QString style = darkMode ? QStringLiteral("dark") : QStringLiteral("bright");
-
-#endif
-
-            settings()->set("ApplicationTheme", style);
-        }
-
         m_themeManager->applyCurrentlySelectedTheme(true);
 
         SetupWizard setupWizard;
-        if (languageRequired) {
-            setupWizard.addPage(new LanguageWizardPage(&setupWizard));
-        }
-
         if (javaRequired) {
             setupWizard.addPage(new JavaWizardPage(&setupWizard));
         } else if (askjava) {
             setupWizard.addPage(new AutoJavaWizardPage(&setupWizard));
         }
 
-        if (pasteInterventionRequired) {
-            setupWizard.addPage(new PasteWizardPage(&setupWizard));
-        }
-
-        if (themeInterventionRequired) {
-            setupWizard.addPage(new ThemeWizardPage(&setupWizard));
-        }
-
-        if (login) {
-            setupWizard.addPage(new LoginWizardPage(&setupWizard));
-        }
         if (setupWizard.exec() != QDialog::Accepted) {
             qWarning() << "Setup wizard was not completed; continuing with the current settings";
         }

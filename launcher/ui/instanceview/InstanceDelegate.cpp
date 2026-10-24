@@ -45,6 +45,9 @@
 #include <QTextEdit>
 #include "BaseInstance.h"
 #include "InstanceList.h"
+#include "InstanceView.h"
+#include "MMCTime.h"
+#include "ui/yahu/YahuStyle.h"
 
 // Origin: Qt
 static void viewItemTextLayout(QTextLayout& textLayout, int lineWidth, qreal& height, qreal& widthUsed)
@@ -69,143 +72,211 @@ static void viewItemTextLayout(QTextLayout& textLayout, int lineWidth, qreal& he
 
 ListViewDelegate::ListViewDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
 
-void drawSelectionRect(QPainter* painter, const QStyleOptionViewItem& option, const QRect& rect)
+namespace {
+// Card metrics. The top inset leaves room for the hover lift so it never gets clipped.
+constexpr int kLift = 6;
+constexpr int kPadTop = 16;
+constexpr int kIconSize = 56;
+constexpr int kGap = 12;
+constexpr int kMetaHeight = 16;
+constexpr int kPadBottom = 14;
+constexpr int kTextInset = 12;
+constexpr qreal kCut = 12.0;
+constexpr qreal kMaxTilt = 9.0;
+
+qreal easeOutCubic(qreal t)
 {
-    if ((option.state & QStyle::State_Selected))
-        painter->fillRect(rect, option.palette.brush(QPalette::Highlight));
-    else {
-        QColor backgroundColor = option.palette.color(QPalette::Window);
-        backgroundColor.setAlpha(160);
-        painter->fillRect(rect, QBrush(backgroundColor));
-    }
+    t = qBound(0.0, t, 1.0);
+    return 1.0 - qPow(1.0 - t, 3);
 }
 
-void drawBadges(QPainter* painter, const QStyleOptionViewItem& option, BaseInstance* instance, QIcon::Mode mode, QIcon::State state)
+QFont cardFont(const QStyleOptionViewItem& option)
 {
-    QList<QString> pixmaps;
-    if (instance->isRunning()) {
-        pixmaps.append("status-running");
-    } else if (instance->hasCrashed() || instance->hasVersionBroken()) {
-        pixmaps.append("status-bad");
-    }
-
-    static const int itemSide = 24;
-    static const int spacing = 1;
-    const int itemsPerRow = qMax(1, qFloor(double(option.rect.width() + spacing) / double(itemSide + spacing)));
-    const int rows = qCeil((double)pixmaps.size() / (double)itemsPerRow);
-    QListIterator<QString> it(pixmaps);
-    painter->translate(option.rect.topLeft());
-    for (int y = 0; y < rows; ++y) {
-        for (int x = 0; x < itemsPerRow; ++x) {
-            if (!it.hasNext()) {
-                return;
-            }
-            // FIXME: inject this.
-            auto icon = QIcon::fromTheme(it.next());
-            // opt.icon.paint(painter, iconbox, Qt::AlignCenter, mode, state);
-            const QPixmap pixmap;
-            // itemSide
-            QRect badgeRect(option.rect.width() - x * itemSide + qMax(x - 1, 0) * spacing - itemSide,
-                            y * itemSide + qMax(y - 1, 0) * spacing, itemSide, itemSide);
-            icon.paint(painter, badgeRect, Qt::AlignCenter, mode, state);
-        }
-    }
-    painter->translate(-option.rect.topLeft());
+    QFont font = option.font;
+    font.setWeight(QFont::Bold);
+    return font;
 }
+
+void drawStatusPixel(QPainter* painter, const QPointF& center, const QColor& color, qreal pulse)
+{
+    // pulse in [0, 1): an expanding, fading square around a solid pixel
+    const qreal ring = 4.0 + 7.0 * pulse;
+    painter->setPen(QPen(YahuStyle::withAlpha(color, 0.7 * (1.0 - pulse)), 1.5));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRect(QRectF(center.x() - ring, center.y() - ring, ring * 2, ring * 2));
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(color);
+    painter->drawRect(QRectF(center.x() - 3.5, center.y() - 3.5, 7, 7));
+}
+}  // namespace
 
 static QSize viewItemTextSize(const QStyleOptionViewItem* option)
 {
-    QStyle* style = option->widget ? option->widget->style() : QApplication::style();
     QTextOption textOption;
     textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
     QTextLayout textLayout;
     textLayout.setTextOption(textOption);
-    textLayout.setFont(option->font);
+    textLayout.setFont(cardFont(*option));
     textLayout.setText(option->text);
-    const int textMargin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, option, option->widget) + 1;
-    QRect bounds(0, 0, 100 - 2 * textMargin, 600);
+    QRect bounds(0, 0, InstanceView::kCardWidth - 2 * kTextInset, 600);
     qreal height = 0, widthUsed = 0;
     viewItemTextLayout(textLayout, bounds.width(), height, widthUsed);
-    const QSize size(qCeil(widthUsed), qCeil(height));
-    return QSize(size.width() + 2 * textMargin, size.height());
+    return QSize(qCeil(widthUsed), qCeil(height));
 }
 
 void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
+    using namespace YahuStyle;
+
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, index);
-    painter->save();
-    painter->setClipRect(opt.rect);
-
-    opt.features |= QStyleOptionViewItem::WrapText;
     opt.text = index.data().toString();
-    opt.textElideMode = Qt::ElideRight;
-    opt.displayAlignment = Qt::AlignTop | Qt::AlignHCenter;
 
-    QStyle* style = opt.widget ? opt.widget->style() : QApplication::style();
+    const auto* view = qobject_cast<const InstanceView*>(opt.widget);
+    const qreal hover = view ? easeOutCubic(view->hoverProgress(index)) : ((opt.state & QStyle::State_MouseOver) ? 1.0 : 0.0);
+    const qreal intro = view ? easeOutCubic(view->introProgress(index)) : 1.0;
+    if (intro <= 0.0) {
+        return;
+    }
+    const bool selected = opt.state & QStyle::State_Selected;
+    const bool enabled = opt.state & QStyle::State_Enabled;
+    auto instance = (BaseInstance*)index.data(InstanceList::InstancePointerRole).value<void*>();
+    const bool running = instance && instance->isRunning();
+    const QColor tone = running ? gold : accent;
 
-    const int iconSize = 48;
-    QRect iconbox = opt.rect;
-    const int textMargin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, opt.widget) + 1;
-    QRect textRect = opt.rect;
-    QRect textHighlightRect = textRect;
-    // clip the decoration on top, remove width padding
-    textRect.adjust(textMargin, iconSize + textMargin + 5, -textMargin, 0);
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter->setOpacity(intro);
 
-    textHighlightRect.adjust(0, iconSize + 5, 0, 0);
+    QRectF card = QRectF(opt.rect).adjusted(2, kLift + 1, -2, -1);
+    const QPointF center = card.center();
 
-    // draw background
-    drawSelectionRect(painter, opt, textHighlightRect);
+    // tilt the card towards the cursor while hovered, like holding it in your hand
+    QPointF rel(0, 0);
+    if (view && hover > 0.0) {
+        const QPointF cursor = view->cursorPosition();
+        rel = QPointF(qBound(-1.0, (cursor.x() - center.x()) / (card.width() / 2), 1.0),
+                      qBound(-1.0, (cursor.y() - center.y()) / (card.height() / 2), 1.0));
+    }
+    QTransform tilt;
+    tilt.translate(center.x(), center.y() + (1.0 - intro) * 18.0 - hover * kLift);
+    tilt.rotate(rel.x() * kMaxTilt * hover, Qt::YAxis);
+    tilt.rotate(-rel.y() * kMaxTilt * hover, Qt::XAxis);
+    const qreal scale = 0.92 + 0.08 * intro + 0.03 * hover;
+    tilt.scale(scale, scale);
+    tilt.translate(-center.x(), -center.y());
+    painter->setTransform(tilt, true);
 
-    // icon mode and state, also used for badges
-    QIcon::Mode mode = QIcon::Normal;
-    if (!(opt.state & QStyle::State_Enabled))
-        mode = QIcon::Disabled;
-    else if (opt.state & QStyle::State_Selected)
-        mode = QIcon::Selected;
+    const QPainterPath shape = chamfer(card, kCut);
+
+    // drop shadow + accent glow
+    if (hover > 0.01 || selected || running) {
+        const qreal strength = qMax(qMax(hover, selected ? 0.6 : 0.0), running ? 0.7 : 0.0);
+        painter->setPen(Qt::NoPen);
+        for (int i = 5; i >= 1; --i) {
+            painter->setBrush(withAlpha(tone, 0.03 * strength * (6 - i)));
+            painter->drawPath(chamfer(card.adjusted(-i * 1.6, -i * 1.2 + 4, i * 1.6, i * 2.4 + 4), kCut + i));
+        }
+    }
+
+    QColor fill = mix(withAlpha(raised, 0.88), withAlpha(raisedHi, 0.96), hover);
+    if (selected) {
+        fill = mix(fill, withAlpha(tone, 0.95), 0.12);
+    }
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(fill);
+    painter->drawPath(shape);
+
+    // light reflection that follows the cursor across the card
+    if (hover > 0.01) {
+        painter->save();
+        painter->setClipPath(shape);
+        const QPointF spot = center + QPointF(rel.x() * card.width() * 0.5, rel.y() * card.height() * 0.5);
+        QRadialGradient sheen(spot, card.width() * 0.8);
+        sheen.setColorAt(0.0, QColor(255, 255, 255, int(34 * hover)));
+        sheen.setColorAt(1.0, QColor(255, 255, 255, 0));
+        painter->setBrush(sheen);
+        painter->drawRect(card);
+        painter->restore();
+    }
+
+    // border, with lit corner brackets when hovered or selected
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(QPen(selected ? tone : mix(line, lineHi, hover), selected ? 1.5 : 1.0));
+    painter->drawPath(shape);
+    const qreal bracket = qMax(hover, selected ? 1.0 : 0.0);
+    if (bracket > 0.01) {
+        painter->setPen(QPen(withAlpha(tone, bracket), 2.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
+        const qreal len = 10 + 8 * bracket;
+        const QRectF b = card.adjusted(-3, -3, 3, 3);
+        painter->drawPolyline(QPolygonF() << QPointF(b.left(), b.top() + kCut + len) << QPointF(b.left(), b.top() + kCut)
+                                          << QPointF(b.left() + kCut, b.top()) << QPointF(b.left() + kCut + len, b.top()));
+        painter->drawPolyline(QPolygonF() << QPointF(b.right(), b.bottom() - kCut - len) << QPointF(b.right(), b.bottom() - kCut)
+                                          << QPointF(b.right() - kCut, b.bottom()) << QPointF(b.right() - kCut - len, b.bottom()));
+    }
+
+    QIcon::Mode mode = enabled ? QIcon::Normal : QIcon::Disabled;
     QIcon::State state = opt.state & QStyle::State_Open ? QIcon::On : QIcon::Off;
 
-    // draw the icon
+    // icon on a little pixel pedestal, bobbing up on hover
     {
-        iconbox.setHeight(iconSize);
-        opt.icon.paint(painter, iconbox, Qt::AlignCenter, mode, state);
-    }
-    // set the text colors
-    QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
-    if (cg == QPalette::Normal && !(opt.state & QStyle::State_Active))
-        cg = QPalette::Inactive;
-    if (opt.state & QStyle::State_Selected) {
-        painter->setPen(opt.palette.color(cg, QPalette::HighlightedText));
-    } else {
-        painter->setPen(opt.palette.color(cg, QPalette::Text));
+        const qreal size = kIconSize * (1.0 + 0.1 * hover);
+        const qreal top = card.top() + kPadTop - hover * 3.0;
+        QRectF iconBox(center.x() - size / 2.0, top + (kIconSize - size) / 2.0, size, size);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(withAlpha(Qt::black, 0.25 + 0.15 * hover));
+        painter->drawRect(QRectF(center.x() - kIconSize * 0.36, card.top() + kPadTop + kIconSize + 3, kIconSize * 0.72, 3));
+        opt.icon.paint(painter, iconBox.toRect(), Qt::AlignCenter, mode, state);
     }
 
-    // draw the text
-    QTextOption textOption;
-    textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
-    textOption.setTextDirection(opt.direction);
-    textOption.setAlignment(QStyle::visualAlignment(opt.direction, opt.displayAlignment));
-    QTextLayout textLayout;
-    textLayout.setTextOption(textOption);
-    textLayout.setFont(opt.font);
-    textLayout.setText(opt.text);
-
-    qreal width, height;
-    viewItemTextLayout(textLayout, textRect.width(), height, width);
-
-    const int lineCount = textLayout.lineCount();
-
-    const QRect layoutRect = QStyle::alignedRect(opt.direction, opt.displayAlignment, QSize(textRect.width(), int(height)), textRect);
-    const QPointF position = layoutRect.topLeft();
-    for (int i = 0; i < lineCount; ++i) {
-        const QTextLine line = textLayout.lineAt(i);
-        line.draw(painter, position);
+    // name
+    QRectF textRect = card.adjusted(kTextInset, kPadTop + kIconSize + kGap, -kTextInset, -(kPadBottom + kMetaHeight));
+    {
+        QFont font = cardFont(opt);
+        painter->setFont(font);
+        painter->setPen(enabled ? (selected || hover > 0.5 ? text : mix(muted, text, 0.6)) : faint);
+        QTextOption textOption;
+        textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+        textOption.setTextDirection(opt.direction);
+        textOption.setAlignment(Qt::AlignHCenter);
+        QTextLayout textLayout;
+        textLayout.setTextOption(textOption);
+        textLayout.setFont(font);
+        textLayout.setText(opt.text);
+        qreal width, height;
+        viewItemTextLayout(textLayout, textRect.width(), height, width);
+        for (int i = 0; i < textLayout.lineCount(); ++i) {
+            textLayout.lineAt(i).draw(painter, textRect.topLeft());
+        }
     }
 
-    // FIXME: this really has no business of being here. Make generic.
-    auto instance = (BaseInstance*)index.data(InstanceList::InstancePointerRole).value<void*>();
+    // meta line in the pixel font: running state or time played
     if (instance) {
-        drawBadges(painter, opt, instance, mode, state);
+        QString meta;
+        QColor metaColor = faint;
+        if (running) {
+            meta = QObject::tr("PLAYING");
+            metaColor = gold;
+        } else if (instance->hasCrashed() || instance->hasVersionBroken()) {
+            meta = QObject::tr("NEEDS ATTENTION");
+            metaColor = danger;
+        } else if (instance->totalTimePlayed() > 0) {
+            meta = Time::prettifyDuration(instance->totalTimePlayed(), true).toUpper();
+        } else {
+            meta = QObject::tr("NEW");
+            metaColor = mix(faint, accent, 0.6);
+        }
+        painter->setFont(pixelFont(8));
+        painter->setPen(mix(metaColor, metaColor.lighter(130), hover));
+        painter->drawText(QRectF(card.left() + 6, card.bottom() - kPadBottom - kMetaHeight + 4, card.width() - 12, kMetaHeight),
+                          Qt::AlignHCenter | Qt::AlignVCenter, meta);
+
+        if (running) {
+            drawStatusPixel(painter, QPointF(card.right() - 15, card.top() + 15), gold, view ? view->pulsePhase() : 0.0);
+        } else if (instance->hasCrashed() || instance->hasVersionBroken()) {
+            drawStatusPixel(painter, QPointF(card.right() - 15, card.top() + 15), danger, 0.0);
+        }
     }
 
     painter->restore();
@@ -215,19 +286,9 @@ QSize ListViewDelegate::sizeHint(const QStyleOptionViewItem& option, const QMode
 {
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, index);
-    opt.features |= QStyleOptionViewItem::WrapText;
     opt.text = index.data().toString();
-    opt.textElideMode = Qt::ElideRight;
-    opt.displayAlignment = Qt::AlignTop | Qt::AlignHCenter;
-
-    QStyle* style = opt.widget ? opt.widget->style() : QApplication::style();
-    const int textMargin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, &option, opt.widget) + 1;
-    int height = 48 + textMargin * 2 + 5;  // TODO: turn constants into variables
-    QSize szz = viewItemTextSize(&opt);
-    height += szz.height();
-    // FIXME: maybe the icon items could scale and keep proportions?
-    QSize sz(100, height);
-    return sz;
+    const QSize text = viewItemTextSize(&opt);
+    return QSize(InstanceView::kCardWidth, kLift + kPadTop + kIconSize + kGap + text.height() + kMetaHeight + kPadBottom + 4);
 }
 
 class NoReturnTextEdit : public QTextEdit {
@@ -263,9 +324,8 @@ void ListViewDelegate::updateEditorGeometry(QWidget* editor,
                                             const QStyleOptionViewItem& option,
                                             [[maybe_unused]] const QModelIndex& index) const
 {
-    const int iconSize = 48;
     QRect textRect = option.rect;
-    textRect.adjust(0, iconSize + 5, 0, 0);
+    textRect.adjust(kTextInset / 2, kLift + kPadTop + kIconSize + kGap / 2, -kTextInset / 2, -2);
     editor->setGeometry(textRect);
 }
 

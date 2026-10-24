@@ -118,7 +118,15 @@ MSAStep::MSAStep(AccountData* data, bool silent) : AuthStep(data), m_silent(sile
 
     {
         auto replyHandler = new LoggingOAuthHttpServerReplyHandler(this);
-        replyHandler->setCallbackText(QString(R"XXX(
+        if (BuildConfig.LOGIN_CALLBACK_URL.isEmpty()) {
+            replyHandler->setCallbackText(QString(R"XXX(
+    <body style="background:#0A0F0B;color:#ECF3EA;font-family:sans-serif;display:grid;place-items:center;height:100vh;margin:0">
+      <div style="text-align:center"><h1 style="color:#5BE36B">Signed in!</h1><p>You can close this tab and go back to %1.</p></div>
+    </body>
+    )XXX")
+                                              .arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+        } else {
+            replyHandler->setCallbackText(QString(R"XXX(
     <noscript>
       <meta http-equiv="Refresh" content="0; URL=%1" />
     </noscript>
@@ -127,7 +135,8 @@ MSAStep::MSAStep(AccountData* data, bool silent) : AuthStep(data), m_silent(sile
       window.location.replace("%1");
     </script>
     )XXX")
-                                          .arg(BuildConfig.LOGIN_CALLBACK_URL));
+                                              .arg(BuildConfig.LOGIN_CALLBACK_URL));
+        }
         m_oauth2.setReplyHandler(replyHandler);
     } else {
         m_oauth2.setReplyHandler(new CustomOAuthOobReplyHandler(this));

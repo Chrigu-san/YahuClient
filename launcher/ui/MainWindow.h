@@ -58,6 +58,8 @@ class MinecraftLauncher;
 class BaseProfilerFactory;
 class InstanceView;
 class KonamiCode;
+class YahuHero;
+class YahuSidebar;
 class InstanceTask;
 
 namespace Ui {
@@ -241,6 +243,8 @@ class MainWindow : public QMainWindow {
     InstanceProxyModel* proxymodel = nullptr;
     QToolButton* newsLabel = nullptr;
     QLabel* m_statusLeft = nullptr;
+    YahuHero* m_hero = nullptr;
+    YahuSidebar* m_sidebar = nullptr;
     QLabel* m_statusCenter = nullptr;
     QToolButton* m_changeIconButton = nullptr;
     QAction* m_instanceToolBarTopSeparator = nullptr;

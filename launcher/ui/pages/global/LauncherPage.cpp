@@ -71,6 +71,7 @@ enum InstSortMode {
 LauncherPage::LauncherPage(QWidget* parent) : QWidget(parent), ui(new Ui::LauncherPage)
 {
     ui->setupUi(this);
+    ui->preferMenuBarCheckBox->hide();  // Yahu Client has no menu bar or toolbar to switch between
 
     ui->sortingModeGroup->setId(ui->sortByNameBtn, Sort_Name);
     ui->sortingModeGroup->setId(ui->sortLastLaunchedBtn, Sort_LastLaunch);

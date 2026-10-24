@@ -36,6 +36,10 @@
 #pragma once
 
 #include <QCache>
+#include <QElapsedTimer>
+#include <QHash>
+#include <QPersistentModelIndex>
+#include <QTimer>
 #include <QLineEdit>
 #include <QListView>
 #include <QScrollBar>
@@ -80,6 +84,13 @@ class InstanceView : public QAbstractItemView {
     int spacing() const { return m_spacing; };
     void setPaintCat(bool visible);
 
+    // Yahu card animation state, read by ListViewDelegate while painting.
+    static constexpr int kCardWidth = 156;
+    qreal hoverProgress(const QModelIndex& index) const;
+    qreal introProgress(const QModelIndex& index) const;
+    qreal pulsePhase() const;
+    QPointF cursorPosition() const { return m_cursorPos; }
+
    public slots:
     virtual void updateGeometries() override;
 
@@ -101,6 +112,8 @@ class InstanceView : public QAbstractItemView {
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void leaveEvent(QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
@@ -120,12 +133,26 @@ class InstanceView : public QAbstractItemView {
     visibilityFunction m_fVisibility;
 
     // geometry
-    int m_leftMargin = 5;
-    int m_rightMargin = 5;
-    int m_bottomMargin = 5;
-    int m_categoryMargin = 5;
-    int m_spacing = 5;
-    int m_itemWidth = 100;
+    int m_leftMargin = 22;
+    int m_rightMargin = 22;
+    int m_bottomMargin = 22;
+    int m_categoryMargin = 10;
+    int m_spacing = 12;
+    int m_itemWidth = kCardWidth;
+
+    // animation
+    void setHoveredIndex(const QModelIndex& index);
+    void animationTick();
+    bool anyInstanceRunning() const;
+    void ensureAnimating();
+    QPersistentModelIndex m_hoveredIndex;
+    QHash<QPersistentModelIndex, qreal> m_hoverProgress;
+    QTimer m_animationTimer;
+    QElapsedTimer m_frameClock;
+    QElapsedTimer m_introClock;
+    QElapsedTimer m_pulseClock;
+    bool m_introPlayed = false;
+    QPointF m_cursorPos;
     int m_currentItemsPerRow = -1;
     int m_currentCursorColumn = -1;
     mutable QCache<int, QRect> m_geometryCache;

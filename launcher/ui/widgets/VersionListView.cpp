@@ -35,6 +35,7 @@
  */
 
 #include "VersionListView.h"
+#include "ui/yahu/YahuStyle.h"
 #include <QApplication>
 #include <QDrag>
 #include <QHeaderView>
@@ -132,38 +133,28 @@ void VersionListView::paintInfoLabel(QPaintEvent* event) const
 {
     QString emptyString = currentEmptyString();
 
-    // calculate the rect for the overlay
     QPainter painter(viewport());
     painter.setRenderHint(QPainter::Antialiasing, true);
-    QFont font("sans", 20);
-    font.setBold(true);
+    QFont font = YahuStyle::pixelFont(8);
 
     QRect bounds = viewport()->geometry();
     bounds.moveTop(0);
-    auto innerBounds = bounds;
-    innerBounds.adjust(10, 10, -10, -10);
+    auto innerBounds = bounds.adjusted(16, 16, -16, -16);
 
-    QColor background = QApplication::palette().color(QPalette::WindowText);
-    QColor foreground = QApplication::palette().color(QPalette::Base);
-    foreground.setAlpha(190);
     painter.setFont(font);
-    auto fontMetrics = painter.fontMetrics();
-    auto textRect = fontMetrics.boundingRect(innerBounds, Qt::AlignHCenter | Qt::TextWordWrap, emptyString);
+    auto textRect = painter.fontMetrics().boundingRect(innerBounds, Qt::AlignHCenter | Qt::TextWordWrap, emptyString);
     textRect.moveCenter(bounds.center());
-
-    auto wrapRect = textRect;
-    wrapRect.adjust(-10, -10, 10, 10);
-
-    // check if we are allowed to draw in our area
-    if (!event->rect().intersects(wrapRect)) {
+    if (!event->rect().intersects(textRect.adjusted(-30, -30, 30, 30))) {
         return;
     }
 
-    painter.setBrush(QBrush(background));
-    painter.setPen(foreground);
-    painter.drawRoundedRect(wrapRect, 5.0, 5.0);
-
-    painter.setPen(foreground);
-    painter.setFont(font);
+    // a dashed pixel frame with the message in the pixel font
+    const QRectF frame = QRectF(textRect).adjusted(-18, -14, 18, 14);
+    QPen dash(YahuStyle::lineHi, 1.0, Qt::CustomDashLine);
+    dash.setDashPattern({ 3, 3 });
+    painter.setPen(dash);
+    painter.setBrush(YahuStyle::withAlpha(YahuStyle::ink, 0.6));
+    painter.drawPath(YahuStyle::chamfer(frame, 6));
+    painter.setPen(m_emptyMode == ErrorString ? YahuStyle::danger : YahuStyle::muted);
     painter.drawText(textRect, Qt::AlignHCenter | Qt::TextWordWrap, emptyString);
 }

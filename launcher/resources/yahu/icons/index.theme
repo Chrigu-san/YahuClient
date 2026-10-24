@@ -1,0 +1,11 @@
+[Icon Theme]
+Name=Yahu
+Comment=The Yahu Client icon set
+Inherits=multimc
+Directories=scalable
+
+[scalable]
+Size=48
+Type=Scalable
+MinSize=16
+MaxSize=256

@@ -1,0 +1,14 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/yahu">
+        <file>logo.svg</file>
+        <file>check.svg</file>
+        <file>partial.svg</file>
+        <file>chevron-down.svg</file>
+        <file>chevron-up.svg</file>
+        <file>chevron-right.svg</file>
+        <file>fonts/Unbounded.ttf</file>
+        <file>fonts/Silkscreen-Regular.ttf</file>
+        <file>fonts/InstrumentSans.ttf</file>
+    </qresource>
+</RCC>

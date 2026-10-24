@@ -856,6 +856,24 @@ SET(LAUNCHER_SOURCES
     ui/themes/CustomTheme.h
     ui/themes/DarkTheme.cpp
     ui/themes/DarkTheme.h
+    ui/themes/YahuTheme.cpp
+    ui/themes/YahuTheme.h
+    ui/yahu/YahuStyle.cpp
+    ui/yahu/YahuStyle.h
+    ui/yahu/YahuAnimator.cpp
+    ui/yahu/YahuAnimator.h
+    ui/yahu/YahuPlayButton.cpp
+    ui/yahu/YahuPlayButton.h
+    ui/yahu/YahuHero.cpp
+    ui/yahu/YahuHero.h
+    ui/yahu/YahuSheetHost.cpp
+    ui/yahu/YahuSheetHost.h
+    ui/yahu/YahuBackdrop.cpp
+    ui/yahu/YahuBackdrop.h
+    ui/yahu/YahuFxLayer.cpp
+    ui/yahu/YahuFxLayer.h
+    ui/yahu/YahuSidebar.cpp
+    ui/yahu/YahuSidebar.h
     ui/themes/ITheme.cpp
     ui/themes/ITheme.h
     ui/themes/HintOverrideProxyStyle.cpp
@@ -1196,6 +1214,8 @@ endif()
 
 qt_add_resources(LAUNCHER_RESOURCES
     resources/backgrounds/backgrounds.qrc
+    resources/yahu/yahu.qrc
+    resources/yahu/icons/yahu_icons.qrc
     resources/multimc/multimc.qrc
     resources/pe_dark/pe_dark.qrc
     resources/pe_light/pe_light.qrc

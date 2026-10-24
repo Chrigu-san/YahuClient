@@ -44,6 +44,7 @@
 #include <utility>
 
 #include "InstanceView.h"
+#include "ui/yahu/YahuStyle.h"
 
 VisualGroup::VisualGroup(QString text, InstanceView* view) : view(view), text(std::move(text)), collapsed(false) {}
 
@@ -143,22 +144,23 @@ void VisualGroup::drawHeader(QPainter* painter, const QStyleOptionViewItem& opti
 {
     QRect optRect = option.rect;
     optRect.setTop(optRect.top() + 7);
-    QFont font(QApplication::font());
-    font.setBold(true);
+    QFont font = YahuStyle::pixelFont(8);
     const QFontMetrics fontMetrics = QFontMetrics(font);
     painter->setFont(font);
 
     QPen pen;
-    pen.setWidth(2);
-    QColor penColor = option.palette.text().color();
-    penColor.setAlphaF(0.6f);
-    pen.setColor(penColor);
+    pen.setWidthF(1.6);
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+    pen.setColor(option.palette.color(QPalette::Highlight));
     painter->setPen(pen);
     painter->setRenderHint(QPainter::Antialiasing);
+    QColor penColor = option.palette.text().color();
+    penColor.setAlphaF(0.6f);
 
     // sizes and offsets, to keep things consistent below
-    const int arrowOffsetLeft = fontMetrics.height() / 2 + 7;
-    const int textOffsetLeft = arrowOffsetLeft * 2;
+    const int arrowOffsetLeft = optRect.left() + fontMetrics.height() / 2 + 4;
+    const int textOffsetLeft = arrowOffsetLeft + fontMetrics.height() / 2 + 10;
     const int centerHeight = optRect.top() + fontMetrics.height() / 2;
     const QString& textToDraw = text.isEmpty() ? QObject::tr("Ungrouped") : text;
 
@@ -188,18 +190,19 @@ void VisualGroup::drawHeader(QPainter* painter, const QStyleOptionViewItem& opti
         textRect.setHeight(fontMetrics.height());
         textRect.setRight(textRect.right() - 7);
 
+        painter->setPen(penColor);
         painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, textToDraw);
     }
     // END: text
 
     // BEGIN: horizontal line
     {
-        penColor.setAlphaF(0.05f);
+        penColor.setAlphaF(0.08f);
         pen.setColor(penColor);
         painter->setPen(pen);
         // startPoint is left + arrow + text + space
         const int startPoint =
-            optRect.left() + fontMetrics.height() + fontMetrics.size(Qt::AlignLeft | Qt::AlignVCenter, textToDraw).width() + 20;
+            textOffsetLeft + fontMetrics.size(Qt::AlignLeft | Qt::AlignVCenter, textToDraw).width() + 14;
         painter->setRenderHint(QPainter::Antialiasing, false);
         QPolygon polygon;
         // for some reason the height (yPos) doesn't look centered, so we are adding 1 to the center height

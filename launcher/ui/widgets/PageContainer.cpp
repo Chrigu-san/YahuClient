@@ -39,6 +39,7 @@
 #include "BuildConfig.h"
 #include "PageContainer_p.h"
 
+#include <QApplication>
 #include <QDialogButtonBox>
 #include <QGridLayout>
 #include <QLabel>
@@ -54,6 +55,8 @@
 #include "settings/SettingsObject.h"
 
 #include "ui/widgets/IconLabel.h"
+#include "ui/yahu/YahuAnimator.h"
+#include "ui/yahu/YahuStyle.h"
 
 #include "Application.h"
 #include "DesktopServices.h"
@@ -165,19 +168,13 @@ void PageContainer::createUI()
     m_pageList = new PageView;
     m_header = new QLabel();
 
-    QFont headerLabelFont = m_header->font();
-    headerLabelFont.setBold(true);
-    const int pointSize = headerLabelFont.pointSize();
-    if (pointSize > 0) {
-        headerLabelFont.setPointSize(pointSize + 2);
-    }
-    m_header->setFont(headerLabelFont);
+    m_header->setFont(YahuStyle::displayFont(QApplication::font().pointSizeF() + 6, QFont::Bold));
 
     auto* headerHLayout = new QHBoxLayout;
     const int leftMargin = APPLICATION->style()->pixelMetric(QStyle::PM_LayoutLeftMargin);
     headerHLayout->addSpacerItem(new QSpacerItem(leftMargin, 0, QSizePolicy::Fixed, QSizePolicy::Ignored));
     headerHLayout->addWidget(m_header);
-    headerHLayout->setContentsMargins(0, 6, 0, 0);
+    headerHLayout->setContentsMargins(0, 10, 0, 4);
 
     m_pageStack->setContentsMargins(0, 0, 0, 0);
     m_pageStack->addWidget(new QWidget(this));
@@ -231,6 +228,7 @@ void PageContainer::showPage(int row)
         m_pageStack->setCurrentIndex(m_currentPage->stackIndex);
         m_header->setText(m_currentPage->displayName());
         m_currentPage->opened();
+        YahuAnimator::reveal(m_pageStack->currentWidget());
     } else {
         m_pageStack->setCurrentIndex(0);
         m_header->setText(QString());

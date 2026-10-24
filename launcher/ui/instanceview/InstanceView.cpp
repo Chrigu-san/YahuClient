@@ -51,9 +51,13 @@
 #include "VisualGroup.h"
 #include "ui/themes/CatPainter.h"
 #include "ui/themes/ThemeManager.h"
+#include "ui/yahu/YahuStyle.h"
 
 #include <Application.h>
+#include <BaseInstance.h>
 #include <InstanceList.h>
+
+#include <cmath>
 
 InstanceView::InstanceView(QWidget* parent) : QAbstractItemView(parent)
 {
@@ -64,6 +68,124 @@ InstanceView::InstanceView(QWidget* parent) : QAbstractItemView(parent)
     setPaintCat(APPLICATION->settings()->get("TheCat").toBool());
     connect(verticalScrollBar(), &QScrollBar::valueChanged, viewport(), QOverload<>::of(&QWidget::update));
     connect(horizontalScrollBar(), &QScrollBar::valueChanged, viewport(), QOverload<>::of(&QWidget::update));
+
+    setMouseTracking(true);
+    viewport()->setMouseTracking(true);
+    m_animationTimer.setInterval(16);
+    m_animationTimer.setTimerType(Qt::PreciseTimer);
+    connect(&m_animationTimer, &QTimer::timeout, this, &InstanceView::animationTick);
+    m_pulseClock.start();
+}
+
+namespace {
+constexpr qreal kHoverDurationMs = 160.0;
+constexpr qreal kIntroDurationMs = 520.0;
+constexpr qreal kIntroStaggerMs = 45.0;
+constexpr qreal kPulseDurationMs = 1600.0;
+}  // namespace
+
+qreal InstanceView::hoverProgress(const QModelIndex& index) const
+{
+    return m_hoverProgress.value(QPersistentModelIndex(index), 0.0);
+}
+
+qreal InstanceView::introProgress(const QModelIndex& index) const
+{
+    if (!m_introPlayed) {
+        return 0.0;
+    }
+    if (!m_introClock.isValid()) {
+        return 1.0;
+    }
+    const qreal t = (m_introClock.elapsed() - index.row() * kIntroStaggerMs) / kIntroDurationMs;
+    return qBound(0.0, t, 1.0);
+}
+
+qreal InstanceView::pulsePhase() const
+{
+    return std::fmod(qreal(m_pulseClock.elapsed()), kPulseDurationMs) / kPulseDurationMs;
+}
+
+bool InstanceView::anyInstanceRunning() const
+{
+    if (!model()) {
+        return false;
+    }
+    for (int i = 0; i < model()->rowCount(); ++i) {
+        auto instance = (BaseInstance*)model()->index(i, 0).data(InstanceList::InstancePointerRole).value<void*>();
+        if (instance && instance->isRunning()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void InstanceView::ensureAnimating()
+{
+    if (!m_animationTimer.isActive()) {
+        m_frameClock.start();
+        m_animationTimer.start();
+    }
+}
+
+void InstanceView::setHoveredIndex(const QModelIndex& index)
+{
+    const QPersistentModelIndex hovered(index);
+    if (hovered == m_hoveredIndex) {
+        return;
+    }
+    m_hoveredIndex = hovered;
+    if (hovered.isValid() && !m_hoverProgress.contains(hovered)) {
+        m_hoverProgress.insert(hovered, 0.0);
+    }
+    ensureAnimating();
+}
+
+void InstanceView::animationTick()
+{
+    const qreal dt = m_frameClock.isValid() ? qMin<qreal>(m_frameClock.restart(), 50.0) : 16.0;
+    const qreal step = dt / kHoverDurationMs;
+
+    bool hoverMoving = false;
+    for (auto it = m_hoverProgress.begin(); it != m_hoverProgress.end();) {
+        const bool target = it.key().isValid() && it.key() == m_hoveredIndex;
+        qreal& value = it.value();
+        value = target ? qMin(1.0, value + step) : qMax(0.0, value - step);
+        if (!it.key().isValid() || (!target && value <= 0.0)) {
+            it = m_hoverProgress.erase(it);
+            continue;
+        }
+        hoverMoving |= target ? value < 1.0 : value > 0.0;
+        ++it;
+    }
+
+    const bool introRunning =
+        m_introClock.isValid() && model() && m_introClock.elapsed() < kIntroDurationMs + model()->rowCount() * kIntroStaggerMs;
+    if (m_introClock.isValid() && !introRunning) {
+        m_introClock.invalidate();
+    }
+
+    viewport()->update();
+
+    if (!hoverMoving && !introRunning && !anyInstanceRunning()) {
+        m_animationTimer.stop();
+    }
+}
+
+void InstanceView::leaveEvent(QEvent* event)
+{
+    setHoveredIndex(QModelIndex());
+    QAbstractItemView::leaveEvent(event);
+}
+
+void InstanceView::showEvent(QShowEvent* event)
+{
+    QAbstractItemView::showEvent(event);
+    if (!m_introPlayed) {
+        m_introPlayed = true;
+        m_introClock.start();
+        ensureAnimating();
+    }
 }
 
 InstanceView::~InstanceView()
@@ -87,6 +209,9 @@ void InstanceView::dataChanged([[maybe_unused]] const QModelIndex& topLeft,
                                [[maybe_unused]] const QList<int>& roles)
 {
     scheduleDelayedItemsLayout();
+    if (anyInstanceRunning()) {
+        ensureAnimating();
+    }
 }
 void InstanceView::rowsInserted([[maybe_unused]] const QModelIndex& parent, [[maybe_unused]] int start, [[maybe_unused]] int end)
 {
@@ -310,6 +435,13 @@ void InstanceView::mouseMoveEvent(QMouseEvent* event)
 {
     executeDelayedItemsLayout();
 
+    setHoveredIndex(event->buttons() == Qt::NoButton ? indexAt(event->pos()) : QModelIndex());
+    m_cursorPos = event->position();
+    if (m_hoveredIndex.isValid()) {
+        // the hovered card tilts with every mouse move
+        viewport()->update(visualRect(m_hoveredIndex).adjusted(-16, -16, 16, 16));
+    }
+
     QPoint topLeft;
     QPoint visualPos = event->pos();
     QPoint geometryPos = event->pos() + offset();
@@ -458,41 +590,33 @@ void InstanceView::paintEvent([[maybe_unused]] QPaintEvent* event)
 
     if (model()->rowCount() == 0) {
         painter.save();
-        QString emptyString = tr("Welcome!") + "\n" + tr("Click \"Add Instance\" to get started.");
-
-        // calculate the rect for the overlay
         painter.setRenderHint(QPainter::Antialiasing, true);
-        QFont font("sans", 20);
-        font.setBold(true);
+        const QRect bounds = viewport()->rect();
 
-        QRect bounds = viewport()->geometry();
-        bounds.moveTop(0);
-        auto innerBounds = bounds;
-        innerBounds.adjust(10, 10, -10, -10);
+        const QString title = tr("Nothing here yet.");
+        const QString hint = tr("Create your first instance with \"New instance\" in the menu on the left.");
+        QFont titleFont = YahuStyle::displayFont(26);
+        QFont hintFont = QApplication::font();
+        hintFont.setPointSizeF(hintFont.pointSizeF() + 1);
 
-        QColor background = QApplication::palette().color(QPalette::WindowText);
-        QColor foreground = QApplication::palette().color(QPalette::Base);
-        foreground.setAlpha(190);
-        painter.setFont(font);
-        auto fontMetrics = painter.fontMetrics();
-        auto textRect = fontMetrics.boundingRect(innerBounds, Qt::AlignHCenter | Qt::TextWordWrap, emptyString);
-        textRect.moveCenter(bounds.center());
+        const QFontMetrics titleMetrics(titleFont);
+        const QFontMetrics hintMetrics(hintFont);
+        const int blockHeight = titleMetrics.height() + 10 + hintMetrics.height() * 2;
+        QRect titleRect(bounds.left() + 20, bounds.center().y() - blockHeight / 2, bounds.width() - 40, titleMetrics.height());
+        QRect hintRect(titleRect.left(), titleRect.bottom() + 10, titleRect.width(), hintMetrics.height() * 2);
 
-        auto wrapRect = textRect;
-        wrapRect.adjust(-10, -10, 10, 10);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(palette().color(QPalette::Highlight));
+        painter.drawRoundedRect(QRectF(bounds.center().x() - 18, titleRect.top() - 22, 36, 5), 2.5, 2.5);
 
-        // check if we are allowed to draw in our area
-        if (!event->rect().intersects(wrapRect)) {
-            return;
-        }
-
-        painter.setBrush(QBrush(background));
-        painter.setPen(foreground);
-        painter.drawRoundedRect(wrapRect, 5.0, 5.0);
-
-        painter.setPen(foreground);
-        painter.setFont(font);
-        painter.drawText(textRect, Qt::AlignHCenter | Qt::TextWordWrap, emptyString);
+        painter.setFont(titleFont);
+        painter.setPen(palette().color(QPalette::WindowText));
+        painter.drawText(titleRect, Qt::AlignHCenter | Qt::AlignVCenter, title);
+        QColor hintColor = palette().color(QPalette::WindowText);
+        hintColor.setAlphaF(0.55);
+        painter.setFont(hintFont);
+        painter.setPen(hintColor);
+        painter.drawText(hintRect, Qt::AlignHCenter | Qt::AlignTop | Qt::TextWordWrap, hint);
 
         painter.restore();
         return;
