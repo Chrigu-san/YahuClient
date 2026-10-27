@@ -34,6 +34,7 @@
  */
 
 #include "MSALoginDialog.h"
+#include "ui/yahu/YahuStyle.h"
 #include "Application.h"
 #include "Handle.h"
 #include "settings/SettingsObject.h"
@@ -73,13 +74,11 @@ MSALoginDialog::MSALoginDialog(QWidget* parent) : QDialog(parent), ui(new Ui::MS
 {
     ui->setupUi(this);
 
-    // make font monospace
-    QFont font;
-    font.setPixelSize(ui->code->fontInfo().pixelSize());
-    font.setFamily(APPLICATION->settings()->get("ConsoleFont").toString());
-    font.setStyleHint(QFont::Monospace);
-    font.setFixedPitch(true);
+    // the sign-in code in big, evenly spaced display type so it is easy to read off and type in
+    QFont font = YahuStyle::displayFont(24, QFont::Black);
+    font.setLetterSpacing(QFont::AbsoluteSpacing, 5.0);
     ui->code->setFont(font);
+    ui->code->setStyleSheet(QStringLiteral("color: %1;").arg(YahuStyle::accent.name()));
 
     connect(ui->copyCode, &QPushButton::clicked, this, [this] { QApplication::clipboard()->setText(ui->code->text()); });
     connect(ui->loginButton, &QPushButton::clicked, this, [this] {

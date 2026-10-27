@@ -36,6 +36,7 @@
 #include "BaseInstance.h"
 #include "YahuPlayButton.h"
 #include "YahuStyle.h"
+#include "InstanceList.h"
 #include "icons/IconList.h"
 
 using namespace YahuStyle;
@@ -60,9 +61,18 @@ YahuHero::YahuHero(QAction* launchAction,
     setAttribute(Qt::WA_TranslucentBackground, true);
 
     m_play = new YahuPlayButton(this);
-    connect(m_play, &QAbstractButton::clicked, m_launchAction, &QAction::trigger);
+    connect(m_play, &QAbstractButton::clicked, this, [this] {
+        if (!m_instance && m_libraryEmpty && m_createAction) {
+            m_createAction->trigger();
+        } else {
+            m_launchAction->trigger();
+        }
+    });
 
-    m_launchMenuButton = makeGhostButton(QString(), QStringLiteral("launch"));
+    m_launchMenuButton = makeGhostButton(QString(), QString());
+    m_launchMenuButton->setIcon(QIcon(QStringLiteral(":/yahu/chevron-down.svg")));
+    m_launchMenuButton->setIconSize(QSize(16, 16));
+    m_launchMenuButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_launchMenuButton->setToolTip(tr("More ways to launch"));
     m_launchMenuButton->setFixedWidth(46);
     connect(m_launchMenuButton, &QToolButton::clicked, this, [this] {
@@ -160,6 +170,13 @@ QToolButton* YahuHero::makeGhostButton(const QString& label, const QString& icon
     return button;
 }
 
+void YahuHero::setCreateAction(QAction* createAction)
+{
+    m_createAction = createAction;
+    connect(createAction, &QAction::changed, this, &YahuHero::syncActions);
+    refresh();
+}
+
 void YahuHero::setInstance(BaseInstance* instance)
 {
     const bool changed = instance != m_instance.data();
@@ -177,17 +194,24 @@ void YahuHero::setInstance(BaseInstance* instance)
 
 void YahuHero::refresh()
 {
+    m_libraryEmpty = APPLICATION->instances()->count() == 0;
     if (m_instance) {
         m_running = m_instance->isRunning();
         m_title = m_instance->name();
         m_eyebrow = m_running ? tr("Playing now") : tr("Ready to play");
         m_meta = m_instance->getStatusbarDescription();
         m_icon = APPLICATION->icons()->getIcon(m_instance->iconKey());
+    } else if (m_libraryEmpty) {
+        m_running = false;
+        m_title = tr("Let's get you playing");
+        m_eyebrow = tr("Getting started");
+        m_meta = tr("Create an instance: pick a Minecraft version, add a mod loader if you like, done.");
+        m_icon = QIcon(QStringLiteral(":/yahu/logo.svg"));
     } else {
         m_running = false;
         m_title = tr("Welcome back");
         m_eyebrow = tr("Pick an instance");
-        m_meta = tr("Choose something to play below, or create a new instance from the menu.");
+        m_meta = tr("Click one of your instances below to get it ready.");
         m_icon = QIcon(QStringLiteral(":/yahu/logo.svg"));
     }
     syncActions();
@@ -196,14 +220,26 @@ void YahuHero::refresh()
 
 void YahuHero::syncActions()
 {
-    m_play->setMode(m_running ? YahuPlayButton::Mode::Running : YahuPlayButton::Mode::Play);
-    m_play->setEnabled(m_launchAction->isEnabled() && !m_running);
-    m_play->setToolTip(m_launchAction->toolTip());
-    m_launchMenuButton->setEnabled(m_launchAction->isEnabled() && m_instance);
+    const bool creating = !m_instance && m_libraryEmpty && m_createAction;
+    if (creating) {
+        m_play->setMode(YahuPlayButton::Mode::Create);
+        m_play->setEnabled(m_createAction->isEnabled());
+        m_play->setToolTip(tr("Create your first instance"));
+    } else {
+        m_play->setMode(m_running ? YahuPlayButton::Mode::Running : YahuPlayButton::Mode::Play);
+        m_play->setEnabled(m_instance && m_launchAction->isEnabled() && !m_running);
+        m_play->setToolTip(m_instance ? tr("Launch %1").arg(m_instance->name()) : tr("Select an instance first"));
+    }
+    // instance tools only make sense once something is selected
+    const bool hasInstance = m_instance;
+    m_launchMenuButton->setVisible(hasInstance && !m_running);
+    m_launchMenuButton->setEnabled(m_launchAction->isEnabled());
     m_stopButton->setVisible(m_running && m_killAction->isEnabled());
-    m_editButton->setEnabled(m_editAction->isEnabled() && m_instance);
-    m_folderButton->setEnabled(m_folderAction->isEnabled() && m_instance);
-    m_moreButton->setEnabled(m_instance);
+    m_editButton->setVisible(hasInstance);
+    m_editButton->setEnabled(m_editAction->isEnabled());
+    m_folderButton->setVisible(hasInstance);
+    m_folderButton->setEnabled(m_folderAction->isEnabled());
+    m_moreButton->setVisible(hasInstance);
 }
 
 void YahuHero::updateRunning()

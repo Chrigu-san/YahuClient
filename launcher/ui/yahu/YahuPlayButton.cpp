@@ -60,7 +60,12 @@ YahuPlayButton::YahuPlayButton(QWidget* parent) : QAbstractButton(parent)
 
 QSize YahuPlayButton::sizeHint() const
 {
-    return { 210 + kGlowPad * 2, 56 + kGlowPad * 2 };
+    // wide enough for the longest label of the current mode, but never narrower than the classic PLAY key
+    QFont font = YahuStyle::displayFont(13, QFont::Black);
+    font.setLetterSpacing(QFont::AbsoluteSpacing, 1.5);
+    const QString label = m_mode == Mode::Create ? tr("NEW INSTANCE") : tr("PLAYING");
+    const int content = QFontMetrics(font).horizontalAdvance(label) + 14 + 12;
+    return { qMax(210, content + 64) + kGlowPad * 2, 56 + kGlowPad * 2 };
 }
 
 void YahuPlayButton::setMode(Mode mode)
@@ -69,6 +74,7 @@ void YahuPlayButton::setMode(Mode mode)
         return;
     }
     m_mode = mode;
+    updateGeometry();
     updateBreathing();
     update();
 }
@@ -208,7 +214,7 @@ void YahuPlayButton::paintEvent(QPaintEvent*)
     QFont font = displayFont(13, QFont::Black);
     font.setLetterSpacing(QFont::AbsoluteSpacing, 1.5);
     p.setFont(font);
-    const QString label = running ? tr("PLAYING") : tr("PLAY");
+    const QString label = running ? tr("PLAYING") : (m_mode == Mode::Create ? tr("NEW INSTANCE") : tr("PLAY"));
     const QFontMetricsF fm(font);
     const qreal glyph = 14.0;
     const qreal gap = 12.0;
@@ -224,6 +230,15 @@ void YahuPlayButton::paintEvent(QPaintEvent*)
             p.setBrush(gold);
             p.drawRect(QRectF(startX + i * 5, cy + 7 - h, 3, h));
         }
+    } else if (m_mode == Mode::Create) {
+        // pixel plus that turns a quarter on hover
+        p.save();
+        p.translate(startX + glyph / 2, cy);
+        p.rotate(m_hover * 90.0);
+        p.setBrush(labelColor);
+        p.drawRect(QRectF(-7, -2, 14, 4));
+        p.drawRect(QRectF(-2, -7, 4, 14));
+        p.restore();
     } else {
         // pixel play triangle, slides forward on hover
         p.setBrush(labelColor);

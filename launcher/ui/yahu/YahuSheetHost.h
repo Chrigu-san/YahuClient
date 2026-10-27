@@ -55,10 +55,13 @@ class YahuSheetHost : public QObject {
 
     void place(QWidget* w);
     void appear(QWidget* w);
+    void updateCard(QWidget* w);
+    static QSize contentNeed(QWidget* w);
     void paintChrome(QWidget* w);
     QRect overlayRect() const;
 
     QWidget* m_window;
     QHash<QWidget*, Sheet> m_sheets;
+    bool m_placing = false;  // geometry changes made by us, not by the window itself
     static QPointer<YahuSheetHost> s_active;
 };

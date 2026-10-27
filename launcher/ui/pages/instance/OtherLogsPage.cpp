@@ -60,6 +60,7 @@ OtherLogsPage::OtherLogsPage(QString id, QString displayName, QString helpPage, 
     , m_logSearchPaths(instance ? instance->getLogFileSearchPaths() : QStringList{ "logs" })
 {
     ui->setupUi(this);
+    ui->btnPaste->hide();
 
     m_proxy = new LogFormatProxyModel(this);
     if (m_instance) {

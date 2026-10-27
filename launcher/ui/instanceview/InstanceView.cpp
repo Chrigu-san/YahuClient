@@ -593,8 +593,8 @@ void InstanceView::paintEvent([[maybe_unused]] QPaintEvent* event)
         painter.setRenderHint(QPainter::Antialiasing, true);
         const QRect bounds = viewport()->rect();
 
-        const QString title = tr("Nothing here yet.");
-        const QString hint = tr("Create your first instance with \"New instance\" in the menu on the left.");
+        const QString title = tr("Your library is empty");
+        const QString hint = tr("Instances you create or import show up here.");
         QFont titleFont = YahuStyle::displayFont(26);
         QFont hintFont = QApplication::font();
         hintFont.setPointSizeF(hintFont.pointSizeF() + 1);

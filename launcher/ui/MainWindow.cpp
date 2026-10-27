@@ -111,6 +111,7 @@
 #include "ui/themes/ITheme.h"
 #include "ui/themes/ThemeManager.h"
 #include "ui/widgets/EditableLabel.h"
+#include "ui/dialogs/MSALoginDialog.h"
 #include "ui/yahu/YahuBackdrop.h"
 #include "ui/yahu/YahuFxLayer.h"
 #include "ui/yahu/YahuHero.h"
@@ -239,6 +240,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         ui->actionOpenWiki->setVisible(!BuildConfig.WIKI_URL.isEmpty());
         ui->actionMoreNews->setVisible(!BuildConfig.NEWS_OPEN_URL.isEmpty());
         ui->actionChangeTheme->setVisible(false);
+        ui->actionNoAccountsAdded->setVisible(false);
         ui->actionViewWidgetThemeFolder->setVisible(false);
         ui->actionViewIconThemeFolder->setVisible(false);
         ui->actionViewCatPackFolder->setVisible(false);
@@ -356,13 +358,18 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         m_sidebar->addAction(ui->actionSettings, tr("Settings"), QStringLiteral("settings"));
         m_sidebar->addMenu(ui->foldersMenu, tr("Folders"), QStringLiteral("viewfolder"));
         m_sidebar->addMenu(ui->helpMenu, tr("Help"), QStringLiteral("help"));
-        m_sidebar->setAccountAction(ui->actionAccountsButton, ui->accountsMenu);
+        m_sidebar->setAccountAction(ui->actionAccountsButton, ui->accountsMenu, [] { return APPLICATION->accounts()->count() > 0; },
+                                    [this] { addMicrosoftAccount(); });
         shell->addWidget(m_sidebar);
 
         m_hero = new YahuHero(ui->actionLaunchInstance, ui->actionKillInstance, ui->actionEditInstance, ui->actionViewSelectedInstFolder,
                               { ui->actionRenameInstance, ui->actionChangeInstIcon, ui->actionChangeInstGroup, ui->actionExportInstance,
                                 ui->actionCopyInstance, ui->actionCreateInstanceShortcut, ui->actionDeleteInstance },
                               backdrop);
+        m_hero->setCreateAction(ui->actionAddInstance);
+        connect(APPLICATION->instances(), &QAbstractItemModel::rowsInserted, m_hero, &YahuHero::refresh);
+        connect(APPLICATION->instances(), &QAbstractItemModel::rowsRemoved, m_hero, &YahuHero::refresh);
+        connect(APPLICATION->instances(), &QAbstractItemModel::modelReset, m_hero, &YahuHero::refresh);
         auto* column = new QVBoxLayout;
         column->setContentsMargins(0, 0, 0, 0);
         column->setSpacing(0);
@@ -715,10 +722,7 @@ void MainWindow::repopulateAccountsMenu()
 
     QActionGroup* accountsGroup = new QActionGroup(this);
 
-    if (accounts->count() <= 0) {
-        ui->actionNoAccountsAdded->setEnabled(false);
-        ui->accountsMenu->addAction(ui->actionNoAccountsAdded);
-    } else {
+    if (accounts->count() > 0) {
         // TODO: Nicer way to iterate?
         for (int i = 0; i < accounts->count(); i++) {
             MinecraftAccountPtr account = accounts->at(i);
@@ -749,17 +753,12 @@ void MainWindow::repopulateAccountsMenu()
     }
 
     ui->accountsMenu->addSeparator();
-
-    ui->actionNoDefaultAccount->setData(-1);
-    ui->actionNoDefaultAccount->setChecked(!defaultAccount);
-    ui->actionNoDefaultAccount->setActionGroup(accountsGroup);
-
-    ui->accountsMenu->addAction(ui->actionNoDefaultAccount);
-
-    connect(ui->actionNoDefaultAccount, &QAction::triggered, this, &MainWindow::changeActiveAccount);
-
-    ui->accountsMenu->addSeparator();
-    ui->accountsMenu->addAction(ui->actionManageSkins);
+    auto* addAccount = new QAction(QIcon::fromTheme("new"), tr("Add Microsoft account"), ui->accountsMenu);
+    connect(addAccount, &QAction::triggered, this, &MainWindow::addMicrosoftAccount);
+    ui->accountsMenu->addAction(addAccount);
+    if (defaultAccount) {
+        ui->accountsMenu->addAction(ui->actionManageSkins);
+    }
     ui->accountsMenu->addAction(ui->actionManageAccounts);
 
     accountsButtonMenu->addActions(ui->accountsMenu->actions());
@@ -826,12 +825,14 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
             secretEventFilter->input(ev);
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(ev);
             switch (keyEvent->key()) {
-                    /*
                 case Qt::Key_Enter:
                 case Qt::Key_Return:
-                    activateInstance(m_selectedInstance);
-                    return true;
-                    */
+                    // Enter plays the selected instance, like the big button
+                    if (m_selectedInstance && ui->actionLaunchInstance->isEnabled()) {
+                        ui->actionLaunchInstance->trigger();
+                        return true;
+                    }
+                    break;
                 case Qt::Key_Delete:
                     on_actionDeleteInstance_triggered();
                     return true;
@@ -1447,7 +1448,8 @@ void MainWindow::on_actionEditInstance_triggered()
         return;
 
     if (m_selectedInstance->canEdit()) {
-        APPLICATION->showInstanceWindow(m_selectedInstance);
+        // "Edit" means setting the instance up, so start on its version and mod loader page rather than the log
+        APPLICATION->showInstanceWindow(m_selectedInstance, "version");
     } else {
         CustomMessageBox::selectable(this, tr("Instance not editable"),
                                      tr("This instance is not editable. It may be broken, invalid, or too old. Check logs for details."),
@@ -1463,6 +1465,19 @@ void MainWindow::on_actionManageSkins_triggered()
     if (account && (account->accountType() == AccountType::MSA) && !account->isActive()) {
         SkinManageDialog dialog(this, account);
         dialog.exec();
+    }
+}
+
+void MainWindow::addMicrosoftAccount()
+{
+    auto account = MSALoginDialog::newAccount(this);
+    if (!account) {
+        return;
+    }
+    auto* accounts = APPLICATION->accounts();
+    accounts->addAccount(account);
+    if (!accounts->defaultAccount() || accounts->count() == 1) {
+        accounts->setDefaultAccount(account);
     }
 }
 

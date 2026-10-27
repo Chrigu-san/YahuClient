@@ -131,6 +131,7 @@ QModelIndex LogFormatProxyModel::find(const QModelIndex& start, const QString& v
 LogPage::LogPage(BaseInstance* instance, QWidget* parent) : QWidget(parent), ui(new Ui::LogPage), m_instance(instance)
 {
     ui->setupUi(this);
+    ui->btnPaste->hide();
 
     m_proxy = new LogFormatProxyModel(this);
 

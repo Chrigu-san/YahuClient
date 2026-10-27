@@ -44,6 +44,8 @@ class YahuHero : public QWidget {
              QWidget* parent = nullptr);
 
     void setInstance(BaseInstance* instance);
+    // With an empty library the big button creates an instance instead of launching one.
+    void setCreateAction(QAction* createAction);
     // Re-reads name, icon and state from the current instance.
     void refresh();
 
@@ -65,6 +67,7 @@ class YahuHero : public QWidget {
     QAction* m_killAction;
     QAction* m_editAction;
     QAction* m_folderAction;
+    QAction* m_createAction = nullptr;
     QMenu* m_moreMenu = nullptr;
 
     YahuPlayButton* m_play = nullptr;
@@ -79,6 +82,7 @@ class YahuHero : public QWidget {
     QString m_meta;
     QIcon m_icon;
     bool m_running = false;
+    bool m_libraryEmpty = false;
 
     qreal m_swap = 1.0;       // 0 -> 1 when the selection changes; drives the text slide-in and a block spin
     qreal m_spin = 0.0;       // extra yaw added by the selection spin

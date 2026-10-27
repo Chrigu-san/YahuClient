@@ -133,6 +133,7 @@ class MainWindow : public QMainWindow {
     void on_actionManageSkins_triggered();
 
     void on_actionManageAccounts_triggered();
+    void addMicrosoftAccount();
 
     void on_actionReportBug_triggered();
 

@@ -67,10 +67,12 @@ void YahuSidebar::addPage(const QString& label, const QString& iconName, std::fu
     update();
 }
 
-void YahuSidebar::setAccountAction(QAction* action, QMenu* menu)
+void YahuSidebar::setAccountAction(QAction* action, QMenu* menu, std::function<bool()> hasAccounts, std::function<void()> signIn)
 {
     m_accountAction = action;
     m_accountMenu = menu;
+    m_hasAccounts = std::move(hasAccounts);
+    m_signIn = std::move(signIn);
     connect(action, &QAction::changed, this, QOverload<>::of(&QWidget::update));
     update();
 }
@@ -192,7 +194,9 @@ void YahuSidebar::mouseReleaseEvent(QMouseEvent* event)
 void YahuSidebar::activate(int index)
 {
     if (index == -2) {
-        if (m_accountMenu) {
+        if (m_signIn && m_hasAccounts && !m_hasAccounts()) {
+            m_signIn();
+        } else if (m_accountMenu) {
             const QRectF r = accountRect();
             m_accountMenu->popup(mapToGlobal(QPoint(int(r.right()) + 8, int(r.bottom()) - m_accountMenu->sizeHint().height())));
         }
@@ -304,7 +308,7 @@ void YahuSidebar::paintEvent(QPaintEvent*)
         m_accountAction->icon().paint(&p, face);
         p.restore();
 
-        const bool signedIn = m_accountAction->text() != tr("Accounts");
+        const bool signedIn = m_hasAccounts ? m_hasAccounts() : m_accountAction->text() != tr("Accounts");
         QFont nameFont = font();
         nameFont.setWeight(QFont::Bold);
         p.setFont(nameFont);
@@ -320,6 +324,6 @@ void YahuSidebar::paintEvent(QPaintEvent*)
         p.drawRect(QRectF(face.right() + 12, r.top() + 41, 5, 5));
         p.setFont(pixelFont(8));
         p.setPen(statusColor);
-        p.drawText(QPointF(face.right() + 22, r.top() + 47), signedIn ? tr("ONLINE") : tr("NO ACCOUNT"));
+        p.drawText(QPointF(face.right() + 22, r.top() + 47), signedIn ? tr("SIGNED IN") : tr("NO ACCOUNT YET"));
     }
 }

@@ -42,8 +42,9 @@ class YahuSidebar : public QWidget {
     // The entry that stands for the page currently on screen.
     void addPage(const QString& label, const QString& iconName, std::function<void()> onClick);
 
-    // The account chip at the bottom mirrors this action (its text and face icon) and opens its menu.
-    void setAccountAction(QAction* action, QMenu* menu);
+    // The account chip at the bottom mirrors this action (its text and face icon). With accounts it opens the menu,
+    // without any it starts the sign-in right away.
+    void setAccountAction(QAction* action, QMenu* menu, std::function<bool()> hasAccounts, std::function<void()> signIn);
 
     QSize sizeHint() const override { return { 232, 600 }; }
 
@@ -83,6 +84,8 @@ class YahuSidebar : public QWidget {
     qreal m_accountHover = 0;
     QPointer<QAction> m_accountAction;
     QPointer<QMenu> m_accountMenu;
+    std::function<bool()> m_hasAccounts;
+    std::function<void()> m_signIn;
     QTimer m_timer;
     QElapsedTimer m_clock;
 };

@@ -26,7 +26,7 @@
 class YahuPlayButton : public QAbstractButton {
     Q_OBJECT
    public:
-    enum class Mode { Play, Running };
+    enum class Mode { Play, Running, Create };
 
     explicit YahuPlayButton(QWidget* parent = nullptr);
 

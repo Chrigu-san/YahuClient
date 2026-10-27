@@ -41,7 +41,8 @@ bool wantsWindowFade(QWidget* widget)
         case Qt::Window:
         case Qt::Dialog:
         case Qt::Sheet:
-            return !widget->testAttribute(Qt::WA_DontShowOnScreen);
+            // the main window (a QMainWindow without parent) appears instantly; only stray windows fade
+            return !widget->testAttribute(Qt::WA_DontShowOnScreen) && !widget->inherits("MainWindow");
         default:
             return false;  // popups, tooltips, splash screens and tool windows keep their own behaviour
     }

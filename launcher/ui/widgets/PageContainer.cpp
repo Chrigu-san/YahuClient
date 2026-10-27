@@ -168,7 +168,7 @@ void PageContainer::createUI()
     m_pageList = new PageView;
     m_header = new QLabel();
 
-    m_header->setFont(YahuStyle::displayFont(QApplication::font().pointSizeF() + 6, QFont::Bold));
+    m_header->setFont(YahuStyle::displayFont(QApplication::font().pointSizeF() + 4, QFont::Bold));
 
     auto* headerHLayout = new QHBoxLayout;
     const int leftMargin = APPLICATION->style()->pixelMetric(QStyle::PM_LayoutLeftMargin);

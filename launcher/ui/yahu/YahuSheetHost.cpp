@@ -17,9 +17,12 @@
 
 #include "YahuSheetHost.h"
 
+#include <QApplication>
 #include <QDialog>
 #include <QEvent>
 #include <QKeyEvent>
+#include <QLayout>
+#include <QTimer>
 #include <QMainWindow>
 #include <QPainter>
 #include <QRegularExpression>
@@ -37,7 +40,7 @@ using namespace YahuStyle;
 QPointer<YahuSheetHost> YahuSheetHost::s_active;
 
 namespace {
-constexpr int kPageHeader = 70;
+constexpr int kPageHeader = 60;
 constexpr int kCardHeader = 54;
 constexpr int kCardPad = 16;
 constexpr qreal kCut = 14.0;
@@ -46,6 +49,9 @@ constexpr const char* kOverlayProperty = "yahuOverlay";
 QString cleanTitle(QWidget* w)
 {
     QString title = w->windowTitle();
+    if (title.trimmed().isEmpty()) {
+        return QApplication::applicationDisplayName();
+    }
     // drop the " — Yahu Client" style suffixes windows put in their titles
     title.remove(QRegularExpression(QStringLiteral("\\s+[-—–]\\s+Yahu Client.*$")));
     return title;
@@ -130,10 +136,37 @@ QRect YahuSheetHost::overlayRect() const
     return m_window->geometry();
 }
 
+QSize YahuSheetHost::contentNeed(QWidget* w)
+{
+    // the layout's own wish, without the margins we add around it for the chrome
+    if (auto* layout = w->layout()) {
+        return layout->sizeHint().expandedTo(layout->minimumSize());
+    }
+    return w->sizeHint();
+}
+
+void YahuSheetHost::updateCard(QWidget* w)
+{
+    const Sheet& sheet = m_sheets[w];
+    const QRect area = overlayRect();
+    QSize size(sheet.natural.width() + kCardPad * 2, sheet.natural.height() + kCardHeader + kCardPad);
+    size = size.expandedTo(QSize(400, 180)).boundedTo(QSize(int(area.width() * 0.9), int(area.height() * 0.9)));
+    QRect card(QPoint(0, 0), size);
+    card.moveCenter(QRect(QPoint(0, 0), area.size()).center());
+    w->setProperty("_yahu_card", card);
+}
+
 void YahuSheetHost::place(QWidget* w)
 {
     Sheet& sheet = m_sheets[w];
     const QRect area = overlayRect();
+    m_placing = true;
+    // dialogs that pin their own size (fixed-size layouts, setFixedSize) would refuse to cover the window
+    if (auto* layout = w->layout(); layout && layout->sizeConstraint() != QLayout::SetDefaultConstraint) {
+        layout->setSizeConstraint(QLayout::SetDefaultConstraint);
+    }
+    w->setMinimumSize(0, 0);
+    w->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     if (w->geometry() != area) {
         w->setGeometry(area);
     }
@@ -141,7 +174,7 @@ void YahuSheetHost::place(QWidget* w)
     const int slide = int((1.0 - sheet.enter) * (sheet.page ? 30 : 22));
     auto* close = static_cast<QToolButton*>(sheet.closeButton);
     if (sheet.page) {
-        w->setContentsMargins(28, kPageHeader + 14 + slide, 28, 22 - slide);
+        w->setContentsMargins(24, kPageHeader + 8 + slide, 24, 12 - slide);
         close->setText(tr("←  Back"));
         close->adjustSize();
         close->move(28, (kPageHeader - close->height()) / 2 + slide);
@@ -155,6 +188,7 @@ void YahuSheetHost::place(QWidget* w)
     }
     close->raise();
     close->show();
+    m_placing = false;
 }
 
 void YahuSheetHost::appear(QWidget* w)
@@ -164,17 +198,14 @@ void YahuSheetHost::appear(QWidget* w)
 
     // first appearance: decide between a full page and a card from the window's natural size
     if (!sheet.natural.isValid()) {
-        sheet.natural = w->size().expandedTo(w->minimumSizeHint());
+        // what the content really needs, never less than what the window chose for itself before we got it
+        sheet.natural = contentNeed(w).expandedTo(w->size()).expandedTo(w->minimumSizeHint());
         sheet.page = qobject_cast<QMainWindow*>(w) || w->inherits("PageDialog") || w->inherits("NewInstanceDialog") ||
                      w->inherits("ResourceDownloadDialog") || sheet.natural.width() > area.width() * 0.62 ||
                      sheet.natural.height() > area.height() * 0.72;
     }
     if (!sheet.page) {
-        QSize size(sheet.natural.width() + kCardPad * 2, sheet.natural.height() + kCardHeader + kCardPad);
-        size = size.expandedTo(QSize(400, 180)).boundedTo(QSize(int(area.width() * 0.9), int(area.height() * 0.9)));
-        QRect card(QPoint(0, 0), size);
-        card.moveCenter(QRect(QPoint(0, 0), area.size()).center());
-        w->setProperty("_yahu_card", card);
+        updateCard(w);
     }
 
     sheet.enter = 0.0;
@@ -247,10 +278,7 @@ bool YahuSheetHost::eventFilter(QObject* watched, QEvent* event)
             for (auto it = m_sheets.cbegin(); it != m_sheets.cend(); ++it) {
                 if (it.key()->isVisible()) {
                     if (!it.value().page) {
-                        // keep cards centered in the new size
-                        QRect card = it.key()->property("_yahu_card").toRect();
-                        card.moveCenter(QRect(QPoint(0, 0), overlayRect().size()).center());
-                        it.key()->setProperty("_yahu_card", card);
+                        updateCard(it.key());
                     }
                     place(it.key());
                 }
@@ -272,6 +300,29 @@ bool YahuSheetHost::eventFilter(QObject* watched, QEvent* event)
             break;
         case QEvent::WindowTitleChange:
             w->update();
+            break;
+        case QEvent::Move:
+        case QEvent::Resize:
+            // some windows resize or re-center themselves while open (progress dialogs do); pull them back in
+            if (!m_placing && w->isVisible() && w->geometry() != overlayRect()) {
+                QTimer::singleShot(0, w, [this, w] {
+                    if (m_sheets.contains(w) && w->isVisible()) {
+                        place(w);
+                    }
+                });
+            }
+            break;
+        case QEvent::LayoutRequest:
+            // a card grows with its content (e.g. a progress dialog gaining a second line)
+            if (!m_sheets[w].page && w->isVisible()) {
+                const QSize need = contentNeed(w);
+                if (need.width() > m_sheets[w].natural.width() || need.height() > m_sheets[w].natural.height()) {
+                    m_sheets[w].natural = m_sheets[w].natural.expandedTo(need);
+                    updateCard(w);
+                    place(w);
+                    w->update();
+                }
+            }
             break;
         case QEvent::KeyPress:
             // QMainWindows don't close on Esc by themselves

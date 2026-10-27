@@ -199,7 +199,7 @@ QListView::indicator:checked, QTableView::indicator:checked {
 QCheckBox::indicator:indeterminate, QTreeView::indicator:indeterminate {
     background: @accent; border-color: @accent; image: url(:/yahu/partial.svg);
 }
-QRadioButton::indicator { width: 16px; height: 16px; border-radius: 2px; border: 1px solid @lineHi; background: @ink; }
+QRadioButton::indicator { width: 16px; height: 16px; border-radius: 9px; border: 1px solid @lineHi; background: @ink; }
 QRadioButton::indicator:hover { border-color: @accent; }
 QRadioButton::indicator:checked { background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5,
     stop:0 @accent, stop:0.5 @accent, stop:0.51 @ink, stop:1 @ink); border-color: @accent; }
@@ -250,7 +250,8 @@ QAbstractItemView {
 }
 QAbstractItemView::item { padding: 5px; }
 QAbstractItemView::item:hover { background: @raised; }
-QAbstractItemView::item:selected { background: @raisedHi; color: @text; border-left: 2px solid @accent; }
+QAbstractItemView::item:selected { background: @raisedHi; color: @text; }
+QListView::item:selected { border-left: 2px solid @accent; }
 QTreeView::branch { background: transparent; }
 QTreeView::branch:has-children:closed { image: url(:/yahu/chevron-right.svg); }
 QTreeView::branch:has-children:open { image: url(:/yahu/chevron-down.svg); }

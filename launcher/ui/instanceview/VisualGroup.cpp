@@ -162,7 +162,7 @@ void VisualGroup::drawHeader(QPainter* painter, const QStyleOptionViewItem& opti
     const int arrowOffsetLeft = optRect.left() + fontMetrics.height() / 2 + 4;
     const int textOffsetLeft = arrowOffsetLeft + fontMetrics.height() / 2 + 10;
     const int centerHeight = optRect.top() + fontMetrics.height() / 2;
-    const QString& textToDraw = text.isEmpty() ? QObject::tr("Ungrouped") : text;
+    const QString& textToDraw = text.isEmpty() ? QObject::tr("My instances") : text;
 
     // BEGIN: arrow
     {
