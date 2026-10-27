@@ -295,6 +295,22 @@ bool YahuSheetHost::eventFilter(QObject* watched, QEvent* event)
         case QEvent::Show:
             appear(w);
             break;
+        case QEvent::Hide:
+            // When an overlay closes while another app has focus (e.g. the browser after signing in), the launcher
+            // could stay half inactive and swallow clicks. Hand focus and the mouse back to it explicitly.
+            if (w->isHidden()) {
+                QTimer::singleShot(0, m_window, [this] {
+                    if (auto* grabber = QWidget::mouseGrabber()) {
+                        grabber->releaseMouse();
+                    }
+                    if (!QApplication::activeModalWidget() && m_window->isVisible()) {
+                        m_window->setEnabled(true);
+                        m_window->raise();
+                        m_window->activateWindow();
+                    }
+                });
+            }
+            break;
         case QEvent::Paint:
             paintChrome(w);
             break;
