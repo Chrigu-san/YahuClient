@@ -37,6 +37,7 @@
 
 #include <QDialog>
 #include <QHash>
+#include <QTimer>
 #include <QUuid>
 #include <memory>
 
@@ -47,6 +48,7 @@
 
 class Task;
 class SequentialTask;
+class QLabel;
 
 namespace Ui {
 class ProgressDialog;
@@ -89,7 +91,6 @@ class ProgressDialog : public QDialog {
 
    private:
     bool handleImmediateResult(QDialog::DialogCode& result);
-    void addTaskProgress(TaskStepProgress const& progress);
 
    private:
     Ui::ProgressDialog* ui;
@@ -99,5 +100,10 @@ class ProgressDialog : public QDialog {
     QList<QMetaObject::Connection> m_taskConnections;
 
     bool m_is_multi_step = false;
-    QHash<QUuid, SubTaskProgressBar*> taskProgress;
+
+    // Instead of one bar per sub-download, a single quiet line names what is being worked on right now.
+    // It is refreshed a few times per second at most, so hundreds of tiny files don't turn into flicker.
+    QLabel* m_currentItem = nullptr;
+    QString m_pendingItem;
+    QTimer m_itemTimer;
 };

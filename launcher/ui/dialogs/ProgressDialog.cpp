@@ -39,11 +39,13 @@
 
 #include <QDebug>
 #include <QKeyEvent>
+#include <QLabel>
+#include <QRegularExpression>
 #include <limits>
 
 #include "tasks/Task.h"
 
-#include "ui/widgets/SubTaskProgressBar.h"
+#include "ui/yahu/YahuStyle.h"
 
 // map a value in a numeric range of an arbitrary type to between 0 and INT_MAX
 // for getting the best precision out of the qt progress bar
@@ -67,6 +69,23 @@ ProgressDialog::ProgressDialog(QWidget* parent) : QDialog(parent), ui(new Ui::Pr
 {
     ui->setupUi(this);
     ui->taskProgressScrollArea->setHidden(true);
+
+    // one slim bar and a small line of text, nothing that races past
+    ui->globalProgressBar->setTextVisible(false);
+    ui->globalProgressBar->setFixedHeight(6);
+    m_currentItem = new QLabel(this);
+    m_currentItem->setStyleSheet(QStringLiteral("color: %1;").arg(YahuStyle::faint.name()));
+    QFont small = m_currentItem->font();
+    small.setPointSizeF(small.pointSizeF() - 1);
+    m_currentItem->setFont(small);
+    m_currentItem->setMinimumWidth(1);
+    m_currentItem->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+    ui->verticalLayout->insertWidget(ui->verticalLayout->indexOf(ui->globalProgressBar) + 1, m_currentItem);
+    m_itemTimer.setSingleShot(true);
+    m_itemTimer.setInterval(250);
+    connect(&m_itemTimer, &QTimer::timeout, this, [this] {
+        m_currentItem->setText(m_currentItem->fontMetrics().elidedText(m_pendingItem, Qt::ElideMiddle, m_currentItem->width()));
+    });
     this->setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
     setAttribute(Qt::WidgetAttribute::WA_QuitOnClose, true);
     changeProgress(0, 100);
@@ -166,7 +185,6 @@ int ProgressDialog::execWithTask(Task* task)
     this->m_taskConnections.push_back(connect(task, &Task::abortButtonTextChanged, ui->skipButton, &QPushButton::setText));
 
     m_is_multi_step = task->isMultiStep();
-    ui->taskProgressScrollArea->setHidden(!m_is_multi_step);
     updateSize();
 
     // It's a good idea to start the task after we entered the dialog's event loop :^)
@@ -226,7 +244,13 @@ void ProgressDialog::onTaskSucceeded()
 
 void ProgressDialog::changeStatus([[maybe_unused]] const QString& status)
 {
-    ui->globalStatusLabel->setText(m_task->getStatus());
+    // "Executing task 3 out of 5" -> "Step 3 of 5"
+    static const QRegularExpression steps(QStringLiteral(R"(^Executing task (\d+) out of (\d+)$)"));
+    QString statusText = m_task->getStatus();
+    if (const auto match = steps.match(statusText); match.hasMatch()) {
+        statusText = tr("Step %1 of %2").arg(match.captured(1), match.captured(2));
+    }
+    ui->globalStatusLabel->setText(statusText);
     ui->globalStatusLabel->adjustSize();
     ui->globalStatusDetailsLabel->setText(m_task->getDetails());
     ui->globalStatusDetailsLabel->adjustSize();
@@ -234,36 +258,27 @@ void ProgressDialog::changeStatus([[maybe_unused]] const QString& status)
     updateSize();
 }
 
-void ProgressDialog::addTaskProgress(const TaskStepProgress& progress)
-{
-    SubTaskProgressBar* task_bar = new SubTaskProgressBar(this);
-    taskProgress.insert(progress.uid, task_bar);
-    ui->taskProgressLayout->addWidget(task_bar);
-}
-
 void ProgressDialog::changeStepProgress(const TaskStepProgress& task_progress)
 {
     m_is_multi_step = true;
-    if (ui->taskProgressScrollArea->isHidden()) {
-        ui->taskProgressScrollArea->setHidden(false);
-        updateSize();
+    if (task_progress.isDone()) {
+        return;
     }
-
-    if (!taskProgress.contains(task_progress.uid))
-        addTaskProgress(task_progress);
-    auto task_bar = taskProgress.value(task_progress.uid);
-
-    const auto [mapped_current, mapped_total] = map_int_zero_max<qint64>(task_progress.current, task_progress.total, 0);
-    if (task_progress.total <= 0) {
-        task_bar->setRange(0, 0);
-    } else {
-        task_bar->setRange(0, mapped_total);
+    QString item = task_progress.status;
+    if (!task_progress.details.isEmpty() && task_progress.details != item) {
+        item = item.isEmpty() ? task_progress.details : item + QStringLiteral("  ·  ") + task_progress.details;
     }
-
-    task_bar->setValue(mapped_current);
-    task_bar->setStatus(task_progress.status);
-    task_bar->setDetails(task_progress.details);
-    task_bar->setVisible(!task_progress.isDone());
+    if (item.isEmpty()) {
+        return;
+    }
+    // "Requesting https://host/a/b/file.jar" reads better as "Downloading file.jar"
+    static const QRegularExpression url(QStringLiteral(R"(https?://\S*/([^/\s?#]+)\S*)"));
+    item.replace(url, QStringLiteral(R"(\1)"));
+    item.replace(QRegularExpression(QStringLiteral(R"(^Requesting\b)")), tr("Downloading"));
+    m_pendingItem = item;
+    if (!m_itemTimer.isActive()) {
+        m_itemTimer.start();
+    }
 }
 
 void ProgressDialog::changeProgress(qint64 current, qint64 total)
