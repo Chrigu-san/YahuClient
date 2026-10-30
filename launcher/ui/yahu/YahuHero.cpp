@@ -215,22 +215,19 @@ void YahuHero::refresh()
     if (m_instance) {
         m_running = m_instance->isRunning();
         m_title = m_instance->name();
-        m_eyebrow = m_running ? tr("Playing now") : tr("Ready to play");
         m_meta = m_instance->getStatusbarDescription();
         m_icon = APPLICATION->icons()->getIcon(m_instance->iconKey());
     } else if (m_libraryEmpty) {
         m_running = false;
-        m_title = tr("Let's get you playing");
-        m_eyebrow = tr("Getting started");
-        m_meta = tr("Create an instance: pick a Minecraft version, add a mod loader if you like, done.");
+        m_title = tr("No instances yet");
+        m_meta = tr("Create one to start playing. Pick a Minecraft version and you're set.");
         m_icon = QIcon(QStringLiteral(":/yahu/logo.svg"));
     } else {
         m_running = false;
         const auto account = APPLICATION->accounts()->defaultAccount();
         const QString name = account ? account->profileName() : QString();
         m_title = name.isEmpty() ? tr("Welcome back") : tr("Welcome back, %1").arg(name);
-        m_eyebrow = tr("Pick an instance");
-        m_meta = tr("Click one of your instances below to get it ready.");
+        m_meta = tr("Pick an instance below.");
         m_icon = QIcon(QStringLiteral(":/yahu/logo.svg"));
     }
     syncActions();
@@ -575,26 +572,9 @@ void YahuHero::paintEvent(QPaintEvent*)
         const qreal slide = (1.0 - m_swap) * 24.0;
         const qreal left = banner.left() + kInnerPad;
         const qreal textWidth = banner.width() - kInnerPad * 2 - kBlock * 4.4;
-        qreal y = banner.top() + 30;
+        qreal y = banner.top() + 46;
 
         p.setOpacity(qBound(0.0, m_swap * 1.6, 1.0));
-
-        // eyebrow chip: a status dot and pixel text on a translucent pill
-        QFont eyebrow = pixelFont(8);
-        const QFontMetricsF em(eyebrow);
-        const QRectF chip(left + slide * 0.4, y, em.horizontalAdvance(m_eyebrow) + 30, 22);
-        p.setPen(Qt::NoPen);
-        p.setBrush(withAlpha(tone, 0.12));
-        p.drawRoundedRect(chip, 11, 11);
-        const qreal pulse = 0.5 + 0.5 * qSin(t * kTau / 1.6);
-        p.setBrush(withAlpha(tone, 0.3 * pulse));
-        p.drawEllipse(QPointF(chip.left() + 12, chip.center().y()), 5, 5);
-        p.setBrush(tone);
-        p.drawEllipse(QPointF(chip.left() + 12, chip.center().y()), 3, 3);
-        p.setFont(eyebrow);
-        p.setPen(tone);
-        p.drawText(QRectF(chip.left() + 21, chip.top(), chip.width() - 21, chip.height()), Qt::AlignVCenter | Qt::AlignLeft, m_eyebrow);
-        y += chip.height() + 14;
 
         QFont title = displayFont(26, QFont::Black);
         const QFontMetricsF tm(title);

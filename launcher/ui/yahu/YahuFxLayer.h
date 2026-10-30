@@ -59,7 +59,6 @@ class YahuFxLayer : public QWidget {
 
     QList<Particle> m_particles;
     QList<Ring> m_rings;
-    QPointF m_lastTrail{ -1000, -1000 };
     QRect m_lastDirty;
     QTimer m_timer;
     QElapsedTimer m_frame;

@@ -80,7 +80,6 @@ class YahuHero : public QWidget {
     QToolButton* m_moreButton = nullptr;
 
     QString m_title;
-    QString m_eyebrow;
     QString m_meta;
     QIcon m_icon;
     bool m_running = false;

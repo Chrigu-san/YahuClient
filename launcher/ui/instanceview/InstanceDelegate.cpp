@@ -245,25 +245,26 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         }
     }
 
-    // meta line in the pixel font: running state or time played
+    // meta line: running state or when it was last played
     if (instance) {
         QString meta;
         QColor metaColor = faint;
         if (running) {
-            meta = QObject::tr("PLAYING");
+            meta = QObject::tr("Playing");
             metaColor = gold;
         } else if (instance->hasCrashed() || instance->hasVersionBroken()) {
-            meta = QObject::tr("NEEDS ATTENTION");
+            meta = QObject::tr("Needs attention");
             metaColor = danger;
-        } else if (instance->totalTimePlayed() > 0) {
-            meta = Time::prettifyDuration(instance->totalTimePlayed(), true).toUpper();
+        } else if (instance->lastLaunch() > 0) {
+            meta = Time::relativeAgo(instance->lastLaunch());
         } else {
-            meta = QObject::tr("NEW");
-            metaColor = mix(faint, accent, 0.6);
+            meta = QObject::tr("Never played");
         }
-        painter->setFont(pixelFont(8));
+        QFont metaFont = opt.font;
+        metaFont.setPointSizeF(metaFont.pointSizeF() - 1);
+        painter->setFont(metaFont);
         painter->setPen(mix(metaColor, metaColor.lighter(130), hover));
-        painter->drawText(QRectF(card.left() + 6, card.bottom() - kPadBottom - kMetaHeight + 4, card.width() - 12, kMetaHeight),
+        painter->drawText(QRectF(card.left() + 6, card.bottom() - kPadBottom - kMetaHeight + 2, card.width() - 12, kMetaHeight),
                           Qt::AlignHCenter | Qt::AlignVCenter, meta);
 
         if (running) {

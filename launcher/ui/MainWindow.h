@@ -61,6 +61,7 @@ class KonamiCode;
 class YahuHero;
 class YahuSidebar;
 class QStackedWidget;
+class ServerManager;
 class InstanceTask;
 
 namespace Ui {
@@ -248,6 +249,7 @@ class MainWindow : public QMainWindow {
     YahuHero* m_hero = nullptr;
     YahuSidebar* m_sidebar = nullptr;
     QStackedWidget* m_pages = nullptr;
+    ServerManager* m_servers = nullptr;
     QLabel* m_statusCenter = nullptr;
     QToolButton* m_changeIconButton = nullptr;
     QAction* m_instanceToolBarTopSeparator = nullptr;

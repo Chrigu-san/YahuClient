@@ -144,7 +144,8 @@ void VisualGroup::drawHeader(QPainter* painter, const QStyleOptionViewItem& opti
 {
     QRect optRect = option.rect;
     optRect.setTop(optRect.top() + 7);
-    QFont font = YahuStyle::pixelFont(8);
+    QFont font = QApplication::font();
+    font.setWeight(QFont::DemiBold);
     const QFontMetrics fontMetrics = QFontMetrics(font);
     painter->setFont(font);
 

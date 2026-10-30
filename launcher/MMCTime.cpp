@@ -99,3 +99,28 @@ QString Time::humanReadableDuration(double duration, int precision)
 
     return outStr;
 }
+
+QString Time::relativeAgo(qint64 msecsSinceEpoch)
+{
+    const qint64 seconds = qMax<qint64>(0, (QDateTime::currentMSecsSinceEpoch() - msecsSinceEpoch) / 1000);
+    const qint64 minutes = seconds / 60;
+    const qint64 hours = minutes / 60;
+    const qint64 days = hours / 24;
+    // plurals spelled out: without a translation file Qt would print "day(s)"
+    auto count = [](qint64 n, const QString& one, const QString& many) { return (n == 1 ? one : many).arg(n); };
+    const QString d = count(days, QObject::tr("%1 day"), QObject::tr("%1 days"));
+    const QString h = count(hours % 24, QObject::tr("%1 hour"), QObject::tr("%1 hours"));
+    if (minutes < 1) {
+        return QObject::tr("just now");
+    }
+    if (hours < 1) {
+        return QObject::tr("%1 ago").arg(count(minutes, QObject::tr("%1 minute"), QObject::tr("%1 minutes")));
+    }
+    if (days < 1) {
+        return QObject::tr("%1 ago").arg(h);
+    }
+    if (hours % 24 == 0 || days >= 30) {
+        return QObject::tr("%1 ago").arg(d);
+    }
+    return QObject::tr("%1 %2 ago").arg(d, h);
+}

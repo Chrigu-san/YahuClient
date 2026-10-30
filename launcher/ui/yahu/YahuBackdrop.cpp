@@ -29,8 +29,7 @@
 using namespace YahuStyle;
 
 namespace {
-constexpr int kGrid = 22;
-constexpr qreal kLanternRadius = 260.0;
+constexpr qreal kScareRadius = 150.0;  // fireflies within this distance of a moving cursor scatter
 constexpr qreal kTau = 6.283185307179586;
 }  // namespace
 
@@ -132,21 +131,24 @@ void YahuBackdrop::tick()
     }
     const qreal t = m_clock.elapsed() / 1000.0;
     const bool cursorInside = rect().contains(m_cursorTarget.toPoint());
-    m_lantern += ((cursorInside ? 1.0 : 0.0) - m_lantern) * 0.08;
-    if (cursorInside) {
-        m_cursor += (m_cursorTarget - m_cursor) * 0.22;
+    // how fast the mouse moved since the last tick; a resting cursor doesn't bother anyone
+    QPointF sweep(0, 0);
+    if (cursorInside && m_cursor.x() > -500) {
+        sweep = m_cursorTarget - m_cursor;
     }
+    m_cursor = cursorInside ? m_cursorTarget : QPointF(-1000, -1000);
+    const qreal sweepSpeed = qSqrt(sweep.x() * sweep.x() + sweep.y() * sweep.y());
 
     for (auto& f : m_flies) {
         // lazy drift upwards with a little sway
         QPointF accel(qSin(t * 0.7 + f.phase) * 0.012, qCos(t * 0.5 + f.phase) * 0.006);
-        if (cursorInside) {
-            // fireflies are curious: they drift towards the lantern but keep a little distance
-            const QPointF d = m_cursor - f.pos;
+        if (cursorInside && sweepSpeed > 1.0) {
+            // fireflies get startled by a passing cursor and dart away, partly along its path
+            const QPointF d = f.pos - m_cursor;
             const qreal dist = qMax(1.0, qSqrt(d.x() * d.x() + d.y() * d.y()));
-            if (dist < 320) {
-                const qreal pull = dist > 60 ? 0.035 : -0.08;
-                accel += d / dist * pull * (1.0 - dist / 320.0);
+            if (dist < kScareRadius) {
+                const qreal strength = (1.0 - dist / kScareRadius) * qMin(1.0, sweepSpeed / 30.0);
+                accel += d / dist * 0.9 * strength + sweep / sweepSpeed * 0.35 * strength;
             }
         }
         f.vel = (f.vel + accel) * 0.985;
@@ -179,42 +181,14 @@ void YahuBackdrop::paintEvent(QPaintEvent*)
     floor.setColorAt(1.0, withAlpha(accent, 0.0));
     p.fillRect(r, floor);
 
-    // the lantern: reveal the pixel grid around the cursor
-    if (m_lantern > 0.01) {
-        QRadialGradient glow(m_cursor, kLanternRadius * 1.2);
-        glow.setColorAt(0.0, withAlpha(accent, 0.05 * m_lantern));
-        glow.setColorAt(1.0, withAlpha(accent, 0.0));
-        p.fillRect(r, glow);
-
-        p.setPen(Qt::NoPen);
-        const int x0 = int((m_cursor.x() - kLanternRadius) / kGrid) * kGrid;
-        const int y0 = int((m_cursor.y() - kLanternRadius) / kGrid) * kGrid;
-        for (int y = y0; y < m_cursor.y() + kLanternRadius; y += kGrid) {
-            for (int x = x0; x < m_cursor.x() + kLanternRadius; x += kGrid) {
-                const qreal dx = x - m_cursor.x();
-                const qreal dy = y - m_cursor.y();
-                const qreal d = qSqrt(dx * dx + dy * dy) / kLanternRadius;
-                if (d >= 1.0) {
-                    continue;
-                }
-                const qreal a = (1.0 - d) * (1.0 - d) * 0.18 * m_lantern;
-                p.setBrush(withAlpha(d < 0.18 ? accentHi : accent, a));
-                p.drawRect(QRectF(x, y, 2, 2));
-            }
-        }
-    }
-
     // fireflies
     p.setPen(Qt::NoPen);
     for (const auto& f : m_flies) {
         const qreal twinkle = 0.45 + 0.55 * (0.5 + 0.5 * qSin(t * 2.2 + f.phase * 3.0));
-        qreal near = 0.0;
-        if (m_lantern > 0.01) {
-            const QPointF d = m_cursor - f.pos;
-            near = qMax(0.0, 1.0 - qSqrt(d.x() * d.x() + d.y() * d.y()) / 240.0) * m_lantern;
-        }
+        // a startled firefly flashes brighter while it flies fast, then calms down again
+        const qreal rush = qMin(1.0, qSqrt(f.vel.x() * f.vel.x() + f.vel.y() * f.vel.y()) / 3.0);
         const QColor c = f.gold ? gold : accentHi;
-        const qreal alpha = qMin(1.0, 0.15 + 0.35 * twinkle + 0.5 * near);
+        const qreal alpha = qMin(1.0, 0.15 + 0.35 * twinkle + 0.6 * rush);
         // halo
         p.setBrush(withAlpha(c, alpha * 0.18));
         p.drawRect(QRectF(f.pos.x() - f.size * 1.5, f.pos.y() - f.size * 1.5, f.size * 4, f.size * 4));

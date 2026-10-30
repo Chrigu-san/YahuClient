@@ -22,6 +22,9 @@ namespace Time {
 
 QString prettifyDuration(int64_t duration, bool noDays = false);
 
+// How long ago something happened, e.g. "just now", "12 minutes ago", "5 hours ago", "2 days 5 hours ago".
+QString relativeAgo(qint64 msecsSinceEpoch);
+
 /**
  * @brief Returns a string with short form time duration ie. `2days 1h3m4s56.0ms`.
  * miliseconds are only included if `precision` is greater than 0.

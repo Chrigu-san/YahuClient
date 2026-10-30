@@ -143,6 +143,7 @@ QPushButton:disabled { color: @faint; background: @surface; border-color: @surfa
 QPushButton:default { background: @accent; color: @ink; border-color: @accent; font-weight: 700; }
 QPushButton:default:hover { background: @accentHi; border-color: @accentHi; }
 QPushButton:default:pressed { background: @accentLo; border-color: @accentLo; }
+QPushButton:default:disabled { background: @raised; color: @faint; border-color: @line; }
 QPushButton:checked { background: @raisedHi; border-color: @accent; }
 QPushButton::menu-indicator { image: url(:/yahu/chevron-down.svg); subcontrol-origin: padding; subcontrol-position: center right; right: 8px; width: 10px; }
 
@@ -285,6 +286,12 @@ QScrollBar::handle:horizontal { background: @lineHi; min-width: 32px; border-rad
 QScrollBar::handle:hover { background: @faint; }
 QScrollBar::add-line, QScrollBar::sub-line { width: 0px; height: 0px; }
 QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
+
+/* Yahu pages */
+QFrame#yahuPanel { background: @surface; border: 1px solid @line; border-radius: 14px; }
+QFrame#yahuPanel QLabel { border: none; }
+QLabel[yahuHint="true"] { color: @muted; }
+QListWidget#yahuServerList { background: transparent; border: none; padding: 0px; }
 
 QLabel { background: transparent; }
 QLabel:disabled { color: @faint; }

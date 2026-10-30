@@ -116,6 +116,8 @@
 #include "ui/yahu/YahuAnimator.h"
 #include "ui/yahu/YahuBackdrop.h"
 #include "ui/yahu/YahuComingSoon.h"
+#include "ui/yahu/YahuServersPage.h"
+#include "servers/ServerManager.h"
 #include "ui/yahu/YahuFxLayer.h"
 #include "ui/yahu/YahuHero.h"
 #include "ui/yahu/YahuSheetHost.h"
@@ -361,7 +363,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         auto* library = new QWidget(m_pages);
         library->setAttribute(Qt::WA_TranslucentBackground, true);
         m_pages->addWidget(library);
-        m_pages->addWidget(new YahuComingSoon(YahuComingSoon::Kind::Servers, m_pages));
+        m_servers = new ServerManager(FS::PathCombine(APPLICATION->dataRoot(), "servers"), this);
+        m_pages->addWidget(new YahuServersPage(m_servers, m_pages));
         m_pages->addWidget(new YahuComingSoon(YahuComingSoon::Kind::Shop, m_pages));
         auto showPage = [this](int index) {
             if (m_pages->currentIndex() == index) {
@@ -377,7 +380,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
         m_sidebar = new YahuSidebar(backdrop);
         m_sidebar->addPage(tr("Home"), QStringLiteral("yahu-home"), [showPage] { showPage(0); });
-        m_sidebar->addPage(tr("Servers"), QStringLiteral("yahu-host"), [showPage] { showPage(1); }, tr("Soon"));
+        m_sidebar->addPage(tr("Servers"), QStringLiteral("yahu-host"), [showPage] { showPage(1); });
         m_sidebar->addPage(tr("Shop"), QStringLiteral("yahu-shop"), [showPage] { showPage(2); }, tr("Soon"));
         m_sidebar->addAction(ui->actionAddInstance, tr("New"), QStringLiteral("new"));
         m_sidebar->addMenu(ui->foldersMenu, tr("Folders"), QStringLiteral("viewfolder"));

@@ -876,6 +876,12 @@ SET(LAUNCHER_SOURCES
     ui/yahu/YahuSidebar.h
     ui/yahu/YahuComingSoon.cpp
     ui/yahu/YahuComingSoon.h
+    ui/yahu/YahuServersPage.cpp
+    ui/yahu/YahuServersPage.h
+    ui/dialogs/ServerSettingsDialog.cpp
+    ui/dialogs/ServerSettingsDialog.h
+    servers/ServerManager.cpp
+    servers/ServerManager.h
     ui/themes/ITheme.cpp
     ui/themes/ITheme.h
     ui/themes/HintOverrideProxyStyle.cpp

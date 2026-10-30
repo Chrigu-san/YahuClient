@@ -30,7 +30,6 @@ using namespace YahuStyle;
 
 namespace {
 QPointer<YahuFxLayer> s_layer;
-constexpr qreal kTrailSpacing = 16.0;
 constexpr qreal kTau = 6.283185307179586;
 }  // namespace
 
@@ -89,19 +88,6 @@ bool YahuFxLayer::eventFilter(QObject* watched, QEvent* event)
         // one burst per click, not one per widget in the propagation chain
         if (me->spontaneous() && w == QApplication::widgetAt(me->globalPosition().toPoint())) {
             spawnBurst(mapFromGlobal(me->globalPosition()), 9, 26.0);
-        }
-    } else if (event->type() == QEvent::MouseMove) {
-        const QPointF pos = mapFromGlobal(static_cast<QMouseEvent*>(event)->globalPosition());
-        const QPointF d = pos - m_lastTrail;
-        if (d.x() * d.x() + d.y() * d.y() > kTrailSpacing * kTrailSpacing) {
-            m_lastTrail = pos;
-            auto* rng = QRandomGenerator::global();
-            m_particles.append({ pos + QPointF(rng->bounded(7) - 3, rng->bounded(7) - 3), QPointF(0, -0.25), 0.7, 0.045, 2.0,
-                                 rng->bounded(5) == 0 ? gold : accent });
-            if (!m_timer.isActive()) {
-                m_frame.start();
-                m_timer.start();
-            }
         }
     }
     return false;

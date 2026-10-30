@@ -369,11 +369,8 @@ void YahuSidebar::paintEvent(QPaintEvent*)
 
         if (!item.badge.isEmpty()) {
             // a small gold dot that says "something is coming here"
-            const qreal pulse = 0.5 + 0.5 * qSin(t * kTau / 2.0 + i);
             const QPointF dot(r.center().x() + 13, r.top() + 10);
             p.setPen(Qt::NoPen);
-            p.setBrush(withAlpha(gold, 0.25 * pulse));
-            p.drawEllipse(dot, 6, 6);
             p.setBrush(gold);
             p.drawEllipse(dot, 3, 3);
         }

@@ -288,23 +288,13 @@ void YahuComingSoon::paintEvent(QPaintEvent*)
         p.fillRect(rect(), glow);
     }
 
-    // "Coming soon" chip
+    // a plain line above the title
     {
-        QFont chipFont = pixelFont(8);
-        const QString label = tr("Coming soon");
-        const qreal w = QFontMetricsF(chipFont).horizontalAdvance(label.toUpper()) + 34;
-        const QRectF chip(width() / 2.0 - w / 2, top, w, 24);
-        p.setPen(Qt::NoPen);
-        p.setBrush(withAlpha(gold, 0.12));
-        p.drawRoundedRect(chip, 12, 12);
-        const qreal pulse = 0.5 + 0.5 * qSin(t * kTau / 1.6);
-        p.setBrush(withAlpha(gold, 0.3 * pulse));
-        p.drawEllipse(QPointF(chip.left() + 13, chip.center().y()), 5, 5);
-        p.setBrush(gold);
-        p.drawEllipse(QPointF(chip.left() + 13, chip.center().y()), 3, 3);
-        p.setFont(chipFont);
+        QFont small = font();
+        small.setWeight(QFont::DemiBold);
+        p.setFont(small);
         p.setPen(gold);
-        p.drawText(QRectF(chip.left() + 23, chip.top(), chip.width() - 27, chip.height()), Qt::AlignVCenter | Qt::AlignLeft, label);
+        p.drawText(QRectF(kPad, top, width() - kPad * 2, 24), Qt::AlignCenter, tr("Coming soon"));
     }
 
     // title and body
@@ -375,11 +365,6 @@ void YahuComingSoon::paintEvent(QPaintEvent*)
         option.setWrapMode(QTextOption::WordWrap);
         p.drawText(QRectF(r.left() + 18, area.bottom() + 42, r.width() - 36, 44), tile.text, option);
 
-        // a locked "soon" pixel tag in the corner
-        p.setFont(pixelFont(8));
-        p.setPen(faint);
-        p.drawText(QRectF(r.left() + 18, r.bottom() - 26, r.width() - 36, 16), Qt::AlignLeft | Qt::AlignVCenter,
-                   m_kind == Kind::Shop ? tr("Locked") : tr("Planned"));
         p.restore();
     }
 }

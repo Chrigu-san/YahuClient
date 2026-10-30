@@ -1110,16 +1110,12 @@ QString MinecraftInstance::getStatusbarDescription()
     description.append(tr("Minecraft %1").arg(mcVersion));
     if (m_settings->get("ShowGameTime").toBool()) {
         if (lastTimePlayed() > 0 && lastLaunch() > 0) {
-            QDateTime lastLaunchTime = QDateTime::fromMSecsSinceEpoch(lastLaunch());
-            description.append(
-                tr(", last played on %1 for %2")
-                    .arg(QLocale().toString(lastLaunchTime, QLocale::ShortFormat))
-                    .arg(Time::prettifyDuration(lastTimePlayed(), APPLICATION->settings()->get("ShowGameTimeWithoutDays").toBool())));
+            description.append(tr(", last played %1").arg(Time::relativeAgo(lastLaunch())));
         }
 
         if (totalTimePlayed() > 0) {
             description.append(
-                tr(", total played for %1")
+                tr(", %1 in total")
                     .arg(Time::prettifyDuration(totalTimePlayed(), APPLICATION->settings()->get("ShowGameTimeWithoutDays").toBool())));
         }
     }

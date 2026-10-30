@@ -51,9 +51,8 @@ class YahuBackdrop : public QWidget {
     void updateRunning();
 
     QList<Firefly> m_flies;
-    QPointF m_cursor{ -1000, -1000 };  // smoothed lantern position
+    QPointF m_cursor{ -1000, -1000 };  // cursor position at the last tick
     QPointF m_cursorTarget{ -1000, -1000 };
-    qreal m_lantern = 0.0;  // fades in while the mouse is over the window
     QTimer m_timer;
     QElapsedTimer m_clock;
     QElapsedTimer m_lastMove;
