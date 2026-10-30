@@ -71,6 +71,14 @@ QPainterPath chamfer(const QRectF& r, qreal cut)
     return path;
 }
 
+QPainterPath rounded(const QRectF& r, qreal radius)
+{
+    radius = qMin(radius, qMin(r.width(), r.height()) / 2.0);
+    QPainterPath path;
+    path.addRoundedRect(r, radius, radius);
+    return path;
+}
+
 QColor mix(const QColor& a, const QColor& b, qreal t)
 {
     t = qBound(0.0, t, 1.0);

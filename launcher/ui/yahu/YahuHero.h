@@ -31,8 +31,8 @@ class QMenu;
 class QToolButton;
 class YahuPlayButton;
 
-// The stage above the library: the selected instance in big type, a slowly turning block that follows the
-// mouse, and the launch controls. It drives the launcher's own actions, so it behaves like the toolbar did.
+// The banner above the library: a pixel night landscape that shifts with the mouse, a floating grass block,
+// the selected instance in big type and the launch controls. It drives the launcher's own actions, so it behaves like the toolbar did.
 class YahuHero : public QWidget {
     Q_OBJECT
    public:
@@ -60,6 +60,8 @@ class YahuHero : public QWidget {
     void syncActions();
     void updateRunning();
     void paintBlock(QPainter& p, const QPointF& center, qreal size, qreal yaw, qreal pitch);
+    void paintLandscape(QPainter& p, const QRectF& banner, qreal t);
+    QRectF bannerRect() const;
     QToolButton* makeGhostButton(const QString& label, const QString& iconName);
 
     QPointer<BaseInstance> m_instance;

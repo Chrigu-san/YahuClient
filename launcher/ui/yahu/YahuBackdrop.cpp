@@ -48,7 +48,7 @@ YahuBackdrop::YahuBackdrop(QWidget* parent) : QWidget(parent)
 void YahuBackdrop::seed()
 {
     auto* rng = QRandomGenerator::global();
-    const int count = qBound(24, width() * height() / 26000, 70);
+    const int count = qBound(16, width() * height() / 40000, 44);
     m_flies.clear();
     for (int i = 0; i < count; ++i) {
         Firefly f;
@@ -64,7 +64,7 @@ void YahuBackdrop::seed()
 void YahuBackdrop::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
-    if (m_flies.isEmpty() || qAbs(m_flies.size() - width() * height() / 26000) > 12) {
+    if (m_flies.isEmpty() || qAbs(m_flies.size() - width() * height() / 40000) > 8) {
         seed();
     }
 }
@@ -172,16 +172,17 @@ void YahuBackdrop::paintEvent(QPaintEvent*)
     const QRectF r = rect();
     const qreal t = m_clock.elapsed() / 1000.0;
 
-    // night sky: a slightly greener horizon at the bottom
-    QLinearGradient sky(r.topLeft(), r.bottomLeft());
-    sky.setColorAt(0.0, ink);
-    sky.setColorAt(1.0, mix(ink, QColor(0x10, 0x22, 0x15), 0.9));
-    p.fillRect(r, sky);
+    // deep black with the faintest green glow rising from the bottom
+    p.fillRect(r, ink);
+    QRadialGradient floor(QPointF(r.center().x(), r.bottom() + r.height() * 0.2), r.width() * 0.7);
+    floor.setColorAt(0.0, withAlpha(accent, 0.045));
+    floor.setColorAt(1.0, withAlpha(accent, 0.0));
+    p.fillRect(r, floor);
 
     // the lantern: reveal the pixel grid around the cursor
     if (m_lantern > 0.01) {
         QRadialGradient glow(m_cursor, kLanternRadius * 1.2);
-        glow.setColorAt(0.0, withAlpha(accent, 0.075 * m_lantern));
+        glow.setColorAt(0.0, withAlpha(accent, 0.05 * m_lantern));
         glow.setColorAt(1.0, withAlpha(accent, 0.0));
         p.fillRect(r, glow);
 
@@ -196,7 +197,7 @@ void YahuBackdrop::paintEvent(QPaintEvent*)
                 if (d >= 1.0) {
                     continue;
                 }
-                const qreal a = (1.0 - d) * (1.0 - d) * 0.28 * m_lantern;
+                const qreal a = (1.0 - d) * (1.0 - d) * 0.18 * m_lantern;
                 p.setBrush(withAlpha(d < 0.18 ? accentHi : accent, a));
                 p.drawRect(QRectF(x, y, 2, 2));
             }
@@ -213,7 +214,7 @@ void YahuBackdrop::paintEvent(QPaintEvent*)
             near = qMax(0.0, 1.0 - qSqrt(d.x() * d.x() + d.y() * d.y()) / 240.0) * m_lantern;
         }
         const QColor c = f.gold ? gold : accentHi;
-        const qreal alpha = qMin(1.0, 0.25 + 0.45 * twinkle + 0.5 * near);
+        const qreal alpha = qMin(1.0, 0.15 + 0.35 * twinkle + 0.5 * near);
         // halo
         p.setBrush(withAlpha(c, alpha * 0.18));
         p.drawRect(QRectF(f.pos.x() - f.size * 1.5, f.pos.y() - f.size * 1.5, f.size * 4, f.size * 4));

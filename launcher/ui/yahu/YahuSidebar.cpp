@@ -18,9 +18,11 @@
 #include "YahuSidebar.h"
 
 #include <QAction>
+#include <QHelpEvent>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QToolTip>
 #include <QtMath>
 
 #include "YahuStyle.h"
@@ -28,43 +30,50 @@
 using namespace YahuStyle;
 
 namespace {
-constexpr int kTop = 112;
-constexpr int kItemHeight = 46;
-constexpr int kPad = 14;
-constexpr int kAccountHeight = 66;
+constexpr int kTop = 88;          // first page below the logo
+constexpr int kItemHeight = 60;
+constexpr int kTile = 64;         // width of the hover tile
+constexpr int kAccountSize = 44;
+constexpr int kAccountGap = 18;   // space below the avatar
 constexpr qreal kTau = 6.283185307179586;
 }  // namespace
 
 YahuSidebar::YahuSidebar(QWidget* parent) : QWidget(parent)
 {
     setMouseTracking(true);
-    setFixedWidth(232);
+    setFixedWidth(kWidth);
     setCursor(Qt::ArrowCursor);
     m_timer.setInterval(16);
     connect(&m_timer, &QTimer::timeout, this, &YahuSidebar::tick);
     m_clock.start();
 }
 
+void YahuSidebar::addPage(const QString& label, const QString& iconName, std::function<void()> onClick, const QString& badge)
+{
+    Item item{ label, iconName, nullptr, nullptr, std::move(onClick), badge, true, m_addingBottom };
+    m_items.append(item);
+    if (m_activePage < 0) {
+        m_activePage = m_items.size() - 1;
+    }
+    update();
+}
+
 void YahuSidebar::addAction(QAction* action, const QString& label, const QString& iconName)
 {
-    m_items.append({ label, iconName, action, nullptr, {}, false });
+    m_items.append({ label, iconName, action, nullptr, {}, QString(), false, m_addingBottom });
     connect(action, &QAction::changed, this, QOverload<>::of(&QWidget::update));
     update();
 }
 
 void YahuSidebar::addMenu(QMenu* menu, const QString& label, const QString& iconName)
 {
-    m_items.append({ label, iconName, nullptr, menu, {}, false });
+    m_items.append({ label, iconName, nullptr, menu, {}, QString(), false, m_addingBottom });
     update();
 }
 
-void YahuSidebar::addPage(const QString& label, const QString& iconName, std::function<void()> onClick)
+void YahuSidebar::beginBottomGroup()
 {
-    m_items.append({ label, iconName, nullptr, nullptr, std::move(onClick), true });
-    if (m_activePage < 0) {
-        m_activePage = m_items.size() - 1;
-    }
-    update();
+    m_addingBottom = true;
 }
 
 void YahuSidebar::setAccountAction(QAction* action, QMenu* menu, std::function<bool()> hasAccounts, std::function<void()> signIn)
@@ -77,14 +86,40 @@ void YahuSidebar::setAccountAction(QAction* action, QMenu* menu, std::function<b
     update();
 }
 
+void YahuSidebar::setActivePage(int pageIndex)
+{
+    int seen = 0;
+    for (int i = 0; i < m_items.size(); ++i) {
+        if (m_items[i].page && seen++ == pageIndex) {
+            m_activePage = i;
+            ensureTicking();
+            return;
+        }
+    }
+}
+
 QRectF YahuSidebar::itemRect(int index) const
 {
-    return QRectF(kPad, kTop + index * kItemHeight, width() - kPad * 2, kItemHeight - 6);
+    const qreal x = (kWidth - kTile) / 2.0;
+    if (!m_items[index].bottom) {
+        int row = 0;
+        for (int i = 0; i < index; ++i) {
+            row += m_items[i].bottom ? 0 : 1;
+        }
+        return QRectF(x, kTop + row * kItemHeight, kTile, kItemHeight - 6);
+    }
+    // bottom group: stacked upwards from the avatar
+    int below = 0;
+    for (int i = index + 1; i < m_items.size(); ++i) {
+        below += m_items[i].bottom ? 1 : 0;
+    }
+    const qreal bottom = accountRect().top() - 18 - below * kItemHeight;
+    return QRectF(x, bottom - (kItemHeight - 6), kTile, kItemHeight - 6);
 }
 
 QRectF YahuSidebar::accountRect() const
 {
-    return QRectF(kPad, height() - kAccountHeight - kPad, width() - kPad * 2, kAccountHeight);
+    return QRectF((kWidth - kAccountSize) / 2.0, height() - kAccountSize - kAccountGap, kAccountSize, kAccountSize);
 }
 
 int YahuSidebar::hitTest(const QPoint& pos) const
@@ -94,10 +129,15 @@ int YahuSidebar::hitTest(const QPoint& pos) const
             return i;
         }
     }
-    if (m_accountAction && accountRect().contains(pos)) {
+    if (m_accountAction && accountRect().adjusted(-6, -6, 6, 6).contains(pos)) {
         return -2;
     }
     return -1;
+}
+
+bool YahuSidebar::signedIn() const
+{
+    return m_hasAccounts ? m_hasAccounts() : (m_accountAction && m_accountAction->text() != tr("Accounts"));
 }
 
 void YahuSidebar::ensureTicking()
@@ -126,23 +166,50 @@ void YahuSidebar::tick()
     }
     if (m_hovered >= 0) {
         const qreal target = itemRect(m_hovered).top();
-        if (m_slabY < 0) {
+        if (m_slabY < 0 || m_slabAlpha < 0.02) {
             m_slabY = target;
         }
-        approach(m_slabY, target, 0.25);
+        approach(m_slabY, target, 0.28);
     }
     approach(m_slabAlpha, m_hovered >= 0 ? 1.0 : 0.0, 0.15);
+    if (m_activePage >= 0) {
+        const qreal target = itemRect(m_activePage).center().y();
+        if (m_markerY < 0) {
+            m_markerY = target;
+        }
+        approach(m_markerY, target, 0.18);
+    }
     approach(m_accountHover, m_hovered == -2 ? 1.0 : 0.0, 0.2);
 
     update();
-    // the account chip's status pixel breathes, so keep a slow heartbeat going while visible
+    // the avatar's status dot breathes, so keep a slow heartbeat going while visible
     if (!moving && !isVisible()) {
         m_timer.stop();
-    } else if (!moving) {
-        m_timer.setInterval(66);
     } else {
-        m_timer.setInterval(16);
+        m_timer.setInterval(moving ? 16 : 66);
     }
+}
+
+bool YahuSidebar::event(QEvent* event)
+{
+    if (event->type() == QEvent::ToolTip) {
+        auto* help = static_cast<QHelpEvent*>(event);
+        const int hit = hitTest(help->pos());
+        QString tip;
+        if (hit == -2) {
+            tip = signedIn() ? m_accountAction->text() : tr("Sign in with Microsoft");
+        } else if (hit >= 0 && !m_items[hit].badge.isEmpty()) {
+            tip = tr("%1 (%2)").arg(m_items[hit].label, m_items[hit].badge);
+        }
+        if (tip.isEmpty()) {
+            QToolTip::hideText();
+            event->ignore();
+        } else {
+            QToolTip::showText(help->globalPos(), tip, this);
+        }
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 void YahuSidebar::changeEvent(QEvent* event)
@@ -194,11 +261,11 @@ void YahuSidebar::mouseReleaseEvent(QMouseEvent* event)
 void YahuSidebar::activate(int index)
 {
     if (index == -2) {
-        if (m_signIn && m_hasAccounts && !m_hasAccounts()) {
+        if (m_signIn && !signedIn()) {
             m_signIn();
         } else if (m_accountMenu) {
             const QRectF r = accountRect();
-            m_accountMenu->popup(mapToGlobal(QPoint(int(r.right()) + 8, int(r.bottom()) - m_accountMenu->sizeHint().height())));
+            m_accountMenu->popup(mapToGlobal(QPoint(int(r.right()) + 14, int(r.bottom()) - m_accountMenu->sizeHint().height())));
         }
         return;
     }
@@ -215,7 +282,8 @@ void YahuSidebar::activate(int index)
         }
     } else if (item.menu) {
         const QRectF r = itemRect(index);
-        item.menu->popup(mapToGlobal(QPoint(int(r.right()) + 8, int(r.top()))));
+        const int y = item.bottom ? int(r.bottom()) - item.menu->sizeHint().height() : int(r.top());
+        item.menu->popup(mapToGlobal(QPoint(int(r.right()) + 14, y)));
     } else if (item.action && item.action->isEnabled()) {
         item.action->trigger();
     }
@@ -227,32 +295,43 @@ void YahuSidebar::paintEvent(QPaintEvent*)
     p.setRenderHint(QPainter::Antialiasing, true);
     const qreal t = m_clock.elapsed() / 1000.0;
 
-    // panel with a hairline on the right
-    p.fillRect(rect(), withAlpha(surface, 0.86));
+    // rail with a hairline on the right
+    p.fillRect(rect(), surface);
     p.fillRect(QRectF(width() - 1, 0, 1, height()), line);
 
-    // brand
+    // logo, with a faint grass glow behind it
     {
-        const QIcon logo(QStringLiteral(":/yahu/logo.svg"));
-        logo.paint(&p, QRect(kPad + 4, 30, 40, 40));
-        p.setFont(displayFont(17, QFont::Black));
-        p.setPen(text);
-        p.drawText(QPointF(kPad + 56, 54), QStringLiteral("YAHU"));
-        p.setFont(pixelFont(8));
-        p.setPen(accent);
-        p.drawText(QPointF(kPad + 57, 68), QStringLiteral("CLIENT"));
+        const QPointF c(kWidth / 2.0, 42);
+        QRadialGradient glow(c, 34);
+        glow.setColorAt(0.0, withAlpha(accent, 0.16));
+        glow.setColorAt(1.0, withAlpha(accent, 0.0));
+        p.setPen(Qt::NoPen);
+        p.setBrush(glow);
+        p.drawEllipse(c, 34, 34);
+        QIcon(QStringLiteral(":/yahu/logo.svg")).paint(&p, QRect(int(c.x()) - 18, int(c.y()) - 18, 36, 36));
     }
 
-    p.setFont(pixelFont(8));
-    p.setPen(faint);
-    p.drawText(QPointF(kPad + 4, kTop - 12), tr("MENU"));
+    // separator between the pages and the rest
+    p.fillRect(QRectF(22, kTop - 14, kWidth - 44, 1), line);
 
-    // the gliding hover slab
+    // the gliding hover tile
     if (m_slabAlpha > 0.01 && m_slabY >= 0) {
-        const QRectF slab(kPad, m_slabY, width() - kPad * 2, kItemHeight - 6);
+        const QRectF slab((kWidth - kTile) / 2.0, m_slabY, kTile, kItemHeight - 6);
         p.setPen(Qt::NoPen);
-        p.setBrush(withAlpha(raisedHi, m_slabAlpha));
-        p.drawPath(chamfer(slab, 7));
+        p.setBrush(withAlpha(raised, m_slabAlpha));
+        p.drawPath(rounded(slab, 12));
+    }
+
+    // the active-page marker: a green pill hugging the left edge
+    if (m_activePage >= 0 && m_markerY >= 0) {
+        p.setPen(Qt::NoPen);
+        p.setBrush(accent);
+        p.drawRoundedRect(QRectF(-3, m_markerY - 14, 7, 28), 3.5, 3.5);
+        QRadialGradient glow(QPointF(0, m_markerY), 30);
+        glow.setColorAt(0.0, withAlpha(accent, 0.25));
+        glow.setColorAt(1.0, withAlpha(accent, 0.0));
+        p.setBrush(glow);
+        p.drawEllipse(QPointF(0, m_markerY), 30, 30);
     }
 
     for (int i = 0; i < m_items.size(); ++i) {
@@ -263,67 +342,84 @@ void YahuSidebar::paintEvent(QPaintEvent*)
 
         if (active) {
             p.setPen(Qt::NoPen);
-            p.setBrush(withAlpha(accent, 0.10));
-            p.drawPath(chamfer(r, 7));
-            // pixel bracket on the left edge
-            p.fillRect(QRectF(r.left(), r.top() + 8, 3, r.height() - 16), accent);
-            p.fillRect(QRectF(r.left() + 3, r.top() + 8, 3, 3), accent);
-            p.fillRect(QRectF(r.left() + 3, r.bottom() - 11, 3, 3), accent);
+            p.setBrush(raisedHi);
+            p.drawPath(rounded(r, 12));
         }
         if (item.flash > 0.01) {
             p.setPen(Qt::NoPen);
-            p.setBrush(withAlpha(accentHi, 0.25 * item.flash));
-            p.drawPath(chamfer(r, 7));
+            p.setBrush(withAlpha(accent, 0.18 * item.flash));
+            p.drawPath(rounded(r, 12));
         }
 
-        const qreal nudge = item.hover * 4.0;
-        const QRect iconRect(int(r.left() + 14 + nudge), int(r.center().y() - 10), 20, 20);
+        const qreal lift = item.hover * 2.0;
+        const QRect iconRect(int(r.center().x() - 11), int(r.top() + 9 - lift), 22, 22);
+        p.save();
+        if (!active && enabled) {
+            p.setOpacity(0.72 + 0.28 * item.hover);
+        }
         QIcon::fromTheme(item.iconName).paint(&p, iconRect, Qt::AlignCenter, enabled ? QIcon::Normal : QIcon::Disabled);
+        p.restore();
 
         QFont font = this->font();
+        font.setPointSizeF(font.pointSizeF() - 1.5);
         font.setWeight(active ? QFont::Bold : QFont::DemiBold);
         p.setFont(font);
         p.setPen(!enabled ? faint : mix(active ? text : muted, text, item.hover));
-        p.drawText(QRectF(r.left() + 46 + nudge, r.top(), r.width() - 56, r.height()), Qt::AlignVCenter | Qt::AlignLeft, item.label);
+        p.drawText(QRectF(r.left() - 6, r.top() + 34, r.width() + 12, 16), Qt::AlignHCenter | Qt::AlignVCenter, item.label);
+
+        if (!item.badge.isEmpty()) {
+            // a small gold dot that says "something is coming here"
+            const qreal pulse = 0.5 + 0.5 * qSin(t * kTau / 2.0 + i);
+            const QPointF dot(r.center().x() + 13, r.top() + 10);
+            p.setPen(Qt::NoPen);
+            p.setBrush(withAlpha(gold, 0.25 * pulse));
+            p.drawEllipse(dot, 6, 6);
+            p.setBrush(gold);
+            p.drawEllipse(dot, 3, 3);
+        }
 
         if (item.menu) {
-            p.setPen(QPen(withAlpha(muted, 0.5 + 0.5 * item.hover), 1.6));
-            const qreal x = r.right() - 16 + item.hover * 3;
-            const qreal y = r.center().y();
-            p.drawLine(QPointF(x - 3, y - 4), QPointF(x + 1, y));
-            p.drawLine(QPointF(x + 1, y), QPointF(x - 3, y + 4));
+            // tiny chevron to the right: this opens a menu
+            p.setPen(QPen(withAlpha(muted, 0.35 + 0.65 * item.hover), 1.4));
+            const qreal x = r.right() - 5 + item.hover * 2;
+            const qreal y = r.top() + 20;
+            p.drawLine(QPointF(x - 2, y - 3), QPointF(x + 1, y));
+            p.drawLine(QPointF(x + 1, y), QPointF(x - 2, y + 3));
         }
     }
 
-    // account chip
+    // avatar
     if (m_accountAction) {
         const QRectF r = accountRect();
-        p.setPen(QPen(mix(line, accent, m_accountHover), 1.0));
-        p.setBrush(mix(raised, raisedHi, m_accountHover));
-        p.drawPath(chamfer(r.adjusted(0.5, 0.5, -0.5, -0.5), 9));
+        const bool in = signedIn();
+        const QColor statusColor = in ? accent : gold;
 
-        const QRect face(int(r.left() + 12), int(r.center().y() - 18), 36, 36);
+        // hover ring
+        p.setPen(QPen(withAlpha(statusColor, 0.25 + 0.75 * m_accountHover), 2.0));
+        p.setBrush(Qt::NoBrush);
+        p.drawPath(rounded(r.adjusted(-4, -4, 4, 4), 14));
+
+        p.setPen(Qt::NoPen);
+        p.setBrush(raised);
+        p.drawPath(rounded(r, 11));
         p.save();
+        p.setClipPath(rounded(r, 11));
         p.setRenderHint(QPainter::SmoothPixmapTransform, false);  // keep skin faces crisp
-        m_accountAction->icon().paint(&p, face);
+        if (in) {
+            m_accountAction->icon().paint(&p, r.toRect());
+        } else {
+            QIcon::fromTheme(QStringLiteral("accounts")).paint(&p, r.adjusted(10, 10, -10, -10).toRect());
+        }
         p.restore();
 
-        const bool signedIn = m_hasAccounts ? m_hasAccounts() : m_accountAction->text() != tr("Accounts");
-        QFont nameFont = font();
-        nameFont.setWeight(QFont::Bold);
-        p.setFont(nameFont);
-        p.setPen(text);
-        const QString name = signedIn ? m_accountAction->text() : tr("Sign in");
-        p.drawText(QRectF(face.right() + 12, r.top() + 13, r.width() - 70, 20), Qt::AlignLeft | Qt::AlignVCenter,
-                   QFontMetrics(nameFont).elidedText(name, Qt::ElideRight, int(r.width() - 74)));
-
+        // status dot, bottom right, breathing
         const qreal pulse = 0.5 + 0.5 * qSin(t * kTau / 2.4);
-        const QColor statusColor = signedIn ? accent : gold;
-        p.setPen(Qt::NoPen);
-        p.setBrush(withAlpha(statusColor, 0.35 + 0.65 * pulse));
-        p.drawRect(QRectF(face.right() + 12, r.top() + 41, 5, 5));
-        p.setFont(pixelFont(8));
-        p.setPen(statusColor);
-        p.drawText(QPointF(face.right() + 22, r.top() + 47), signedIn ? tr("SIGNED IN") : tr("NO ACCOUNT YET"));
+        const QPointF dot(r.right() - 1, r.bottom() - 1);
+        p.setBrush(surface);
+        p.drawEllipse(dot, 7, 7);
+        p.setBrush(withAlpha(statusColor, 0.25 * pulse));
+        p.drawEllipse(dot, 6.5, 6.5);
+        p.setBrush(statusColor);
+        p.drawEllipse(dot, 4, 4);
     }
 }

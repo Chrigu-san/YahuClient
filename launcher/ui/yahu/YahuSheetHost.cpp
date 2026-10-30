@@ -43,7 +43,6 @@ namespace {
 constexpr int kPageHeader = 60;
 constexpr int kCardHeader = 54;
 constexpr int kCardPad = 16;
-constexpr qreal kCut = 14.0;
 constexpr const char* kOverlayProperty = "yahuOverlay";
 
 QString cleanTitle(QWidget* w)
@@ -247,22 +246,22 @@ void YahuSheetHost::paintChrome(QWidget* w)
         return;
     }
 
-    p.fillRect(r, withAlpha(QColor(2, 6, 3), 0.62 * sheet.enter));
+    p.fillRect(r, withAlpha(QColor(0, 0, 0), 0.66 * sheet.enter));
     const QRectF card = QRectF(w->property("_yahu_card").toRect()).translated(0, slide).adjusted(0.5, 0.5, -0.5, -0.5);
-    const QPainterPath shape = chamfer(card, kCut);
-    // soft glow under the card
+    const QPainterPath shape = rounded(card, kRadiusCard + 2);
+    // soft shadow under the card
     p.setPen(Qt::NoPen);
     for (int i = 6; i >= 1; --i) {
-        p.setBrush(withAlpha(accent, 0.012 * (7 - i)));
-        p.drawPath(chamfer(card.adjusted(-i * 2, -i * 2, i * 2, i * 2), kCut + i * 2));
+        p.setBrush(withAlpha(Qt::black, 0.06));
+        p.drawPath(rounded(card.adjusted(-i * 2, -i * 2 + 6, i * 2, i * 2 + 6), kRadiusCard + 2 + i * 2));
     }
     p.fillPath(shape, surface);
-    p.setPen(QPen(lineHi, 1.0));
+    p.setPen(QPen(withAlpha(text, 0.09), 1.0));
     p.drawPath(shape);
-    // lit corner, top left
-    p.setPen(QPen(accent, 2.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
-    p.drawPolyline(QPolygonF() << QPointF(card.left() + 1, card.top() + kCut + 16) << QPointF(card.left() + 1, card.top() + kCut)
-                               << QPointF(card.left() + kCut, card.top() + 1) << QPointF(card.left() + kCut + 16, card.top() + 1));
+    // a short grass-colored accent at the top
+    p.setPen(Qt::NoPen);
+    p.setBrush(accent);
+    p.drawRoundedRect(QRectF(card.left() + 22, card.top() - 1, 36, 3), 1.5, 1.5);
     p.setFont(displayFont(11, QFont::Bold));
     p.setPen(text);
     p.drawText(QRectF(card.left() + 22, card.top(), card.width() - 90, kCardHeader), Qt::AlignVCenter | Qt::AlignLeft,

@@ -874,6 +874,8 @@ SET(LAUNCHER_SOURCES
     ui/yahu/YahuFxLayer.h
     ui/yahu/YahuSidebar.cpp
     ui/yahu/YahuSidebar.h
+    ui/yahu/YahuComingSoon.cpp
+    ui/yahu/YahuComingSoon.h
     ui/themes/ITheme.cpp
     ui/themes/ITheme.h
     ui/themes/HintOverrideProxyStyle.cpp

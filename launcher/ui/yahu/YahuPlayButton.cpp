@@ -25,7 +25,7 @@
 #include "YahuStyle.h"
 
 namespace {
-constexpr qreal kCut = 12.0;
+constexpr qreal kCut = 12.0;  // corner radius
 constexpr qreal kBreathPeriodMs = 2400.0;
 constexpr int kGlowPad = 12;  // room around the face for the glow
 constexpr qreal kTau = 6.283185307179586;
@@ -158,7 +158,7 @@ void YahuPlayButton::paintEvent(QPaintEvent*)
 
     const QColor tone = running ? gold : accent;
     const QColor toneHi = running ? gold.lighter(112) : accentHi;
-    const QColor toneLo = running ? QColor(0xB8, 0x8A, 0x1E) : QColor(0x2F, 0x9C, 0x3E);
+    const QColor toneLo = running ? QColor(0xB8, 0x8A, 0x1E) : accentLo;
 
     // glow
     if (active) {
@@ -166,7 +166,7 @@ void YahuPlayButton::paintEvent(QPaintEvent*)
         for (int i = kGlowPad; i >= 2; i -= 2) {
             p.setPen(Qt::NoPen);
             p.setBrush(withAlpha(tone, strength * 0.05 * (kGlowPad - i + 2) / 2.0 * 0.6));
-            p.drawPath(chamfer(face.adjusted(-i, -i + 4, i, i + 4 + depth), kCut + i * 0.6));
+            p.drawPath(rounded(face.adjusted(-i, -i + 4, i, i + 4 + depth), kCut + i * 0.6));
         }
     }
 
@@ -174,9 +174,9 @@ void YahuPlayButton::paintEvent(QPaintEvent*)
     const QRectF base = QRectF(face.left(), face.top() + depth - sink, face.width(), face.height());
     p.setPen(Qt::NoPen);
     p.setBrush(active ? toneLo : line);
-    p.drawPath(chamfer(base, kCut));
+    p.drawPath(rounded(base, kCut));
 
-    const QPainterPath shape = chamfer(face, kCut);
+    const QPainterPath shape = rounded(face, kCut);
     if (active && !running) {
         QLinearGradient fill(face.topLeft(), face.bottomLeft());
         fill.setColorAt(0.0, mix(tone, toneHi, 0.4 + 0.6 * m_hover));
@@ -256,6 +256,6 @@ void YahuPlayButton::paintEvent(QPaintEvent*)
     if (hasFocus()) {
         p.setPen(QPen(YahuStyle::text, 1.0, Qt::DotLine));
         p.setBrush(Qt::NoBrush);
-        p.drawPath(chamfer(face.adjusted(-4, -4, 4, 4 + depth), kCut + 3));
+        p.drawPath(rounded(face.adjusted(-4, -4, 4, 4 + depth), kCut + 3));
     }
 }

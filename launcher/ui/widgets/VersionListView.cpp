@@ -154,7 +154,7 @@ void VersionListView::paintInfoLabel(QPaintEvent* event) const
     dash.setDashPattern({ 3, 3 });
     painter.setPen(dash);
     painter.setBrush(YahuStyle::withAlpha(YahuStyle::ink, 0.6));
-    painter.drawPath(YahuStyle::chamfer(frame, 6));
+    painter.drawPath(YahuStyle::rounded(frame, YahuStyle::kRadiusCard));
     painter.setPen(m_emptyMode == ErrorString ? YahuStyle::danger : YahuStyle::muted);
     painter.drawText(textRect, Qt::AlignHCenter | Qt::TextWordWrap, emptyString);
 }

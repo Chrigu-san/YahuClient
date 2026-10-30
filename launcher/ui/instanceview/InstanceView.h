@@ -133,8 +133,8 @@ class InstanceView : public QAbstractItemView {
     visibilityFunction m_fVisibility;
 
     // geometry
-    int m_leftMargin = 22;
-    int m_rightMargin = 22;
+    int m_leftMargin = 26;  // lines up with the banner above
+    int m_rightMargin = 26;
     int m_bottomMargin = 22;
     int m_categoryMargin = 10;
     int m_spacing = 12;

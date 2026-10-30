@@ -81,7 +81,7 @@ constexpr int kGap = 12;
 constexpr int kMetaHeight = 16;
 constexpr int kPadBottom = 14;
 constexpr int kTextInset = 12;
-constexpr qreal kCut = 12.0;
+constexpr qreal kRadius = 14.0;
 constexpr qreal kMaxTilt = 9.0;
 
 qreal easeOutCubic(qreal t)
@@ -103,10 +103,10 @@ void drawStatusPixel(QPainter* painter, const QPointF& center, const QColor& col
     const qreal ring = 4.0 + 7.0 * pulse;
     painter->setPen(QPen(YahuStyle::withAlpha(color, 0.7 * (1.0 - pulse)), 1.5));
     painter->setBrush(Qt::NoBrush);
-    painter->drawRect(QRectF(center.x() - ring, center.y() - ring, ring * 2, ring * 2));
+    painter->drawEllipse(center, ring, ring);
     painter->setPen(Qt::NoPen);
     painter->setBrush(color);
-    painter->drawRect(QRectF(center.x() - 3.5, center.y() - 3.5, 7, 7));
+    painter->drawEllipse(center, 4, 4);
 }
 }  // namespace
 
@@ -168,7 +168,7 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     tilt.translate(-center.x(), -center.y());
     painter->setTransform(tilt, true);
 
-    const QPainterPath shape = chamfer(card, kCut);
+    const QPainterPath shape = rounded(card, kRadius);
 
     // drop shadow + accent glow
     if (hover > 0.01 || selected || running) {
@@ -176,11 +176,11 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         painter->setPen(Qt::NoPen);
         for (int i = 5; i >= 1; --i) {
             painter->setBrush(withAlpha(tone, 0.03 * strength * (6 - i)));
-            painter->drawPath(chamfer(card.adjusted(-i * 1.6, -i * 1.2 + 4, i * 1.6, i * 2.4 + 4), kCut + i));
+            painter->drawPath(rounded(card.adjusted(-i * 1.6, -i * 1.2 + 4, i * 1.6, i * 2.4 + 4), kRadius + i));
         }
     }
 
-    QColor fill = mix(withAlpha(raised, 0.88), withAlpha(raisedHi, 0.96), hover);
+    QColor fill = mix(withAlpha(raised, 0.92), withAlpha(raisedHi, 0.98), hover);
     if (selected) {
         fill = mix(fill, withAlpha(tone, 0.95), 0.12);
     }
@@ -201,32 +201,26 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         painter->restore();
     }
 
-    // border, with lit corner brackets when hovered or selected
+    // border; selected cards get a ring in the accent, slightly outside the card
     painter->setBrush(Qt::NoBrush);
-    painter->setPen(QPen(selected ? tone : mix(line, lineHi, hover), selected ? 1.5 : 1.0));
-    painter->drawPath(shape);
-    const qreal bracket = qMax(hover, selected ? 1.0 : 0.0);
-    if (bracket > 0.01) {
-        painter->setPen(QPen(withAlpha(tone, bracket), 2.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
-        const qreal len = 10 + 8 * bracket;
-        const QRectF b = card.adjusted(-3, -3, 3, 3);
-        painter->drawPolyline(QPolygonF() << QPointF(b.left(), b.top() + kCut + len) << QPointF(b.left(), b.top() + kCut)
-                                          << QPointF(b.left() + kCut, b.top()) << QPointF(b.left() + kCut + len, b.top()));
-        painter->drawPolyline(QPolygonF() << QPointF(b.right(), b.bottom() - kCut - len) << QPointF(b.right(), b.bottom() - kCut)
-                                          << QPointF(b.right() - kCut, b.bottom()) << QPointF(b.right() - kCut - len, b.bottom()));
+    painter->setPen(QPen(mix(withAlpha(text, 0.07), withAlpha(text, 0.16), hover), 1.0));
+    painter->drawPath(rounded(card.adjusted(0.5, 0.5, -0.5, -0.5), kRadius));
+    if (selected) {
+        painter->setPen(QPen(tone, 2.0));
+        painter->drawPath(rounded(card.adjusted(-3, -3, 3, 3), kRadius + 3));
     }
 
     QIcon::Mode mode = enabled ? QIcon::Normal : QIcon::Disabled;
     QIcon::State state = opt.state & QStyle::State_Open ? QIcon::On : QIcon::Off;
 
-    // icon on a little pixel pedestal, bobbing up on hover
+    // icon with a soft shadow under it, bobbing up on hover
     {
         const qreal size = kIconSize * (1.0 + 0.1 * hover);
         const qreal top = card.top() + kPadTop - hover * 3.0;
         QRectF iconBox(center.x() - size / 2.0, top + (kIconSize - size) / 2.0, size, size);
         painter->setPen(Qt::NoPen);
-        painter->setBrush(withAlpha(Qt::black, 0.25 + 0.15 * hover));
-        painter->drawRect(QRectF(center.x() - kIconSize * 0.36, card.top() + kPadTop + kIconSize + 3, kIconSize * 0.72, 3));
+        painter->setBrush(withAlpha(Qt::black, 0.35 + 0.15 * hover));
+        painter->drawEllipse(QPointF(center.x(), card.top() + kPadTop + kIconSize + 4), kIconSize * 0.34 - hover * 3, 3);
         opt.icon.paint(painter, iconBox.toRect(), Qt::AlignCenter, mode, state);
     }
 

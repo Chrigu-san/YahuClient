@@ -6,7 +6,7 @@ grass accent so the set reads as a family. Run from this folder: python generate
 
 import os
 
-TEXT = "#ECF3EA"
+TEXT = "#F4F5F2"
 ACCENT = "#5BE36B"
 GOLD = "#FFC94A"
 DANGER = "#FF5A5F"
@@ -63,6 +63,10 @@ ICONS = {
     "status-running": [("M5 5h14v14H5z", ACCENT, True), ("M10 8.5l5 3.5-5 3.5z", "#0A0F0B", True)],
     "discord": [("M4 6h16v10H10l-4 4v-4H4z", TEXT, False), ("M9 10h1M14 10h1", ACCENT, False)],
     "matrix": [("M4 4h3M4 4v16h3M20 4h-3M20 4v16h-3", TEXT, False), ("M9 9h6v6H9z", ACCENT, False)],
+    # navigation rail
+    "yahu-home": [("M3 11l9-8 9 8M5 10v11h14V10", TEXT, False), ("M10 15h4v6h-4z", ACCENT, True)],
+    "yahu-host": [("M4 4h16v6H4zM4 14h16v6H4z", TEXT, False), ("M7 7h2M7 17h2", ACCENT, False), ("M13 10v4", ACCENT, False)],
+    "yahu-shop": [("M4 8h16l-1 13H5z", TEXT, False), ("M9 8V5h6v3", TEXT, False), ("M10 13h4v4h-4z", GOLD, True)],
     "reddit-alien": [("M5 10h14v9H5z", TEXT, False), ("M12 10V5h4", ACCENT, False), ("M9 14h1M14 14h1", ACCENT, False)],
 }
 

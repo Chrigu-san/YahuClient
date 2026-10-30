@@ -53,5 +53,8 @@
         <file>scalable/unlock.svg</file>
         <file>scalable/viewfolder.svg</file>
         <file>scalable/worlds.svg</file>
+        <file>scalable/yahu-home.svg</file>
+        <file>scalable/yahu-host.svg</file>
+        <file>scalable/yahu-shop.svg</file>
     </qresource>
 </RCC>

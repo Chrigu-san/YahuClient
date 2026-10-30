@@ -112,7 +112,10 @@
 #include "ui/themes/ThemeManager.h"
 #include "ui/widgets/EditableLabel.h"
 #include "ui/dialogs/MSALoginDialog.h"
+#include <QStackedWidget>
+#include "ui/yahu/YahuAnimator.h"
 #include "ui/yahu/YahuBackdrop.h"
+#include "ui/yahu/YahuComingSoon.h"
 #include "ui/yahu/YahuFxLayer.h"
 #include "ui/yahu/YahuHero.h"
 #include "ui/yahu/YahuSheetHost.h"
@@ -352,32 +355,57 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         shell->setContentsMargins(0, 0, 0, 0);
         shell->setSpacing(0);
 
+        // pages: the library (banner + instances), then the features that are still being built
+        m_pages = new QStackedWidget(backdrop);
+        m_pages->setAttribute(Qt::WA_TranslucentBackground, true);
+        auto* library = new QWidget(m_pages);
+        library->setAttribute(Qt::WA_TranslucentBackground, true);
+        m_pages->addWidget(library);
+        m_pages->addWidget(new YahuComingSoon(YahuComingSoon::Kind::Servers, m_pages));
+        m_pages->addWidget(new YahuComingSoon(YahuComingSoon::Kind::Shop, m_pages));
+        auto showPage = [this](int index) {
+            if (m_pages->currentIndex() == index) {
+                return;
+            }
+            m_pages->setCurrentIndex(index);
+            m_sidebar->setActivePage(index);
+            YahuAnimator::reveal(m_pages->currentWidget(), 220);
+            if (index == 0) {
+                view->setFocus();
+            }
+        };
+
         m_sidebar = new YahuSidebar(backdrop);
-        m_sidebar->addPage(tr("Library"), QStringLiteral("worlds"), [this] { view->setFocus(); });
-        m_sidebar->addAction(ui->actionAddInstance, tr("New instance"), QStringLiteral("new"));
-        m_sidebar->addAction(ui->actionSettings, tr("Settings"), QStringLiteral("settings"));
+        m_sidebar->addPage(tr("Home"), QStringLiteral("yahu-home"), [showPage] { showPage(0); });
+        m_sidebar->addPage(tr("Servers"), QStringLiteral("yahu-host"), [showPage] { showPage(1); }, tr("Soon"));
+        m_sidebar->addPage(tr("Shop"), QStringLiteral("yahu-shop"), [showPage] { showPage(2); }, tr("Soon"));
+        m_sidebar->addAction(ui->actionAddInstance, tr("New"), QStringLiteral("new"));
         m_sidebar->addMenu(ui->foldersMenu, tr("Folders"), QStringLiteral("viewfolder"));
+        m_sidebar->beginBottomGroup();
+        m_sidebar->addAction(ui->actionSettings, tr("Settings"), QStringLiteral("settings"));
         m_sidebar->addMenu(ui->helpMenu, tr("Help"), QStringLiteral("help"));
         m_sidebar->setAccountAction(ui->actionAccountsButton, ui->accountsMenu, [] { return APPLICATION->accounts()->count() > 0; },
                                     [this] { addMicrosoftAccount(); });
         shell->addWidget(m_sidebar);
+        // creating an instance always happens from the library, so bring it back into view
+        connect(ui->actionAddInstance, &QAction::triggered, this, [showPage] { showPage(0); });
 
         m_hero = new YahuHero(ui->actionLaunchInstance, ui->actionKillInstance, ui->actionEditInstance, ui->actionViewSelectedInstFolder,
                               { ui->actionRenameInstance, ui->actionChangeInstIcon, ui->actionChangeInstGroup, ui->actionExportInstance,
                                 ui->actionCopyInstance, ui->actionCreateInstanceShortcut, ui->actionDeleteInstance },
-                              backdrop);
+                              library);
         m_hero->setCreateAction(ui->actionAddInstance);
         connect(APPLICATION->instances(), &QAbstractItemModel::rowsInserted, m_hero, &YahuHero::refresh);
         connect(APPLICATION->instances(), &QAbstractItemModel::rowsRemoved, m_hero, &YahuHero::refresh);
         connect(APPLICATION->instances(), &QAbstractItemModel::modelReset, m_hero, &YahuHero::refresh);
-        auto* column = new QVBoxLayout;
+        auto* column = new QVBoxLayout(library);
         column->setContentsMargins(0, 0, 0, 0);
         column->setSpacing(0);
         column->addWidget(m_hero);
         column->addWidget(view, 1);
-        shell->addLayout(column, 1);
+        shell->addWidget(m_pages, 1);
 
-        view->setParent(backdrop);
+        view->setParent(library);
         view->viewport()->setAutoFillBackground(false);
         view->setAutoFillBackground(false);
         ui->horizontalLayout->addWidget(backdrop);
@@ -797,6 +825,9 @@ void MainWindow::changeActiveAccount()
 void MainWindow::defaultAccountChanged()
 {
     repopulateAccountsMenu();
+    if (m_hero) {
+        m_hero->refresh();  // the greeting uses the player's name
+    }
 
     MinecraftAccountPtr account = APPLICATION->accounts()->defaultAccount();
 
