@@ -182,7 +182,7 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
     QColor fill = mix(withAlpha(raised, 0.92), withAlpha(raisedHi, 0.98), hover);
     if (selected) {
-        fill = mix(fill, withAlpha(tone, 0.95), 0.12);
+        fill = mix(fill, withAlpha(tone, 0.95), 0.05);
     }
     painter->setPen(Qt::NoPen);
     painter->setBrush(fill);

@@ -26,12 +26,12 @@
 // Design tokens for the Yahu look: a deep black canvas, soft graphite surfaces and the grass accent.
 namespace YahuStyle {
 
-inline const QColor ink{ 0x07, 0x07, 0x09 };       // window background
-inline const QColor surface{ 0x0E, 0x0E, 0x11 };   // panels, navigation rail
-inline const QColor raised{ 0x15, 0x15, 0x19 };    // cards, inputs
-inline const QColor raisedHi{ 0x1D, 0x1D, 0x22 };  // hovered cards
-inline const QColor line{ 0x22, 0x22, 0x28 };      // hairlines
-inline const QColor lineHi{ 0x33, 0x33, 0x3B };
+inline const QColor ink{ 0x03, 0x03, 0x04 };       // window background
+inline const QColor surface{ 0x09, 0x09, 0x0B };   // panels, navigation rail
+inline const QColor raised{ 0x10, 0x10, 0x13 };    // cards, inputs
+inline const QColor raisedHi{ 0x17, 0x17, 0x1B };  // hovered cards
+inline const QColor line{ 0x1A, 0x1A, 0x1F };      // hairlines
+inline const QColor lineHi{ 0x2A, 0x2A, 0x31 };
 inline const QColor text{ 0xF4, 0xF5, 0xF2 };
 inline const QColor muted{ 0x9E, 0xA0, 0xA6 };
 inline const QColor faint{ 0x5C, 0x5E, 0x66 };

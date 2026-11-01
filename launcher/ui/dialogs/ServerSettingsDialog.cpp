@@ -34,14 +34,6 @@
 #include "minecraft/auth/AccountList.h"
 
 namespace {
-QLabel* hint(const QString& text)
-{
-    auto* label = new QLabel(text);
-    label->setWordWrap(true);
-    label->setProperty("yahuHint", true);
-    return label;
-}
-
 QComboBox* choice(const QList<QPair<QString, QString>>& items, const QString& current)
 {
     auto* box = new QComboBox;
@@ -90,9 +82,9 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
 
         m_software = new QComboBox;
         m_software->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
-        m_software->addItem(tr("Paper: fast, supports plugins (recommended)"), int(ServerConfig::Software::Paper));
-        m_software->addItem(tr("Vanilla: the official server from Mojang"), int(ServerConfig::Software::Vanilla));
-        m_software->addItem(tr("Fabric: for Fabric mods"), int(ServerConfig::Software::Fabric));
+        m_software->addItem(tr("Paper (recommended)"), int(ServerConfig::Software::Paper));
+        m_software->addItem(tr("Vanilla"), int(ServerConfig::Software::Vanilla));
+        m_software->addItem(tr("Fabric"), int(ServerConfig::Software::Fabric));
         m_software->setCurrentIndex(m_software->findData(int(c.software)));
         form->addRow(tr("Software"), m_software);
 
@@ -104,10 +96,6 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
         versionRow->addWidget(m_version, 1);
         versionRow->addWidget(m_snapshots);
         form->addRow(tr("Minecraft version"), versionRow);
-        if (m_editing) {
-            form->addRow(QString(), hint(tr("Changing the software or version downloads it again. Your world stays, but back it up "
-                                            "before switching to an older version.")));
-        }
 
         m_memory = new QDoubleSpinBox;
         m_memory->setRange(1.0, 64.0);
@@ -116,7 +104,6 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
         m_memory->setSuffix(tr(" GB"));
         m_memory->setValue(c.memoryMb / 1024.0);
         form->addRow(tr("Memory"), m_memory);
-        form->addRow(QString(), hint(tr("4 GB is plenty for a few friends. Modded servers like 6 GB or more.")));
 
         m_port = new QSpinBox;
         m_port->setRange(1024, 65535);
@@ -125,7 +112,7 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
 
         m_motd = new QLineEdit(c.motd);
         m_motd->setMaxLength(59);
-        form->addRow(tr("Server list message"), m_motd);
+        form->addRow(tr("MOTD"), m_motd);
         tabs->addTab(page, tr("Basics"));
     }
 
@@ -143,7 +130,6 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
                                { "minecraft:amplified", tr("Amplified") } },
                              c.levelType);
         form->addRow(tr("World type"), m_levelType);
-        form->addRow(QString(), hint(tr("Seed and world type only apply when the world is first created.")));
         m_gamemode = choice({ { "survival", tr("Survival") },
                               { "creative", tr("Creative") },
                               { "adventure", tr("Adventure") },
@@ -154,11 +140,11 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
             choice({ { "peaceful", tr("Peaceful") }, { "easy", tr("Easy") }, { "normal", tr("Normal") }, { "hard", tr("Hard") } },
                    c.difficulty);
         form->addRow(tr("Difficulty"), m_difficulty);
-        m_hardcore = new QCheckBox(tr("Hardcore (one life, then spectator)"));
+        m_hardcore = new QCheckBox(tr("Hardcore"));
         m_hardcore->setChecked(c.hardcore);
         m_nether = new QCheckBox(tr("Allow the Nether"));
         m_nether->setChecked(c.allowNether);
-        m_structures = new QCheckBox(tr("Generate villages and other structures"));
+        m_structures = new QCheckBox(tr("Generate structures"));
         m_structures->setChecked(c.generateStructures);
         form->addRow(QString(), m_hardcore);
         form->addRow(QString(), m_nether);
@@ -178,21 +164,20 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
         m_maxPlayers->setRange(1, 500);
         m_maxPlayers->setValue(c.maxPlayers);
         form->addRow(tr("Max players"), m_maxPlayers);
-        m_onlineMode = new QCheckBox(tr("Only allow real Minecraft accounts"));
+        m_onlineMode = new QCheckBox(tr("Online mode"));
         m_onlineMode->setChecked(c.onlineMode);
         m_onlineMode->setToolTip(tr("Turning this off lets anyone join with any name. Keep it on."));
-        m_whitelist = new QCheckBox(tr("Whitelist: only players you add can join"));
+        m_whitelist = new QCheckBox(tr("Whitelist"));
         m_whitelist->setChecked(c.whitelist);
-        m_pvp = new QCheckBox(tr("Players can hurt each other (PvP)"));
+        m_pvp = new QCheckBox(tr("PvP"));
         m_pvp->setChecked(c.pvp);
-        m_flight = new QCheckBox(tr("Allow flying (needed for some mods)"));
+        m_flight = new QCheckBox(tr("Allow flying"));
         m_flight->setChecked(c.allowFlight);
-        m_forceGamemode = new QCheckBox(tr("Reset players to the default game mode when they join"));
+        m_forceGamemode = new QCheckBox(tr("Force game mode"));
         m_forceGamemode->setChecked(c.forceGamemode);
         for (auto* box : { m_onlineMode, m_whitelist, m_pvp, m_flight, m_forceGamemode }) {
             form->addRow(QString(), box);
         }
-        form->addRow(QString(), hint(tr("Add friends to the whitelist from the console: whitelist add <name>")));
 
         m_viewDistance = new QSpinBox;
         m_viewDistance->setRange(3, 32);
@@ -203,19 +188,19 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
         m_simulationDistance->setRange(3, 32);
         m_simulationDistance->setSuffix(tr(" chunks"));
         m_simulationDistance->setValue(c.simulationDistance);
-        form->addRow(tr("Simulation distance"), m_simulationDistance);
+        form->addRow(tr("Simulation"), m_simulationDistance);
         m_idle = new QSpinBox;
         m_idle->setRange(0, 1440);
         m_idle->setSuffix(tr(" min"));
         m_idle->setSpecialValueText(tr("Never"));
         m_idle->setValue(c.idleTimeout);
-        form->addRow(tr("Kick idle players after"), m_idle);
+        form->addRow(tr("Idle kick"), m_idle);
 
         if (!m_editing) {
             const auto account = APPLICATION->accounts()->defaultAccount();
             const QString name = account ? account->profileName() : QString();
-            m_operator = new QCheckBox(name.isEmpty() ? tr("Sign in to become operator of your server automatically")
-                                                      : tr("Make %1 an operator (admin)").arg(name));
+            m_operator = new QCheckBox(name.isEmpty() ? tr("Make me operator")
+                                                      : tr("Make %1 operator").arg(name));
             m_operator->setEnabled(!name.isEmpty());
             m_operator->setChecked(!name.isEmpty());
             form->addRow(QString(), m_operator);
@@ -241,7 +226,7 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
         form->addRow(tr("Spawn"), spawning);
         m_commandBlocks = new QCheckBox(tr("Enable command blocks"));
         m_commandBlocks->setChecked(c.commandBlocks);
-        m_secureChat = new QCheckBox(tr("Require signed chat messages"));
+        m_secureChat = new QCheckBox(tr("Signed chat"));
         m_secureChat->setChecked(c.enforceSecureProfile);
         form->addRow(QString(), m_commandBlocks);
         form->addRow(QString(), m_secureChat);
@@ -261,7 +246,7 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
         form->addRow(tr("Java"), m_java);
         m_jvmArgs = new QLineEdit(c.jvmArgs);
         m_jvmArgs->setPlaceholderText(tr("Optional, e.g. -XX:+UseG1GC"));
-        form->addRow(tr("Extra Java arguments"), m_jvmArgs);
+        form->addRow(tr("Java arguments"), m_jvmArgs);
         tabs->addTab(page, tr("Advanced"));
     }
 

@@ -59,7 +59,7 @@ class YahuHero : public QWidget {
    private:
     void syncActions();
     void updateRunning();
-    void paintBlock(QPainter& p, const QPointF& center, qreal size, qreal yaw, qreal pitch);
+    void paintEmblem(QPainter& p, const QPointF& center, qreal t);
     void paintLandscape(QPainter& p, const QRectF& banner, qreal t);
     QRectF bannerRect() const;
     QToolButton* makeGhostButton(const QString& label, const QString& iconName);
@@ -85,10 +85,10 @@ class YahuHero : public QWidget {
     bool m_running = false;
     bool m_libraryEmpty = false;
 
-    qreal m_swap = 1.0;       // 0 -> 1 when the selection changes; drives the text slide-in and a block spin
-    qreal m_spin = 0.0;       // extra yaw added by the selection spin
+    qreal m_swap = 1.0;       // 0 -> 1 when the selection changes; drives the text slide-in and a comet sprint
+    qreal m_spin = 0.0;       // extra comet travel added on selection changes
     QVariantAnimation m_swapAnimation;
-    QPointF m_look;           // smoothed cursor direction (-1..1), tilts the block
+    QPointF m_look;           // smoothed cursor direction (-1..1), drives the parallax
     QPointF m_lookTarget;
     QTimer m_frameTimer;
     QElapsedTimer m_clock;

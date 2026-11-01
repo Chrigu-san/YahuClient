@@ -177,7 +177,7 @@ void YahuBackdrop::paintEvent(QPaintEvent*)
     // deep black with the faintest green glow rising from the bottom
     p.fillRect(r, ink);
     QRadialGradient floor(QPointF(r.center().x(), r.bottom() + r.height() * 0.2), r.width() * 0.7);
-    floor.setColorAt(0.0, withAlpha(accent, 0.045));
+    floor.setColorAt(0.0, withAlpha(accent, 0.02));
     floor.setColorAt(1.0, withAlpha(accent, 0.0));
     p.fillRect(r, floor);
 

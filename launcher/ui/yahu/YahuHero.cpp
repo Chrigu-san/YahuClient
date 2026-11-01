@@ -26,7 +26,6 @@
 #include <QPainterPath>
 #include <QToolButton>
 #include <QVBoxLayout>
-#include <QVector3D>
 #include <QtMath>
 
 #include <algorithm>
@@ -48,7 +47,8 @@ constexpr int kMarginX = 28;      // banner inset from the hero's edges
 constexpr int kMarginTop = 24;
 constexpr int kMarginBottom = 8;
 constexpr int kInnerPad = 32;     // text inset inside the banner
-constexpr qreal kBlock = 50.0;    // half edge length of the floating block in px
+constexpr qreal kOrbit = 84.0;    // radius of the comet orbit around the instance icon
+constexpr qreal kPlate = 112.0;   // edge length of the glass plate behind the icon
 constexpr qreal kTau = 6.283185307179586;
 
 // Cheap deterministic noise so the landscape looks the same every frame.
@@ -152,7 +152,7 @@ YahuHero::YahuHero(QAction* launchAction,
 
     connect(&m_swapAnimation, &QVariantAnimation::valueChanged, this, [this](const QVariant& v) {
         m_swap = v.toReal();
-        m_spin = (1.0 - m_swap) * 140.0;
+        m_spin = m_swap * 140.0;  // the comet sprints ahead while the new selection slides in
         update();
     });
 
@@ -303,91 +303,60 @@ bool YahuHero::eventFilter(QObject* watched, QEvent* event)
     return false;
 }
 
-void YahuHero::paintBlock(QPainter& p, const QPointF& center, qreal size, qreal yaw, qreal pitch)
+void YahuHero::paintEmblem(QPainter& p, const QPointF& center, qreal t)
 {
-    // a solid grass block, rotated in 3D and projected orthographically
-    static const std::array<QVector3D, 8> corners = { QVector3D(-1, -1, -1), QVector3D(1, -1, -1), QVector3D(1, 1, -1), QVector3D(-1, 1, -1),
-                                                      QVector3D(-1, -1, 1),  QVector3D(1, -1, 1),  QVector3D(1, 1, 1),  QVector3D(-1, 1, 1) };
-    // faces as corner indices; index 0 is the top (y = -1), index 1 the bottom
-    static const std::array<std::array<int, 4>, 6> faces = { { { 0, 1, 5, 4 },
-                                                               { 3, 7, 6, 2 },
-                                                               { 0, 3, 2, 1 },
-                                                               { 4, 5, 6, 7 },
-                                                               { 0, 4, 7, 3 },
-                                                               { 1, 2, 6, 5 } } };
-    const qreal cy = qCos(qDegreesToRadians(yaw)), sy = qSin(qDegreesToRadians(yaw));
-    const qreal cp = qCos(qDegreesToRadians(pitch)), sp = qSin(qDegreesToRadians(pitch));
+    // the instance icon on a dark glass plate, circled by a slow comet; flat on purpose, nothing here can shimmer
+    const QColor tone = m_running ? gold : accent;
+    const qreal bob = qSin(t * kTau / 4.0) * 4.0;
+    const QPointF plateCenter = center + QPointF(0, bob);
 
-    std::array<QVector3D, 8> v;
-    for (int i = 0; i < 8; ++i) {
-        const QVector3D c = corners[i];
-        const qreal x = c.x() * cy + c.z() * sy;
-        const qreal z = -c.x() * sy + c.z() * cy;
-        const qreal y = c.y() * cp - z * sp;
-        const qreal z2 = c.y() * sp + z * cp;
-        v[i] = QVector3D(float(x), float(y), float(z2));
-    }
+    // orbit track
+    p.setBrush(Qt::NoBrush);
+    p.setPen(QPen(withAlpha(text, 0.06), 1.0));
+    p.drawEllipse(center, kOrbit, kOrbit);
 
-    struct Face {
-        int index;
-        float depth;
-    };
-    std::array<Face, 6> order;
-    for (int f = 0; f < 6; ++f) {
-        float depth = 0;
-        for (int k : faces[f]) {
-            depth += v[k].z();
-        }
-        order[f] = { f, depth };
+    // the comet runs clockwise; its tail fades out behind it
+    const qreal head = -std::fmod(t * (m_running ? 150.0 : 42.0) + m_spin, 360.0);
+    const QRectF ring(center.x() - kOrbit, center.y() - kOrbit, kOrbit * 2, kOrbit * 2);
+    constexpr int kTail = 30;
+    for (int i = kTail - 1; i >= 0; --i) {
+        const qreal fade = 1.0 - qreal(i) / kTail;
+        p.setPen(QPen(withAlpha(tone, 0.75 * fade * fade), 2.0, Qt::SolidLine, Qt::RoundCap));
+        p.drawArc(ring, int((head + i * 3.0) * 16), 3 * 16 + 4);
     }
-    std::sort(order.begin(), order.end(), [](const Face& a, const Face& b) { return a.depth > b.depth; });  // far first
+    const qreal rad = qDegreesToRadians(head);
+    const QPointF dot = center + QPointF(qCos(rad), -qSin(rad)) * kOrbit;
+    p.setPen(Qt::NoPen);
+    QRadialGradient spark(dot, 12);
+    spark.setColorAt(0.0, withAlpha(tone, 0.55));
+    spark.setColorAt(1.0, withAlpha(tone, 0.0));
+    p.setBrush(spark);
+    p.drawEllipse(dot, 12, 12);
+    p.setBrush(mix(tone, text, 0.5));
+    p.drawEllipse(dot, 2.6, 2.6);
 
-    const QColor dirt(0x6B, 0x4A, 0x2F);
-    auto project = [&](int i) { return center + QPointF(v[i].x(), v[i].y()) * size; };
-    for (const Face& face : order) {
-        if (face.depth > 0) {
-            continue;  // back faces are hidden by the solid front
-        }
-        QPolygonF poly;
-        for (int k : faces[face.index]) {
-            poly << project(k);
-        }
-        const bool top = face.index == 0;
-        // simple light from above: the top is brightest, sides get darker the more they turn away
-        const qreal light = top ? 1.0 : 0.55 + 0.25 * qAbs(qSin(qDegreesToRadians(yaw + face.index * 90.0)));
-        p.setPen(QPen(withAlpha(Qt::black, 0.35), 1.0));
-        p.setBrush(top ? mix(accentLo, accent, 0.55) : dirt.darker(int(100 / light)));
-        p.drawPolygon(poly);
-        if (!top && face.index != 1) {
-            // the grass overhang: a green band along the side's top edge (corners 0 and 1 of a side are at y = -1)
-            QPolygonF band;
-            const auto& f = faces[face.index];
-            QList<QPointF> upper, lower;
-            for (int k : f) {
-                (corners[k].y() < 0 ? upper : lower) << project(k);
-            }
-            if (upper.size() == 2 && lower.size() == 2) {
-                // pair each upper corner with the lower corner below it
-                if (QLineF(upper[0], lower[0]).length() > QLineF(upper[0], lower[1]).length()) {
-                    std::swap(lower[0], lower[1]);
-                }
-                const QPointF a = upper[0] + (lower[0] - upper[0]) * 0.22;
-                const QPointF b = upper[1] + (lower[1] - upper[1]) * 0.22;
-                band << upper[0] << upper[1] << b << a;
-                p.setPen(Qt::NoPen);
-                p.setBrush(mix(accentLo, accent, 0.25 * light));
-                p.drawPolygon(band);
-                // ragged pixels hanging off the band
-                p.setBrush(mix(accentLo, accent, 0.15));
-                for (int s = 1; s < 8; s += 2) {
-                    const qreal u = s / 8.0;
-                    const QPointF pa = a + (b - a) * u;
-                    const QPointF down = (lower[0] - upper[0]) * (0.06 + 0.06 * ((s / 2) % 2));
-                    p.drawPolygon(QPolygonF() << pa << pa + (b - a) / 8.0 << pa + (b - a) / 8.0 + down << pa + down);
-                }
-            }
-        }
+    // glass plate
+    const QRectF plate(plateCenter.x() - kPlate / 2, plateCenter.y() - kPlate / 2, kPlate, kPlate);
+    for (int i = 3; i >= 1; --i) {
+        p.setBrush(withAlpha(Qt::black, 0.16));
+        p.drawPath(rounded(plate.adjusted(-i * 2, -i + 8, i * 2, i * 2 + 8), 26 + i * 2));
     }
+    QLinearGradient glass(plate.topLeft(), plate.bottomLeft());
+    glass.setColorAt(0.0, withAlpha(raisedHi, 0.96));
+    glass.setColorAt(1.0, withAlpha(ink, 0.96));
+    p.setBrush(glass);
+    p.setPen(QPen(withAlpha(text, 0.10), 1.0));
+    p.drawPath(rounded(plate, 26));
+    p.setPen(QPen(withAlpha(text, 0.16), 1.0));
+    p.drawLine(QPointF(plate.left() + 26, plate.top() + 0.5), QPointF(plate.right() - 26, plate.top() + 0.5));
+
+    // the icon, drawn from a pixmap at fractional positions so the float stays smooth
+    const qreal size = 68.0 * (0.82 + 0.18 * m_swap);
+    const QPixmap pm = m_icon.pixmap(QSize(68, 68), devicePixelRatioF());
+    p.save();
+    p.setOpacity(qBound(0.0, m_swap * 1.5, 1.0));
+    p.drawPixmap(QRectF(plateCenter.x() - size / 2, plateCenter.y() - size / 2, size, size), pm, QRectF(pm.rect()));
+    p.restore();
 }
 
 void YahuHero::paintLandscape(QPainter& p, const QRectF& b, qreal t)
@@ -398,13 +367,13 @@ void YahuHero::paintLandscape(QPainter& p, const QRectF& b, qreal t)
     // sky: black at the top, a green dusk glow behind the hills so their silhouettes read
     QLinearGradient sky(b.topLeft(), b.bottomLeft());
     sky.setColorAt(0.0, QColor(0x07, 0x08, 0x0B));
-    sky.setColorAt(0.35, QColor(0x0C, 0x12, 0x10));
-    sky.setColorAt(0.7, QColor(0x1E, 0x38, 0x27));
-    sky.setColorAt(1.0, QColor(0x1A, 0x31, 0x23));
+    sky.setColorAt(0.35, QColor(0x07, 0x09, 0x09));
+    sky.setColorAt(0.7, QColor(0x0F, 0x1A, 0x14));
+    sky.setColorAt(1.0, QColor(0x0B, 0x13, 0x0F));
     p.fillRect(b, sky);
     {
         QRadialGradient dusk(QPointF(b.center().x() - lx * 20, b.bottom()), b.width() * 0.55);
-        dusk.setColorAt(0.0, withAlpha(accent, 0.16));
+        dusk.setColorAt(0.0, withAlpha(accent, 0.07));
         dusk.setColorAt(1.0, withAlpha(accent, 0.0));
         p.fillRect(b, dusk);
     }
@@ -450,9 +419,9 @@ void YahuHero::paintLandscape(QPainter& p, const QRectF& b, qreal t)
         int seed;
     };
     const std::array<Layer, 3> layers = { {
-        { 10, 0.72, 6.0, 10, QColor(0x10, 0x1F, 0x16), 0.20, 11 },
-        { 14, 0.86, 5.0, 24, QColor(0x0A, 0x12, 0x0E), 0.32, 37 },
-        { 18, 1.00, 4.0, 44, QColor(0x05, 0x07, 0x06), 0.65, 71 },
+        { 10, 0.72, 6.0, 10, QColor(0x0B, 0x13, 0x0E), 0.12, 11 },
+        { 14, 0.86, 5.0, 24, QColor(0x06, 0x0A, 0x08), 0.22, 37 },
+        { 18, 1.00, 4.0, 44, QColor(0x02, 0x03, 0x03), 0.50, 71 },
     } };
     for (const Layer& L : layers) {
         const qreal offset = -lx * L.shift;
@@ -512,44 +481,14 @@ void YahuHero::paintEvent(QPaintEvent*)
     paintLandscape(p, banner, t);
     p.setRenderHint(QPainter::Antialiasing, true);
 
-    // the floating block on the right, glowing in the instance's tone
-    const QPointF stage(banner.right() - kInnerPad - kBlock * 2.2 + m_look.x() * 14, banner.center().y() - 6 + m_look.y() * 6);
+    // the instance emblem on the right, glowing in the instance's tone
+    const QPointF stage(banner.right() - kInnerPad - kOrbit - 24 + m_look.x() * 10, banner.center().y() - 6 + m_look.y() * 5);
     {
-        QRadialGradient glow(stage, 190);
-        glow.setColorAt(0.0, withAlpha(tone, 0.20));
+        QRadialGradient glow(stage, 170);
+        glow.setColorAt(0.0, withAlpha(tone, 0.12));
         glow.setColorAt(1.0, withAlpha(tone, 0.0));
         p.fillRect(banner, glow);
-
-        const qreal bob = qSin(t * kTau / 3.6) * 6.0;
-        const qreal yaw = std::fmod(t * (m_running ? 70.0 : 16.0), 360.0) + m_spin + m_look.x() * 30.0;
-        const qreal pitch = 24.0 - m_look.y() * 12.0;  // positive: looking down onto the grass top
-        // shadow on the "ground"
-        p.setBrush(withAlpha(Qt::black, 0.35 - bob * 0.015));
-        p.drawEllipse(QPointF(stage.x(), stage.y() + kBlock * 1.55), kBlock * 0.9 - bob, kBlock * 0.16);
-        paintBlock(p, stage + QPointF(0, 18 + bob), kBlock * 0.58, yaw, pitch);
-
-        // rising pixels above the block
-        p.setPen(Qt::NoPen);
-        for (int i = 0; i < 9; ++i) {
-            const qreal phase = std::fmod(t * 0.35 + i * 0.137, 1.0);
-            const qreal x = stage.x() + qSin(i * 2.3 + t) * kBlock * 0.8;
-            const qreal y = stage.y() - 10 - phase * 120;
-            p.setBrush(withAlpha(i % 3 == 0 ? gold : accentHi, (1.0 - phase) * 0.8));
-            p.drawRect(QRectF(x, y, 3, 3));
-        }
-
-        // the instance icon hovers above the block, leaning with the cursor
-        const QPointF iconCenter = stage + QPointF(m_look.x() * 8, -kBlock * 1.15 + bob + m_look.y() * 5);
-        const qreal iconSize = 64 + (1.0 - m_swap) * -20;
-        p.save();
-        p.translate(iconCenter);
-        QTransform tilt;
-        tilt.rotate(m_look.x() * 14, Qt::YAxis);
-        tilt.rotate(-m_look.y() * 10, Qt::XAxis);
-        p.setTransform(tilt, true);
-        p.setOpacity(qBound(0.0, m_swap * 1.5, 1.0));
-        m_icon.paint(&p, QRect(int(-iconSize / 2), int(-iconSize / 2), int(iconSize), int(iconSize)));
-        p.restore();
+        paintEmblem(p, stage, t);
     }
 
     // legibility veil on the left
@@ -571,7 +510,7 @@ void YahuHero::paintEvent(QPaintEvent*)
     {
         const qreal slide = (1.0 - m_swap) * 24.0;
         const qreal left = banner.left() + kInnerPad;
-        const qreal textWidth = banner.width() - kInnerPad * 2 - kBlock * 4.4;
+        const qreal textWidth = banner.width() - kInnerPad * 2 - kOrbit * 2 - 60;
         qreal y = banner.top() + 46;
 
         p.setOpacity(qBound(0.0, m_swap * 1.6, 1.0));
