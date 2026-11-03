@@ -376,7 +376,7 @@ Section "@Launcher_DisplayName@"
 
   File "@Launcher_APP_BINARY_NAME@.exe"
   File "@Launcher_APP_BINARY_NAME@_filelink.exe"
-  File "@Launcher_APP_BINARY_NAME@_updater.exe"
+  File /nonfatal "@Launcher_APP_BINARY_NAME@_updater.exe"
   File "qt.conf"
   File "qtlogging.ini"
   File *.dll
@@ -439,7 +439,7 @@ Section "Start Menu Shortcut" SM_SHORTCUTS
 
 SectionEnd
 
-Section /o "Desktop Shortcut" DESKTOP_SHORTCUTS
+Section "Desktop Shortcut" DESKTOP_SHORTCUTS
 
   CreateShortcut "$DESKTOP\@Launcher_DisplayName@.lnk" "$INSTDIR\@Launcher_APP_BINARY_NAME@.exe" "" "$INSTDIR\@Launcher_APP_BINARY_NAME@.exe" 0
 
@@ -475,10 +475,22 @@ Section "Uninstall"
   DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\@Launcher_CommonName@"
   DeleteRegKey HKCU SOFTWARE\@Launcher_CommonName@
 
+  ; URL handlers: our own one always, the shared ones only while they still point at us
+  DeleteRegKey HKCU Software\Classes\@Launcher_APP_BINARY_NAME@
+  ReadRegStr $0 HKCU Software\Classes\curseforge\shell\open\command ""
+  ${If} $0 == '"$INSTDIR\@Launcher_APP_BINARY_NAME@.exe" "%1"'
+    DeleteRegKey HKCU Software\Classes\curseforge
+  ${EndIf}
+  ReadRegStr $0 HKCU Software\Classes\modrinth\shell\open\command ""
+  ${If} $0 == '"$INSTDIR\@Launcher_APP_BINARY_NAME@.exe" "%1"'
+    DeleteRegKey HKCU Software\Classes\modrinth
+  ${EndIf}
+
   Delete $INSTDIR\@Launcher_APP_BINARY_NAME@.exe
   Delete $INSTDIR\@Launcher_APP_BINARY_NAME@_filelink.exe
   Delete $INSTDIR\@Launcher_APP_BINARY_NAME@_updater.exe
   Delete $INSTDIR\qt.conf
+  Delete $INSTDIR\qtlogging.ini
   Delete $INSTDIR\*.dll
 
   Delete $INSTDIR\uninstall.exe
