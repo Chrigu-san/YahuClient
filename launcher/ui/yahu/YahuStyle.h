@@ -19,27 +19,42 @@
 
 #include <QColor>
 #include <QFont>
+#include <QList>
 #include <QPainterPath>
 #include <QRectF>
 #include <QString>
 
 // Design tokens for the Yahu look: a deep black canvas, soft graphite surfaces and the grass accent.
+// The surface and accent tokens follow the chosen palette (KAN-7); applyPalette() sets them once at startup,
+// before any window or stylesheet reads them.
 namespace YahuStyle {
 
-inline const QColor ink{ 0x03, 0x03, 0x04 };       // window background
-inline const QColor surface{ 0x09, 0x09, 0x0B };   // panels, navigation rail
-inline const QColor raised{ 0x10, 0x10, 0x13 };    // cards, inputs
-inline const QColor raisedHi{ 0x17, 0x17, 0x1B };  // hovered cards
-inline const QColor line{ 0x1A, 0x1A, 0x1F };      // hairlines
-inline const QColor lineHi{ 0x2A, 0x2A, 0x31 };
-inline const QColor text{ 0xF4, 0xF5, 0xF2 };
-inline const QColor muted{ 0x9E, 0xA0, 0xA6 };
-inline const QColor faint{ 0x5C, 0x5E, 0x66 };
-inline const QColor accent{ 0x5B, 0xE3, 0x6B };    // grass
-inline const QColor accentHi{ 0x86, 0xF2, 0x93 };
-inline const QColor accentLo{ 0x2F, 0x9C, 0x3E };
+inline QColor ink{ 0x03, 0x03, 0x04 };       // window background
+inline QColor surface{ 0x09, 0x09, 0x0B };   // panels, navigation rail
+inline QColor raised{ 0x10, 0x10, 0x13 };    // cards, inputs
+inline QColor raisedHi{ 0x17, 0x17, 0x1B };  // hovered cards
+inline QColor line{ 0x1A, 0x1A, 0x1F };      // hairlines
+inline QColor lineHi{ 0x2A, 0x2A, 0x31 };
+inline QColor text{ 0xF4, 0xF5, 0xF2 };
+inline QColor muted{ 0x9E, 0xA0, 0xA6 };
+inline QColor faint{ 0x5C, 0x5E, 0x66 };
+inline QColor accent{ 0x5B, 0xE3, 0x6B };    // grass
+inline QColor accentHi{ 0x86, 0xF2, 0x93 };
+inline QColor accentLo{ 0x2F, 0x9C, 0x3E };
 inline const QColor gold{ 0xFF, 0xC9, 0x4A };      // highlights, running games, shop
 inline const QColor danger{ 0xFF, 0x5A, 0x5F };
+
+// A complete set of the tokens above that change with the theme.
+struct Palette {
+    QString id;    // stored in the "YahuPalette" setting
+    QString name;  // shown in the settings
+    QColor ink, surface, raised, raisedHi, line, lineHi, text, muted, faint, accent, accentHi, accentLo;
+};
+
+// Every palette the player can pick, the default ("black") first.
+QList<Palette> palettes();
+// Switches the tokens to this palette; an unknown id falls back to the default. Returns the id actually used.
+QString applyPalette(const QString& id);
 
 // Corner radii: cards and panels, controls, small chips.
 constexpr qreal kRadiusCard = 14.0;

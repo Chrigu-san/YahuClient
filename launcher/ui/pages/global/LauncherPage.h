@@ -49,6 +49,8 @@ namespace Ui {
 class LauncherPage;
 }
 
+class QComboBox;
+
 class LauncherPage : public QWidget, public BasePage {
     Q_OBJECT
 
@@ -81,4 +83,5 @@ class LauncherPage : public QWidget, public BasePage {
 
    private:
     Ui::LauncherPage* ui;
+    QComboBox* m_palette = nullptr;
 };

@@ -36,7 +36,11 @@
  *      limitations under the License.
  */
 
+#include <QComboBox>
+#include <QHBoxLayout>
+#include <QLabel>
 #include "LauncherPage.h"
+#include "ui/yahu/YahuStyle.h"
 #include "ui_LauncherPage.h"
 
 #include <QDir>
@@ -72,6 +76,21 @@ LauncherPage::LauncherPage(QWidget* parent) : QWidget(parent), ui(new Ui::Launch
 {
     ui->setupUi(this);
     ui->preferMenuBarCheckBox->hide();  // Yahu Client has no menu bar or toolbar to switch between
+
+    // KAN-7: the color theme, applied on the next start
+    {
+        auto* row = new QHBoxLayout;
+        row->addWidget(new QLabel(tr("Theme")));
+        m_palette = new QComboBox;
+        for (const auto& palette : YahuStyle::palettes()) {
+            m_palette->addItem(palette.name, palette.id);
+        }
+        row->addWidget(m_palette);
+        auto* hint = new QLabel(tr("Takes effect after restarting Yahu Client."));
+        hint->setProperty("yahuHint", true);
+        row->addWidget(hint, 1);
+        ui->verticalLayout_2->insertLayout(0, row);
+    }
 
     ui->sortingModeGroup->setId(ui->sortByNameBtn, Sort_Name);
     ui->sortingModeGroup->setId(ui->sortLastLaunchedBtn, Sort_LastLaunch);
@@ -223,6 +242,13 @@ void LauncherPage::on_metadataEnableBtn_clicked()
 
 void LauncherPage::applySettings()
 {
+    if (m_palette) {
+        const QString palette = m_palette->currentData().toString();
+        if (palette != APPLICATION->settings()->get("YahuPalette").toString()) {
+            APPLICATION->settings()->set("YahuPalette", palette);
+            QMessageBox::information(this, tr("Theme"), tr("Restart Yahu Client to see the new theme."));
+        }
+    }
     auto* s = APPLICATION->settings();
 
     // Updates
@@ -307,6 +333,10 @@ void LauncherPage::applySettings()
 }
 void LauncherPage::loadSettings()
 {
+    if (m_palette) {
+        const int index = m_palette->findData(APPLICATION->settings()->get("YahuPalette").toString());
+        m_palette->setCurrentIndex(index >= 0 ? index : 0);
+    }
     auto* s = APPLICATION->settings();
     // Updates
     if (APPLICATION->updater()) {

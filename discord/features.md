@@ -61,6 +61,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - Serverseite aufgeräumt: Adresse gross mit kleinem Copy Knopf, keine private IP mehr
 - Mit der eigenen Adresse auch selber auf den eigenen Server joinen (einmal in Windows erlauben)
 - Fix: Text auf der leeren Serverseite wird nicht mehr abgeschnitten
+- Themes: Black, Night Grass und Ocean (Einstellungen, General, Theme)
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
