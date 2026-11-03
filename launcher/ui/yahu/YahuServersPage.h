@@ -67,10 +67,12 @@ class YahuServersPage : public QWidget {
     QPushButton* m_folder;
     QPushButton* m_delete;
 
-    QLabel* m_lanAddress;
-    QLabel* m_publicAddress;
-    QPushButton* m_copyLan;
-    QPushButton* m_publicButton;
+    QLabel* m_address;
+    QPushButton* m_copyAddress;
+    QLabel* m_addressNote;
+    QWidget* m_hostsRow;
+    QLabel* m_hostsNote;
+    QPushButton* m_hostsButton;
     QLabel* m_players;
 
     QPlainTextEdit* m_console;

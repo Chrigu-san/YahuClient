@@ -58,6 +58,9 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 
 **Nächste Version (noch nicht veröffentlicht)**
 - Fix: Während Minecraft läuft, kann man im Launcher wieder klicken
+- Serverseite aufgeräumt: Adresse gross mit kleinem Copy Knopf, keine private IP mehr
+- Mit der eigenen Adresse auch selber auf den eigenen Server joinen (einmal in Windows erlauben)
+- Fix: Text auf der leeren Serverseite wird nicht mehr abgeschnitten
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten

@@ -33,6 +33,7 @@
 #include <QScrollBar>
 #include <QStackedWidget>
 #include <QStyledItemDelegate>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "Application.h"
@@ -40,6 +41,7 @@
 #include "YahuStyle.h"
 #include "minecraft/auth/AccountList.h"
 #include "servers/AddressService.h"
+#include "servers/LocalHosts.h"
 #include "servers/PortMapper.h"
 #include "servers/ServerManager.h"
 #include "ui/dialogs/ServerSettingsDialog.h"
@@ -170,26 +172,35 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
     // ----- empty state
     {
         auto* empty = new QWidget;
-        auto* layout = new QVBoxLayout(empty);
-        layout->addStretch(1);
+        auto* outer = new QVBoxLayout(empty);
+        outer->addStretch(1);
+        // a fixed-width column whose layout gives the wrapped text the height it needs (KAN-10)
+        auto* column = new QWidget;
+        column->setFixedWidth(480);
+        auto* layout = new QVBoxLayout(column);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(10);
+        layout->setSizeConstraint(QLayout::SetMinimumSize);
         auto* title = new QLabel(tr("No servers yet"));
         title->setFont(displayFont(20, QFont::Bold));
         title->setAlignment(Qt::AlignCenter);
         auto* body = new QLabel(tr("Create a server for you and your friends. It runs on this PC while Yahu Client is open, "
-                                   "and your friends join with the address shown here."));
+                                   "and your friends join with its address."));
         body->setWordWrap(true);
         body->setAlignment(Qt::AlignCenter);
-        body->setFixedWidth(460);
         body->setProperty("yahuHint", true);
+        body->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
         auto* create = new QPushButton(tr("Create a server"));
         create->setDefault(true);
         create->setCursor(Qt::PointingHandCursor);
         connect(create, &QPushButton::clicked, this, &YahuServersPage::createServer);
         layout->addWidget(title);
-        layout->addWidget(body, 0, Qt::AlignHCenter);
-        layout->addSpacing(8);
+        layout->addWidget(body);
+        layout->addSpacing(6);
         layout->addWidget(create, 0, Qt::AlignHCenter);
-        layout->addStretch(2);
+        column->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        outer->addWidget(column, 0, Qt::AlignHCenter);
+        outer->addStretch(2);
         m_stack->addWidget(empty);
     }
 
@@ -231,36 +242,52 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
         m_detail->setWordWrap(true);
         layout->addWidget(m_detail);
 
-        // how friends join
+        // how friends join: the address big, a small copy button next to it, one short line about the state
         auto* join = panel();
-        auto* grid = new QGridLayout(join);
-        grid->setContentsMargins(18, 14, 18, 14);
-        grid->setHorizontalSpacing(14);
-        grid->setVerticalSpacing(8);
-        auto* joinTitle = new QLabel(tr("How your friends join"));
-        QFont bold = joinTitle->font();
-        bold.setWeight(QFont::DemiBold);
-        joinTitle->setFont(bold);
-        grid->addWidget(joinTitle, 0, 0, 1, 3);
-        grid->addWidget(caption(tr("Same network")), 1, 0);
-        m_lanAddress = new QLabel;
-        m_lanAddress->setTextInteractionFlags(Qt::TextSelectableByMouse);
-        grid->addWidget(m_lanAddress, 1, 1);
-        m_copyLan = new QPushButton(tr("Copy"));
-        grid->addWidget(m_copyLan, 1, 2);
-        grid->addWidget(caption(tr("Over the internet")), 2, 0);
-        m_publicAddress = new QLabel;
-        m_publicAddress->setTextInteractionFlags(Qt::TextSelectableByMouse);
-        m_publicAddress->setWordWrap(true);
-        grid->addWidget(m_publicAddress, 2, 1);
-        m_publicButton = new QPushButton(tr("Show"));
-        grid->addWidget(m_publicButton, 2, 2);
-        grid->addWidget(caption(tr("Online")), 3, 0);
+        auto* joinLayout = new QVBoxLayout(join);
+        joinLayout->setContentsMargins(20, 16, 20, 16);
+        joinLayout->setSpacing(6);
+        auto* joinTitle = caption(tr("Your friends join with"));
+        joinLayout->addWidget(joinTitle);
+        auto* addressRow = new QHBoxLayout;
+        addressRow->setSpacing(10);
+        m_address = new QLabel;
+        m_address->setFont(displayFont(17, QFont::Bold));
+        m_address->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        addressRow->addWidget(m_address);
+        m_copyAddress = new QPushButton(tr("Copy"));
+        m_copyAddress->setCursor(Qt::PointingHandCursor);
+        m_copyAddress->setStyleSheet(QStringLiteral("QPushButton { padding: 3px 10px; font-size: 9pt; }"));
+        addressRow->addWidget(m_copyAddress, 0, Qt::AlignVCenter);
+        addressRow->addStretch(1);
+        joinLayout->addLayout(addressRow);
+        m_addressNote = caption(QString());
+        m_addressNote->setWordWrap(true);
+        joinLayout->addWidget(m_addressNote);
+
+        // routers rarely reach their own public address, so this PC needs the name pointed at itself once
+        m_hostsRow = new QWidget;
+        auto* hostsLayout = new QHBoxLayout(m_hostsRow);
+        hostsLayout->setContentsMargins(0, 4, 0, 0);
+        m_hostsNote = caption(tr("To join with this address from this PC too, Windows has to allow it once."));
+        m_hostsNote->setWordWrap(true);
+        hostsLayout->addWidget(m_hostsNote, 1);
+        m_hostsButton = new QPushButton(tr("Allow"));
+        m_hostsButton->setCursor(Qt::PointingHandCursor);
+        m_hostsButton->setStyleSheet(QStringLiteral("QPushButton { padding: 3px 10px; font-size: 9pt; }"));
+        hostsLayout->addWidget(m_hostsButton, 0, Qt::AlignVCenter);
+        joinLayout->addWidget(m_hostsRow);
+
+        auto* playersRow = new QHBoxLayout;
+        playersRow->addWidget(caption(tr("Online")));
         m_players = new QLabel;
         m_players->setWordWrap(true);
-        grid->addWidget(m_players, 3, 1, 1, 2);
-        grid->setColumnStretch(1, 1);
+        playersRow->addWidget(m_players, 1);
+        joinLayout->addSpacing(4);
+        joinLayout->addLayout(playersRow);
         layout->addWidget(join);
+        QFont bold = font();
+        bold.setWeight(QFont::DemiBold);
 
         // console
         auto* consolePanel = panel();
@@ -301,22 +328,36 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
         }
     });
     connect(m_delete, &QPushButton::clicked, this, &YahuServersPage::deleteServer);
-    connect(m_copyLan, &QPushButton::clicked, this,
-            [this] { QApplication::clipboard()->setText(withPort(ServerManager::lanAddress())); });
-    connect(m_publicButton, &QPushButton::clicked, this, [this] {
+    connect(m_copyAddress, &QPushButton::clicked, this, [this] {
         if (const QString address = joinAddress(); !address.isEmpty()) {
             QApplication::clipboard()->setText(address);
+            m_copyAddress->setText(tr("Copied"));
+            QTimer::singleShot(1500, m_copyAddress, [this] { m_copyAddress->setText(tr("Copy")); });
             return;
         }
-        m_publicButton->setEnabled(false);
-        m_publicAddress->setText(tr("Looking it up…"));
+        m_copyAddress->setEnabled(false);
+        m_addressNote->setText(tr("Looking it up…"));
         m_manager->fetchPublicAddress();
     });
     connect(m_manager, &ServerManager::publicAddressChanged, this, [this](const QString& error) {
-        m_publicButton->setEnabled(true);
+        m_copyAddress->setEnabled(true);
         if (!error.isEmpty()) {
-            m_publicAddress->setText(tr("Couldn't find it out: %1").arg(error));
+            m_addressNote->setText(tr("Couldn't find it out: %1").arg(error));
             return;
+        }
+        refreshAddresses();
+    });
+    connect(m_hostsButton, &QPushButton::clicked, this, [this] {
+        // every server's name at once, so one permission covers them all
+        QStringList names;
+        for (auto* server : m_manager->servers()) {
+            if (AddressService::isValidName(server->config().address)) {
+                names << QStringLiteral("%1.%2").arg(server->config().address, AddressService::kDomain);
+            }
+        }
+        QString error;
+        if (!LocalHosts::apply(names, &error)) {
+            QMessageBox::warning(this, tr("Join from this PC"), error);
         }
         refreshAddresses();
     });
@@ -488,54 +529,42 @@ void YahuServersPage::refreshAddresses()
     if (!m_current) {
         return;
     }
-    m_lanAddress->setText(withPort(ServerManager::lanAddress()));
-
     const auto state = m_current->state();
     const bool live = state == YahuServer::State::Running || state == YahuServer::State::Starting;
     const auto mapping = m_manager->portMapper()->mapping(m_current->config().port);
     const auto name = m_manager->addresses()->status(m_current);
     const QString address = joinAddress();
-    // a line about the server's name, if it has one and it isn't the address shown already
-    QString nameNote;
-    if (name.state == AddressService::State::Working) {
-        nameNote = tr("Setting up %1…").arg(name.address);
-    } else if (name.state == AddressService::State::Taken || name.state == AddressService::State::Failed) {
-        nameNote = name.detail;
-    }
 
-    QString info;
-    bool button = true;
+    m_address->setText(address.isEmpty() ? tr("No address yet") : address);
+    m_address->setEnabled(!address.isEmpty());
+    m_copyAddress->setText(address.isEmpty() ? tr("Show IP") : tr("Copy"));
+    m_copyAddress->setVisible(!address.isEmpty() || nameAddress().isEmpty());
+
+    // one short line: what's going on, or what's in the way
+    QString note;
     if (!live) {
-        // the name is fixed, so it can be handed out before the server runs
-        if (nameAddress().isEmpty()) {
-            info = tr("Start the server and Yahu Client opens the port on your router for you.");
-            button = false;
-        } else {
-            info = tr("%1\nWorks for your friends while the server is running.").arg(nameAddress());
-        }
+        note = nameAddress().isEmpty() ? tr("Give the server an address in its settings, then friends never need an IP.")
+                                       : tr("Works while the server is running.");
     } else if (mapping.state == PortMapper::State::Opening || mapping.state == PortMapper::State::Closed) {
-        info = tr("Opening the port on your router…");
-        button = false;
-    } else if (mapping.state == PortMapper::State::Open) {
-        info = address.isEmpty() ? tr("The port is open on your router. Press Show to see your address.")
-                                 : tr("%1\nOpened on your router automatically.").arg(address);
+        note = tr("Opening the port on your router…");
     } else if (mapping.state == PortMapper::State::SharedAddress) {
-        info = mapping.detail;
-        nameNote.clear();
-        button = false;
+        note = mapping.detail;
+    } else if (mapping.state == PortMapper::State::Open) {
+        if (name.state == AddressService::State::Working) {
+            note = tr("Setting up the address…");
+        } else if (name.state == AddressService::State::Taken || name.state == AddressService::State::Failed) {
+            note = name.detail;
+        } else {
+            note = state == YahuServer::State::Running ? tr("Friends can join now.") : tr("Starting the server…");
+        }
     } else {
         // no UPnP router or it said no: the old way still works
-        info = tr("%1 Without that, your router must forward TCP port %2 to this PC.").arg(mapping.detail).arg(m_current->config().port);
-        if (!address.isEmpty()) {
-            info = address + '\n' + info;
-        }
+        note = tr("%1 Without that, your router must forward TCP port %2 to this PC.").arg(mapping.detail).arg(m_current->config().port);
     }
-    if (live && !nameNote.isEmpty()) {
-        info += '\n' + nameNote;
-    }
-    m_publicAddress->setText(info);
-    m_publicButton->setVisible(button);
-    m_publicButton->setText(address.isEmpty() ? tr("Show") : tr("Copy"));
+    m_addressNote->setText(note);
+
+    const QString own = nameAddress();
+    m_hostsRow->setVisible(!own.isEmpty() && !LocalHosts::covers({ own }));
 }
 
 void YahuServersPage::refreshPlayers()
