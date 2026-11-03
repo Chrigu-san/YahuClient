@@ -52,6 +52,16 @@ class PortMapper : public QObject {
 
     Mapping mapping(int port) const { return m_mappings.value(port); }
 
+    // A router reporting such an address as "public" sits behind another router or the provider's CGNAT.
+    static bool isSharedAddress(const QHostAddress& ip);
+    // Finds the WAN connection service in a router's device description. False if there is none.
+    static bool parseDescription(const QByteArray& xml, const QUrl& location, QUrl* controlUrl, QString* serviceType);
+    // "718 ConflictInMappingEntry" from a UPnP fault body, or empty if the body holds no fault.
+    static QString faultFromBody(const QByteArray& body);
+
+    // Skips the search and talks to this control URL directly (tests use a fake router).
+    void useGateway(const QUrl& controlUrl, const QString& serviceType, const QHostAddress& localAddress);
+
    signals:
     void mappingChanged(int port);
 
