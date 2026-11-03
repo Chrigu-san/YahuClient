@@ -39,6 +39,7 @@
 #include "DesktopServices.h"
 #include "YahuStyle.h"
 #include "minecraft/auth/AccountList.h"
+#include "servers/AddressService.h"
 #include "servers/PortMapper.h"
 #include "servers/ServerManager.h"
 #include "ui/dialogs/ServerSettingsDialog.h"
@@ -303,8 +304,8 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
     connect(m_copyLan, &QPushButton::clicked, this,
             [this] { QApplication::clipboard()->setText(withPort(ServerManager::lanAddress())); });
     connect(m_publicButton, &QPushButton::clicked, this, [this] {
-        if (const QString address = internetAddress(); !address.isEmpty()) {
-            QApplication::clipboard()->setText(withPort(address));
+        if (const QString address = joinAddress(); !address.isEmpty()) {
+            QApplication::clipboard()->setText(address);
             return;
         }
         m_publicButton->setEnabled(false);
@@ -318,6 +319,11 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
             return;
         }
         refreshAddresses();
+    });
+    connect(m_manager->addresses(), &AddressService::statusChanged, this, [this](YahuServer* server) {
+        if (server == m_current) {
+            refreshAddresses();
+        }
     });
     connect(m_manager->portMapper(), &PortMapper::mappingChanged, this, [this](int port) {
         if (m_current && m_current->config().port == port) {
@@ -433,15 +439,32 @@ void YahuServersPage::refreshDetail()
 
 QString YahuServersPage::internetAddress() const
 {
-    // what the router reported when it opened the port, otherwise the looked-up public IP
+    // the server's name once it points here, else what the router reported, else the looked-up public IP
     if (!m_current) {
         return {};
+    }
+    const auto name = m_manager->addresses()->status(m_current);
+    if (name.state == AddressService::State::Ready) {
+        return name.address;
     }
     const auto mapping = m_manager->portMapper()->mapping(m_current->config().port);
     if (mapping.state == PortMapper::State::Open && !mapping.externalAddress.isEmpty()) {
         return mapping.externalAddress;
     }
     return m_manager->publicAddress();
+}
+
+QString YahuServersPage::joinAddress() const
+{
+    // a name carries its port in an SRV record, so friends never type one; a bare IP needs it
+    if (!m_current) {
+        return {};
+    }
+    const QString address = internetAddress();
+    if (address.isEmpty() || m_manager->addresses()->status(m_current).state == AddressService::State::Ready) {
+        return address;
+    }
+    return withPort(address);
 }
 
 void YahuServersPage::refreshAddresses()
@@ -454,27 +477,42 @@ void YahuServersPage::refreshAddresses()
     const auto state = m_current->state();
     const bool live = state == YahuServer::State::Running || state == YahuServer::State::Starting;
     const auto mapping = m_manager->portMapper()->mapping(m_current->config().port);
-    const QString address = internetAddress();
+    const auto name = m_manager->addresses()->status(m_current);
+    const QString address = joinAddress();
+    // a line about the server's name, if it has one and it isn't the address shown already
+    QString nameNote;
+    if (name.state == AddressService::State::Working) {
+        nameNote = tr("Setting up %1…").arg(name.address);
+    } else if (name.state == AddressService::State::Taken || name.state == AddressService::State::Failed) {
+        nameNote = name.detail;
+    }
+
     QString info;
     bool button = true;
     if (!live) {
-        info = tr("Start the server and Yahu Client opens the port on your router for you.");
+        info = m_current->config().address.isEmpty()
+                   ? tr("Start the server and Yahu Client opens the port on your router for you.")
+                   : tr("Start the server and friends can join with %1.%2").arg(m_current->config().address, AddressService::kDomain);
         button = false;
     } else if (mapping.state == PortMapper::State::Opening || mapping.state == PortMapper::State::Closed) {
         info = tr("Opening the port on your router…");
         button = false;
     } else if (mapping.state == PortMapper::State::Open) {
         info = address.isEmpty() ? tr("The port is open on your router. Press Show to see your address.")
-                                 : tr("%1\nOpened on your router automatically.").arg(withPort(address));
+                                 : tr("%1\nOpened on your router automatically.").arg(address);
     } else if (mapping.state == PortMapper::State::SharedAddress) {
         info = mapping.detail;
+        nameNote.clear();
         button = false;
     } else {
         // no UPnP router or it said no: the old way still works
         info = tr("%1 Without that, your router must forward TCP port %2 to this PC.").arg(mapping.detail).arg(m_current->config().port);
         if (!address.isEmpty()) {
-            info = withPort(address) + '\n' + info;
+            info = address + '\n' + info;
         }
+    }
+    if (live && !nameNote.isEmpty()) {
+        info += '\n' + nameNote;
     }
     m_publicAddress->setText(info);
     m_publicButton->setVisible(button);

@@ -92,7 +92,8 @@ Download Link für Spieler, zeigt immer auf die neuste Version:
 
 ## 📁 Wichtige Ordner
 - `launcher/ui/yahu/` eigenes Design (Banner, Leiste, Server Seite)
-- `launcher/servers/` Server Hosting und UPnP
+- `launcher/servers/` Server Hosting, UPnP und Server Adressen
+- `services/dns-worker/` Adress Dienst für `name.yahuclient.net` (Cloudflare Worker, Tests mit `node --test`)
 - `launcher/ui/themes/YahuTheme.cpp` und `launcher/ui/yahu/YahuStyle.h` Farben und Stil
 - `program_info/win_install.nsi.in` Installer
 - `tests/` Tests (`ctest` im `build` Ordner)

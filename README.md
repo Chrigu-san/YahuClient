@@ -18,12 +18,14 @@ own account.
 
 - **Server hosting:** Create Paper, Vanilla or Fabric servers that run on your PC, with a console and a player list. While a
   server runs, Yahu Client opens its port on your router (UPnP) and shows the address friends can join with, so nobody has to
-  set up port forwarding. The port is closed again when the server stops.
+  set up port forwarding. The port is closed again when the server stops. Each server can get its own address like
+  `chris.yahuclient.net`, so friends never have to type an IP.
 - **Sign-in:** Players sign in through the official Microsoft login page in their browser. The launcher receives a token
   only to verify game ownership and start Minecraft. Passwords never pass through the launcher.
 - **No cheats, no server tricks:** The launcher starts the unmodified game. It doesn't change network traffic or game behaviour.
-- **No data collection:** No telemetry, no accounts of its own, no backend. Everything stays on the player's PC
-  (`%APPDATA%\YahuClient`).
+- **No data collection:** No telemetry and no accounts of its own. Everything stays on the player's PC
+  (`%APPDATA%\YahuClient`). The only Yahu service is the address service for server names: it stores the name, its
+  current IP and port, nothing else.
 - **Downloads** come only from official sources (Mojang/Microsoft, Modrinth, mod loader projects) and are checked against their hashes.
   Server software is downloaded straight from Mojang, PaperMC and Fabric.
 

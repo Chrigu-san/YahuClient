@@ -34,6 +34,7 @@
 #include "Application.h"
 #include "FileSystem.h"
 #include "java/JavaUtils.h"
+#include "servers/AddressService.h"
 #include "servers/PortMapper.h"
 
 namespace {
@@ -131,6 +132,8 @@ QJsonObject ServerConfig::toJson() const
     o["memoryMb"] = memoryMb;
     o["port"] = port;
     o["motd"] = motd;
+    o["address"] = address;
+    o["addressSecret"] = addressSecret;
     o["levelName"] = levelName;
     o["seed"] = seed;
     o["levelType"] = levelType;
@@ -171,6 +174,8 @@ ServerConfig ServerConfig::fromJson(const QJsonObject& o)
     c.memoryMb = o["memoryMb"].toInt(c.memoryMb);
     c.port = o["port"].toInt(c.port);
     c.motd = o["motd"].toString(c.motd);
+    c.address = o["address"].toString();
+    c.addressSecret = o["addressSecret"].toString();
     c.levelName = o["levelName"].toString(c.levelName);
     c.seed = o["seed"].toString();
     c.levelType = o["levelType"].toString(c.levelType);
@@ -482,10 +487,24 @@ void YahuServer::readOutput()
 // ---------------------------------------------------------------------------------------------------------------------
 // ServerManager
 
-ServerManager::ServerManager(const QString& root, QObject* parent) : QObject(parent), m_root(root), m_ports(new PortMapper(this))
+ServerManager::ServerManager(const QString& root, QObject* parent) : QObject(parent), m_root(root), m_ports(new PortMapper(this)), m_addresses(new AddressService(QUrl(QStringLiteral("https://api.yahuclient.net")), this))
 {
     QDir().mkpath(m_root);
     load();
+    // once the router answered, the name can point here; a shared (CGNAT) address can't be reached, so skip it
+    connect(m_ports, &PortMapper::mappingChanged, this, [this](int port) {
+        const auto mapping = m_ports->mapping(port);
+        if (mapping.state == PortMapper::State::Opening || mapping.state == PortMapper::State::Closed ||
+            mapping.state == PortMapper::State::SharedAddress) {
+            return;
+        }
+        for (auto* server : m_servers) {
+            const bool live = server->state() == YahuServer::State::Starting || server->state() == YahuServer::State::Running;
+            if (live && server->config().port == port && !server->config().address.isEmpty()) {
+                m_addresses->publish(server, mapping.externalAddress);
+            }
+        }
+    });
 }
 
 ServerManager::~ServerManager()
@@ -601,6 +620,13 @@ void ServerManager::update(YahuServer* server, const ServerConfig& config)
     ServerConfig next = config;
     next.installedSoftware = server->config().installedSoftware;
     next.javaMajor = server->config().javaMajor;
+    if (next.address != server->config().address) {
+        // a new name has to be claimed; the old one is given back so others can use it
+        m_addresses->release(server->config().address, server->config().addressSecret);
+        next.addressSecret.clear();
+    } else {
+        next.addressSecret = server->config().addressSecret;
+    }
     server->setConfig(next);
     emit serversChanged();
     if (!server->isInstalled()) {
@@ -618,6 +644,7 @@ bool ServerManager::remove(YahuServer* server, QString* error)
         *error = tr("The folder could not be moved to the recycle bin. Is a file in it still open?");
         return false;
     }
+    m_addresses->release(server->config().address, server->config().addressSecret);
     m_servers.removeAll(server);
     server->deleteLater();
     emit serversChanged();

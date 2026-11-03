@@ -26,12 +26,14 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QRegularExpressionValidator>
 #include <QSpinBox>
 #include <QTabWidget>
 #include <QVBoxLayout>
 
 #include "Application.h"
 #include "minecraft/auth/AccountList.h"
+#include "servers/AddressService.h"
 
 namespace {
 QComboBox* choice(const QList<QPair<QString, QString>>& items, const QString& current)
@@ -113,6 +115,22 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
         m_motd = new QLineEdit(c.motd);
         m_motd->setMaxLength(59);
         form->addRow(tr("MOTD"), m_motd);
+
+        // the name friends join with: <name>.yahuclient.net; a new server suggests the player's name
+        QString address = c.address;
+        if (!m_editing) {
+            if (const auto account = APPLICATION->accounts()->defaultAccount()) {
+                address = AddressService::suggestName(account->profileName());
+            }
+        }
+        m_address = new QLineEdit(address);
+        m_address->setPlaceholderText(tr("e.g. chris"));
+        m_address->setMaxLength(32);
+        m_address->setValidator(new QRegularExpressionValidator(QRegularExpression(QStringLiteral("[a-z0-9-]*")), m_address));
+        auto* addressRow = new QHBoxLayout;
+        addressRow->addWidget(m_address, 1);
+        addressRow->addWidget(new QLabel(QStringLiteral(".") + AddressService::kDomain));
+        form->addRow(tr("Address"), addressRow);
         tabs->addTab(page, tr("Basics"));
     }
 
@@ -271,6 +289,7 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
     connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     connect(m_name, &QLineEdit::textChanged, this, &ServerSettingsDialog::validate);
+    connect(m_address, &QLineEdit::textChanged, this, &ServerSettingsDialog::validate);
     connect(m_version, &QComboBox::currentIndexChanged, this, &ServerSettingsDialog::validate);
     connect(m_snapshots, &QCheckBox::toggled, this, [this] { fillVersions(); });
     connect(m_manager, &ServerManager::versionsChanged, this, &ServerSettingsDialog::fillVersions);
@@ -315,8 +334,9 @@ void ServerSettingsDialog::fillVersions(const QString& error)
 
 void ServerSettingsDialog::validate()
 {
+    const QString address = m_address->text();
     const bool ok = !m_name->text().trimmed().isEmpty() && !m_version->currentData().toString().isEmpty() &&
-                    (!m_eula || m_eula->isChecked());
+                    (address.isEmpty() || AddressService::isValidName(address)) && (!m_eula || m_eula->isChecked());
     m_buttons->button(QDialogButtonBox::Ok)->setEnabled(ok);
 }
 
@@ -329,6 +349,7 @@ ServerConfig ServerSettingsDialog::config() const
     c.memoryMb = int(m_memory->value() * 1024);
     c.port = m_port->value();
     c.motd = m_motd->text();
+    c.address = m_address->text();
     c.levelName = m_levelName->text().trimmed().isEmpty() ? QStringLiteral("world") : m_levelName->text().trimmed();
     c.seed = m_seed->text().trimmed();
     c.levelType = m_levelType->currentData().toString();

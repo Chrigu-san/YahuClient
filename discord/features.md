@@ -18,7 +18,8 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - Eigenen Server mit ein paar Klicks erstellen: Paper, Vanilla oder Fabric
 - Version, RAM, Spieleranzahl, Whitelist, PvP, Schwierigkeit und vieles mehr einstellbar
 - Konsole direkt im Launcher, man sieht wer online ist
-- **Kein Port Forwarding nötig:** Yahu Client öffnet den Port automatisch auf dem Router (UPnP) und zeigt die Adresse für deine Freunde an
+- **Kein Port Forwarding nötig:** Yahu Client öffnet den Port automatisch auf dem Router (UPnP)
+- **Eigene Adresse:** Dein Server bekommt eine Adresse wie `chris.yahuclient.net`, die immer gleich bleibt. Deine Freunde müssen keine IP und keinen Port eintippen
 
 **Design**
 - Alles in einem Fenster, Dialoge öffnen sich als Overlay
@@ -52,6 +53,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - **Version 0.1.0:** Installer auf GitHub, mit Verknüpfung auf dem Desktop und im Startmenü
 - **Version 0.1.1:** Server öffnen ihren Port automatisch auf dem Router
 - Wenn man Yahu Client schliesst, werden laufende Server sauber gespeichert und gestoppt
+- **Eigene Server Adressen** wie `chris.yahuclient.net` (kommt mit der nächsten Version)
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
