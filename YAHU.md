@@ -37,7 +37,8 @@ Tested with a Sagemcom F3896LG (Sunrise). Not covered yet: networks without any 
 **Server addresses** (`launcher/servers/AddressService.cpp`): every server can have a name, so friends join with `chris.yahuclient.net` instead of an IP.
 
 - The name is set under *Address* in the server settings; a new server suggests the signed-in player's name. Typing is cleaned up as you go (lowercase, spaces become dashes), and the dialog says next to its buttons why it can't be saved yet (missing name, bad address, EULA not ticked).
-- The Servers page shows the name with a Copy button even while the server is stopped, since the name never changes.
+- The Servers page shows the address big, with a small Copy button, and one short line about the state underneath (KAN-11). The LAN address is gone from the page.
+- **Joining your own server by its name:** most home routers can't reach their own public address from inside (no NAT loopback), so on the hosting PC the name would fail with "Connection refused". `launcher/servers/LocalHosts.cpp` adds `127.0.0.1 <name>.yahuclient.net # Yahu Client` lines to the Windows hosts file after one UAC prompt ("Allow" on the Servers page), for all servers at once. Minecraft still gets the port from the SRV record. Lines without the marker are never touched. Other PCs in the same home network still need the router to support NAT loopback.
 - Once the router port is open, the launcher asks the address service (`services/dns-worker`, a Cloudflare Worker at `api.yahuclient.net`) to point the name at this PC. The first time it claims the name and keeps the returned secret in `yahu-server.json` (`addressSecret`).
 - A port other than 25565 gets an SRV record, so friends never type a port. The Servers page shows and copies the name instead of the IP.
 - Renaming or deleting a server gives the old name back. A name somebody else has shows as taken.
@@ -63,6 +64,7 @@ Tests live in `tests/` (Qt Test, one `LauncherTests` executable). Yahu's own:
 - `YahuServer_test.cpp`: server settings round trip through JSON, `server.properties` writing and escaping, install state.
 - `RelativeTime_test.cpp`: the "2 days 5 hours ago" texts.
 - `AddressService_test.cpp`: a fake address service; covers claiming, updating, taken names, lost secrets, offline service and name rules.
+- `LocalHosts_test.cpp`: reading and rewriting the hosts file without touching other lines, dropping anything that isn't a host name.
 
 The address service has its own tests: `cd services/dns-worker` and `node --test`.
 

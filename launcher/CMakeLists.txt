@@ -882,6 +882,8 @@ SET(LAUNCHER_SOURCES
     ui/dialogs/ServerSettingsDialog.h
     servers/AddressService.cpp
     servers/AddressService.h
+    servers/LocalHosts.cpp
+    servers/LocalHosts.h
     servers/PortMapper.cpp
     servers/PortMapper.h
     servers/ServerManager.cpp
