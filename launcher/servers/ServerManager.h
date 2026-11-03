@@ -29,6 +29,7 @@
 
 class QNetworkReply;
 class PortMapper;
+class AddressService;
 
 // Everything the user can choose when creating or editing a server. Most fields map 1:1 to server.properties.
 struct ServerConfig {
@@ -40,6 +41,8 @@ struct ServerConfig {
     int memoryMb = 4096;
     int port = 25565;
     QString motd = QStringLiteral("A Yahu Client server");
+    QString address;        // name under yahuclient.net, e.g. "chris" for chris.yahuclient.net; empty for none
+    QString addressSecret;  // proves we own that name to the address service
 
     // world
     QString levelName = QStringLiteral("world");
@@ -182,6 +185,8 @@ class ServerManager : public QObject {
     static QString lanAddress();
     // Opens the port of every running server on the router (UPnP), so friends can join over the internet.
     PortMapper* portMapper() const { return m_ports; }
+    // Points each running server's name (chris.yahuclient.net) at this PC.
+    AddressService* addresses() const { return m_addresses; }
     void fetchPublicAddress();
     QString publicAddress() const { return m_publicAddress; }
 
@@ -207,4 +212,5 @@ class ServerManager : public QObject {
     bool m_javasScanned = false;
     QString m_publicAddress;
     PortMapper* m_ports;
+    AddressService* m_addresses;
 };

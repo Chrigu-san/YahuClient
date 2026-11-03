@@ -1,0 +1,10 @@
+{
+  "name": "yahu-addresses",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker that gives Yahu Client servers addresses like name.yahuclient.net",
+  "scripts": {
+    "test": "node --test",
+    "deploy": "npx wrangler deploy"
+  }
+}

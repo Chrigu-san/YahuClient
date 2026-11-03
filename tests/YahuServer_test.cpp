@@ -26,6 +26,8 @@ class YahuServerTest : public QObject {
         c.memoryMb = 6144;
         c.port = 25570;
         c.motd = QStringLiteral("Hallo");
+        c.address = QStringLiteral("freunde");
+        c.addressSecret = QStringLiteral("abc123");
         c.seed = QStringLiteral("-123456789");
         c.gamemode = QStringLiteral("creative");
         c.difficulty = QStringLiteral("hard");
@@ -52,6 +54,8 @@ class YahuServerTest : public QObject {
         QCOMPARE(back.mcVersion, c.mcVersion);
         QCOMPARE(back.memoryMb, c.memoryMb);
         QCOMPARE(back.port, c.port);
+        QCOMPARE(back.address, c.address);
+        QCOMPARE(back.addressSecret, c.addressSecret);
         QCOMPARE(back.seed, c.seed);
         QCOMPARE(back.gamemode, c.gamemode);
         QCOMPARE(back.difficulty, c.difficulty);

@@ -32,7 +32,17 @@ Under the hood it is still Prism, so every Prism feature works the same way: ins
 
 When the router has no UPnP or refuses (e.g. error 718, port taken by another device), the Servers page explains it and falls back to the manual port-forwarding hint. The first server start triggers the Windows firewall prompt for Java; it has to be allowed.
 
-Tested with a Sagemcom F3896LG (Sunrise). Not covered yet: networks without any public address. That needs a relay server (planned with a domain such as `yahuclient.net` and a small VPS).
+Tested with a Sagemcom F3896LG (Sunrise). Not covered yet: networks without any public address. That needs a relay server (planned on `yahuclient.net` with a small VPS).
+
+**Server addresses** (`launcher/servers/AddressService.cpp`): every server can have a name, so friends join with `chris.yahuclient.net` instead of an IP.
+
+- The name is set under *Address* in the server settings; a new server suggests the signed-in player's name.
+- Once the router port is open, the launcher asks the address service (`services/dns-worker`, a Cloudflare Worker at `api.yahuclient.net`) to point the name at this PC. The first time it claims the name and keeps the returned secret in `yahu-server.json` (`addressSecret`).
+- A port other than 25565 gets an SRV record, so friends never type a port. The Servers page shows and copies the name instead of the IP.
+- Renaming or deleting a server gives the old name back. A name somebody else has shows as taken.
+- No address is set up on CGNAT connections (nothing could reach them anyway).
+
+The Cloudflare API token lives only in the worker as a secret; see `services/dns-worker/README.md` for the API, tests and deployment.
 
 ## Building (Windows)
 
@@ -51,6 +61,9 @@ Tests live in `tests/` (Qt Test, one `LauncherTests` executable). Yahu's own:
 - `PortMapper_test.cpp`: a fake router on localhost answers the UPnP calls; covers opening, the lease fallback, refused and taken ports, CGNAT detection, closing, stopping while opening and parsing router descriptions.
 - `YahuServer_test.cpp`: server settings round trip through JSON, `server.properties` writing and escaping, install state.
 - `RelativeTime_test.cpp`: the "2 days 5 hours ago" texts.
+- `AddressService_test.cpp`: a fake address service; covers claiming, updating, taken names, lost secrets, offline service and name rules.
+
+The address service has its own tests: `cd services/dns-worker` and `node --test`.
 
 Run them from the build folder with Qt's `bin` on the `PATH`:
 
