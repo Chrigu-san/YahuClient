@@ -39,6 +39,7 @@
 #include "DesktopServices.h"
 #include "YahuStyle.h"
 #include "minecraft/auth/AccountList.h"
+#include "servers/PortMapper.h"
 #include "servers/ServerManager.h"
 #include "ui/dialogs/ServerSettingsDialog.h"
 
@@ -302,8 +303,8 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
     connect(m_copyLan, &QPushButton::clicked, this,
             [this] { QApplication::clipboard()->setText(withPort(ServerManager::lanAddress())); });
     connect(m_publicButton, &QPushButton::clicked, this, [this] {
-        if (!m_manager->publicAddress().isEmpty()) {
-            QApplication::clipboard()->setText(withPort(m_manager->publicAddress()));
+        if (const QString address = internetAddress(); !address.isEmpty()) {
+            QApplication::clipboard()->setText(withPort(address));
             return;
         }
         m_publicButton->setEnabled(false);
@@ -317,6 +318,11 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
             return;
         }
         refreshAddresses();
+    });
+    connect(m_manager->portMapper(), &PortMapper::mappingChanged, this, [this](int port) {
+        if (m_current && m_current->config().port == port) {
+            refreshAddresses();
+        }
     });
     connect(m_command, &QLineEdit::returnPressed, this, [this] {
         if (m_current) {
@@ -425,21 +431,54 @@ void YahuServersPage::refreshDetail()
     refreshPlayers();
 }
 
+QString YahuServersPage::internetAddress() const
+{
+    // what the router reported when it opened the port, otherwise the looked-up public IP
+    if (!m_current) {
+        return {};
+    }
+    const auto mapping = m_manager->portMapper()->mapping(m_current->config().port);
+    if (mapping.state == PortMapper::State::Open && !mapping.externalAddress.isEmpty()) {
+        return mapping.externalAddress;
+    }
+    return m_manager->publicAddress();
+}
+
 void YahuServersPage::refreshAddresses()
 {
     if (!m_current) {
         return;
     }
     m_lanAddress->setText(withPort(ServerManager::lanAddress()));
-    if (m_manager->publicAddress().isEmpty()) {
-        m_publicAddress->setText(tr("Your public IP is looked up only when you ask."));
-        m_publicButton->setText(tr("Show"));
+
+    const auto state = m_current->state();
+    const bool live = state == YahuServer::State::Running || state == YahuServer::State::Starting;
+    const auto mapping = m_manager->portMapper()->mapping(m_current->config().port);
+    const QString address = internetAddress();
+    QString info;
+    bool button = true;
+    if (!live) {
+        info = tr("Start the server and Yahu Client opens the port on your router for you.");
+        button = false;
+    } else if (mapping.state == PortMapper::State::Opening || mapping.state == PortMapper::State::Closed) {
+        info = tr("Opening the port on your router…");
+        button = false;
+    } else if (mapping.state == PortMapper::State::Open) {
+        info = address.isEmpty() ? tr("The port is open on your router. Press Show to see your address.")
+                                 : tr("%1\nOpened on your router automatically.").arg(withPort(address));
+    } else if (mapping.state == PortMapper::State::SharedAddress) {
+        info = mapping.detail;
+        button = false;
     } else {
-        m_publicAddress->setText(tr("%1\nYour router must forward TCP port %2 to this PC for this to work.")
-                                     .arg(withPort(m_manager->publicAddress()))
-                                     .arg(m_current->config().port));
-        m_publicButton->setText(tr("Copy"));
+        // no UPnP router or it said no: the old way still works
+        info = tr("%1 Without that, your router must forward TCP port %2 to this PC.").arg(mapping.detail).arg(m_current->config().port);
+        if (!address.isEmpty()) {
+            info = withPort(address) + '\n' + info;
+        }
     }
+    m_publicAddress->setText(info);
+    m_publicButton->setVisible(button);
+    m_publicButton->setText(address.isEmpty() ? tr("Show") : tr("Copy"));
 }
 
 void YahuServersPage::refreshPlayers()

@@ -1688,6 +1688,12 @@ void MainWindow::closeEvent(QCloseEvent* event)
     APPLICATION->settings()->set("MainWindowState", QString::fromUtf8(saveState().toBase64()));
     APPLICATION->settings()->set("MainWindowGeometry", QString::fromUtf8(saveGeometry().toBase64()));
     event->accept();
+    // the app exits right after this window closes without deleting it, so servers must stop here or they keep
+    // running in the background with their router port open
+    if (m_servers) {
+        hide();
+        m_servers->shutdown();
+    }
     emit isClosing();
 }
 

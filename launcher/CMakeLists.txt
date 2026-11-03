@@ -880,6 +880,8 @@ SET(LAUNCHER_SOURCES
     ui/yahu/YahuServersPage.h
     ui/dialogs/ServerSettingsDialog.cpp
     ui/dialogs/ServerSettingsDialog.h
+    servers/PortMapper.cpp
+    servers/PortMapper.h
     servers/ServerManager.cpp
     servers/ServerManager.h
     ui/themes/ITheme.cpp

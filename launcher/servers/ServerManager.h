@@ -28,6 +28,7 @@
 #include <functional>
 
 class QNetworkReply;
+class PortMapper;
 
 // Everything the user can choose when creating or editing a server. Most fields map 1:1 to server.properties.
 struct ServerConfig {
@@ -165,6 +166,8 @@ class ServerManager : public QObject {
     void start(YahuServer* server);
     // Asks every running server to save and stop, waiting up to waitMs in total.
     void stopAll(int waitMs);
+    // For quitting: closes the router ports, then saves and stops every server.
+    void shutdown();
 
     int suggestPort() const;
 
@@ -177,6 +180,8 @@ class ServerManager : public QObject {
     QString pickJava(const ServerConfig& config, QString* problem);
 
     static QString lanAddress();
+    // Opens the port of every running server on the router (UPnP), so friends can join over the internet.
+    PortMapper* portMapper() const { return m_ports; }
     void fetchPublicAddress();
     QString publicAddress() const { return m_publicAddress; }
 
@@ -187,6 +192,7 @@ class ServerManager : public QObject {
 
    private:
     void load();
+    void watch(YahuServer* server);
     void install(YahuServer* server);
     QNetworkReply* get(const QString& url);
     // GETs JSON, calling done(json, error) when finished. The guard object stops the chain if it is deleted.
@@ -200,4 +206,5 @@ class ServerManager : public QObject {
     QList<JavaFound> m_javas;
     bool m_javasScanned = false;
     QString m_publicAddress;
+    PortMapper* m_ports;
 };

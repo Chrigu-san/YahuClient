@@ -34,6 +34,7 @@
 #include "Application.h"
 #include "FileSystem.h"
 #include "java/JavaUtils.h"
+#include "servers/PortMapper.h"
 
 namespace {
 const QString kConfigFile = QStringLiteral("yahu-server.json");
@@ -481,7 +482,7 @@ void YahuServer::readOutput()
 // ---------------------------------------------------------------------------------------------------------------------
 // ServerManager
 
-ServerManager::ServerManager(const QString& root, QObject* parent) : QObject(parent), m_root(root)
+ServerManager::ServerManager(const QString& root, QObject* parent) : QObject(parent), m_root(root), m_ports(new PortMapper(this))
 {
     QDir().mkpath(m_root);
     load();
@@ -489,6 +490,13 @@ ServerManager::ServerManager(const QString& root, QObject* parent) : QObject(par
 
 ServerManager::~ServerManager()
 {
+    shutdown();
+}
+
+void ServerManager::shutdown()
+{
+    // close the router ports first and wait for the answer; servers that stop later would only fire and forget
+    m_ports->closeAll(1500);
     stopAll(20000);
 }
 
@@ -503,7 +511,28 @@ void ServerManager::load()
         const auto config = ServerConfig::fromJson(QJsonDocument::fromJson(file.readAll()).object());
         auto* server = new YahuServer(root.filePath(name), config, this);
         m_servers.append(server);
+        watch(server);
     }
+}
+
+void ServerManager::watch(YahuServer* server)
+{
+    // the port is opened on the router while the server runs and closed again when it stops
+    connect(server, &YahuServer::stateChanged, this, [this, server] {
+        const int port = server->config().port;
+        switch (server->state()) {
+            case YahuServer::State::Starting:
+            case YahuServer::State::Running:
+                m_ports->open(port, tr("Yahu Client: %1").arg(server->config().name));
+                break;
+            case YahuServer::State::Stopped:
+            case YahuServer::State::Failed:
+                m_ports->close(port);
+                break;
+            default:
+                break;
+        }
+    });
 }
 
 int ServerManager::suggestPort() const
@@ -561,6 +590,7 @@ YahuServer* ServerManager::create(const ServerConfig& config, const QString& ope
     auto* server = new YahuServer(dir, config, this);
     server->setConfig(config);
     m_servers.append(server);
+    watch(server);
     emit serversChanged();
     install(server);
     return server;
