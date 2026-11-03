@@ -454,17 +454,33 @@ QString YahuServersPage::internetAddress() const
     return m_manager->publicAddress();
 }
 
+QString YahuServersPage::nameAddress() const
+{
+    // the server's own name, as long as it isn't known to be taken or broken
+    if (!m_current || m_current->config().address.isEmpty()) {
+        return {};
+    }
+    const auto state = m_manager->addresses()->status(m_current).state;
+    if (state == AddressService::State::Taken || state == AddressService::State::Failed) {
+        return {};
+    }
+    return QStringLiteral("%1.%2").arg(m_current->config().address, AddressService::kDomain);
+}
+
 QString YahuServersPage::joinAddress() const
 {
     // a name carries its port in an SRV record, so friends never type one; a bare IP needs it
     if (!m_current) {
         return {};
     }
-    const QString address = internetAddress();
-    if (address.isEmpty() || m_manager->addresses()->status(m_current).state == AddressService::State::Ready) {
-        return address;
+    const auto state = m_current->state();
+    const bool live = state == YahuServer::State::Running || state == YahuServer::State::Starting;
+    const bool nameReady = m_manager->addresses()->status(m_current).state == AddressService::State::Ready;
+    if (!nameAddress().isEmpty() && (nameReady || !live)) {
+        return nameAddress();
     }
-    return withPort(address);
+    const QString address = internetAddress();
+    return address.isEmpty() || nameReady ? address : withPort(address);
 }
 
 void YahuServersPage::refreshAddresses()
@@ -490,10 +506,13 @@ void YahuServersPage::refreshAddresses()
     QString info;
     bool button = true;
     if (!live) {
-        info = m_current->config().address.isEmpty()
-                   ? tr("Start the server and Yahu Client opens the port on your router for you.")
-                   : tr("Start the server and friends can join with %1.%2").arg(m_current->config().address, AddressService::kDomain);
-        button = false;
+        // the name is fixed, so it can be handed out before the server runs
+        if (nameAddress().isEmpty()) {
+            info = tr("Start the server and Yahu Client opens the port on your router for you.");
+            button = false;
+        } else {
+            info = tr("%1\nWorks for your friends while the server is running.").arg(nameAddress());
+        }
     } else if (mapping.state == PortMapper::State::Opening || mapping.state == PortMapper::State::Closed) {
         info = tr("Opening the port on your router…");
         button = false;

@@ -205,6 +205,9 @@ void YahuSheetHost::appear(QWidget* w)
     }
     if (!sheet.page) {
         updateCard(w);
+        // Windows doesn't reliably make these overlay windows see-through, so the launcher behind the card is drawn
+        // from a snapshot instead of relying on transparency (it used to show up as plain black)
+        sheet.backdrop = m_window->grab();
     }
 
     sheet.enter = 0.0;
@@ -246,7 +249,11 @@ void YahuSheetHost::paintChrome(QWidget* w)
         return;
     }
 
-    p.fillRect(r, withAlpha(QColor(0, 0, 0), 0.66 * sheet.enter));
+    if (!sheet.backdrop.isNull()) {
+        p.drawPixmap(r, sheet.backdrop);
+    }
+    // dim the launcher so the card stands out, but keep it recognisable
+    p.fillRect(r, withAlpha(QColor(0, 0, 0), 0.5 * sheet.enter));
     const QRectF card = QRectF(w->property("_yahu_card").toRect()).translated(0, slide).adjusted(0.5, 0.5, -0.5, -0.5);
     const QPainterPath shape = rounded(card, kRadiusCard + 2);
     // soft shadow under the card

@@ -55,6 +55,7 @@ class ServerSettingsDialog : public QDialog {
     QSpinBox* m_port;
     QLineEdit* m_motd;
     QLineEdit* m_address;
+    QLabel* m_problem;
 
     QLineEdit* m_levelName;
     QLineEdit* m_seed;

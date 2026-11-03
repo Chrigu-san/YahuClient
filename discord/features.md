@@ -1,7 +1,7 @@
 # 🟩 Yahu Client
 Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was Prism kann, aber mit eigenem Design und eigenen Features.
 
-**Aktuelle Version:** `0.1.2` (3. November 2026)
+**Aktuelle Version:** `0.1.3` (3. November 2026)
 **Download:** [YahuClient-Setup.exe](https://github.com/Chrigu-san/YahuClient/releases/latest/download/YahuClient-Setup.exe)
 -# Windows 10/11, 64 Bit. Falls Windows "Der Computer wurde durch Windows geschützt" anzeigt: **Weitere Informationen** und dann **Trotzdem ausführen**.
 
@@ -54,6 +54,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - **Version 0.1.1:** Server öffnen ihren Port automatisch auf dem Router
 - Wenn man Yahu Client schliesst, werden laufende Server sauber gespeichert und gestoppt
 - **Version 0.1.2:** Eigene Server Adressen wie `chris.yahuclient.net`, Freunde brauchen keine IP und keinen Port mehr
+- **Version 0.1.3:** Copy Knopf für die Adresse, auch wenn der Server aus ist. Hinter Fenstern sieht man wieder den Launcher statt nur Schwarz. Beim Server erstellen steht jetzt, warum man noch nicht auf "Create server" drücken kann
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
