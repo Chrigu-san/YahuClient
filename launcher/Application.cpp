@@ -654,6 +654,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         // Theming
         m_settings->registerSetting("IconTheme", QString());
         m_settings->registerSetting("ApplicationTheme", QString());
+        m_settings->registerSetting("YahuPalette", QStringLiteral("black"));
         m_settings->registerSetting("BackgroundCat", QString("kitteh"));
 
         // Remembered state
@@ -970,7 +971,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         qInfo() << "<> Instance icons initialized.";
     }
 
-    // Themes
+    // Themes: the palette has to be in place before the theme builds its stylesheet from it
+    YahuStyle::applyPalette(settings()->get("YahuPalette").toString());
     YahuStyle::loadFonts();
     m_themeManager = std::make_unique<ThemeManager>();
     YahuAnimator::install(this);
