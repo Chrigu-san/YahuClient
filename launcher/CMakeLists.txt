@@ -1576,7 +1576,7 @@ if(WIN32 OR (UNIX AND APPLE))
     # Add qtlogging.ini as a config file
     install(
         FILES "qtlogging.ini"
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/${RESOURCES_DEST_DIR}
+        DESTINATION "${RESOURCES_DEST_DIR}"
         COMPONENT bundle
     )
 endif()

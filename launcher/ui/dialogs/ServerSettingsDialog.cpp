@@ -26,7 +26,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QRegularExpressionValidator>
+#include <QRegularExpression>
 #include <QSpinBox>
 #include <QTabWidget>
 #include <QVBoxLayout>
@@ -126,7 +126,15 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
         m_address = new QLineEdit(address);
         m_address->setPlaceholderText(tr("e.g. chris"));
         m_address->setMaxLength(32);
-        m_address->setValidator(new QRegularExpressionValidator(QRegularExpression(QStringLiteral("[a-z0-9-]*")), m_address));
+        connect(m_address, &QLineEdit::textEdited, this, [this](const QString& typed) {
+            QString clean = typed.toLower();
+            clean.replace(QRegularExpression(QStringLiteral("[^a-z0-9-]")), QStringLiteral("-"));
+            if (clean != typed) {
+                const int cursor = m_address->cursorPosition();
+                m_address->setText(clean);
+                m_address->setCursorPosition(cursor);
+            }
+        });
         auto* addressRow = new QHBoxLayout;
         addressRow->addWidget(m_address, 1);
         addressRow->addWidget(new QLabel(QStringLiteral(".") + AddressService::kDomain));
@@ -284,7 +292,13 @@ ServerSettingsDialog::ServerSettingsDialog(ServerManager* manager, const ServerC
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     m_buttons->button(QDialogButtonBox::Ok)->setText(m_editing ? tr("Save") : tr("Create server"));
     m_buttons->button(QDialogButtonBox::Ok)->setDefault(true);
-    layout->addWidget(m_buttons);
+    // says why the button is greyed out, right next to it
+    m_problem = new QLabel;
+    m_problem->setProperty("yahuHint", true);
+    auto* bottom = new QHBoxLayout;
+    bottom->addWidget(m_problem, 1);
+    bottom->addWidget(m_buttons);
+    layout->addLayout(bottom);
     connect(m_buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
@@ -335,9 +349,21 @@ void ServerSettingsDialog::fillVersions(const QString& error)
 void ServerSettingsDialog::validate()
 {
     const QString address = m_address->text();
-    const bool ok = !m_name->text().trimmed().isEmpty() && !m_version->currentData().toString().isEmpty() &&
-                    (address.isEmpty() || AddressService::isValidName(address)) && (!m_eula || m_eula->isChecked());
-    m_buttons->button(QDialogButtonBox::Ok)->setEnabled(ok);
+    QString problem;
+    if (m_name->text().trimmed().isEmpty()) {
+        problem = tr("Give the server a name.");
+    } else if (m_version->currentData().toString().isEmpty()) {
+        problem = tr("Pick a Minecraft version.");
+    } else if (!address.isEmpty() && !AddressService::isValidName(address)) {
+        problem = address.size() < 3 || address.size() > 32 ? tr("The address needs 3 to 32 characters.")
+                  : address.startsWith('-') || address.endsWith('-') || address.contains(QLatin1String("--"))
+                      ? tr("The address can't start or end with a dash or have two in a row.")
+                      : tr("That address is reserved, pick another one.");
+    } else if (m_eula && !m_eula->isChecked()) {
+        problem = tr("Tick the EULA box to create the server.");
+    }
+    m_problem->setText(problem);
+    m_buttons->button(QDialogButtonBox::Ok)->setEnabled(problem.isEmpty());
 }
 
 ServerConfig ServerSettingsDialog::config() const

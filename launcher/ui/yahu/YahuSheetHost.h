@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <QPixmap>
+
 #include <QHash>
 #include <QObject>
 #include <QPointer>
@@ -51,6 +53,7 @@ class YahuSheetHost : public QObject {
         QSize natural;
         qreal enter = 1.0;  // 0 -> 1 while appearing
         QWidget* closeButton = nullptr;
+        QPixmap backdrop;  // the launcher as it looked when a card opened, drawn dimmed behind it
     };
 
     void place(QWidget* w);

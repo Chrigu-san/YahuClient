@@ -47,6 +47,7 @@ class YahuServersPage : public QWidget {
     void refreshAddresses();
     QString internetAddress() const;
     QString joinAddress() const;
+    QString nameAddress() const;
     void refreshPlayers();
     QString withPort(const QString& host) const;
 
