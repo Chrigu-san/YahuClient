@@ -14,11 +14,11 @@ Jeder Branch kommt von `main` und gehört zu einem Jira Ticket.
 <typ>/<TICKET>-<kurze-beschreibung>
 ```
 Typen:
-- `feature/` neue Funktion → `feature/YAHU-12-cosmetics-shop`
-- `fix/` Bugfix → `fix/YAHU-31-server-port-not-closed`
-- `ui/` nur Design und Texte → `ui/YAHU-18-darker-banner`
-- `chore/` Build, Installer, Aufräumen → `chore/YAHU-7-installer-runtime`
-- `docs/` Doku → `docs/YAHU-9-build-guide`
+- `feature/` neue Funktion → `feature/KAN-12-cosmetics-shop`
+- `fix/` Bugfix → `fix/KAN-31-server-port-not-closed`
+- `ui/` nur Design und Texte → `ui/KAN-18-darker-banner`
+- `chore/` Build, Installer, Aufräumen → `chore/KAN-7-installer-runtime`
+- `docs/` Doku → `docs/KAN-9-build-guide`
 Kleinbuchstaben, Wörter mit `-` trennen, kurz halten.
 
 ---- neue Nachricht ----
@@ -27,13 +27,13 @@ Kleinbuchstaben, Wörter mit `-` trennen, kurz halten.
 Erste Zeile: Ticket, dann **was** sich ändert, in der Befehlsform, max. ca. 72 Zeichen. Kein Punkt am Ende.
 Danach eine leere Zeile und bei grösseren Sachen eine Liste mit Details: was und **warum**.
 ```
-YAHU-31 Close the router port when the launcher quits
+KAN-31 Close the router port when the launcher quits
 
 - Servers were left running in the background after closing the
   main window, with their port still open on the router
 - MainWindow now stops all servers before the app exits
 ```
-✅ `YAHU-12 Add cape preview to the shop page`
+✅ `KAN-12 Add cape preview to the shop page`
 ❌ `fixed stuff`, `wip`, `asdf`, `Update ServerManager.cpp`
 - Ein Commit = eine zusammenhängende Änderung. Lieber mehrere kleine als einen riesigen.
 - Wenn KI mitgeschrieben hat, kommt am Schluss eine Zeile `Co-Authored-By: ...` dazu.
@@ -48,15 +48,15 @@ YAHU-31 Close the router port when the launcher quits
 ```
 git switch main
 git pull
-git switch -c feature/YAHU-12-cosmetics-shop
+git switch -c feature/KAN-12-cosmetics-shop
 ```
 3. Arbeiten, bauen (`scripts\yahu-build.bat`), selber testen, committen
 4. Pushen und PR öffnen:
 ```
-git push -u origin feature/YAHU-12-cosmetics-shop
+git push -u origin feature/KAN-12-cosmetics-shop
 gh pr create --fill
 ```
-5. Titel vom PR: `YAHU-12 Cosmetics shop with cape preview`
+5. Titel vom PR: `KAN-12 Cosmetics shop with cape preview`
 6. In die Beschreibung: **Was** wurde gemacht, **wie testen**, Screenshot bei UI Änderungen, Doku angepasst?
 7. Jemand anderes schaut den PR an, Kommentare werden gelöst
 8. **Squash and merge**, danach den Branch löschen
