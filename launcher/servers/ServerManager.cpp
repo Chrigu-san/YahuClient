@@ -36,6 +36,7 @@
 #include "java/JavaUtils.h"
 #include "servers/AddressService.h"
 #include "servers/PortMapper.h"
+#include "servers/ServerProcesses.h"
 
 namespace {
 const QString kConfigFile = QStringLiteral("yahu-server.json");
@@ -396,6 +397,8 @@ void YahuServer::start(const QString& javaPath)
             setFailed(tr("Java could not be started: %1").arg(m_process->errorString()));
         }
     });
+    // the server must not keep running unseen when the launcher crashes or is ended
+    connect(m_process, &QProcess::started, this, [this] { ServerProcesses::tieToLauncher(m_process->processId()); });
     connect(m_process, &QProcess::finished, this, [this](int code, QProcess::ExitStatus) {
         m_killTimer.stop();
         readOutput();
@@ -640,6 +643,10 @@ bool ServerManager::remove(YahuServer* server, QString* error)
         *error = tr("Stop the server first.");
         return false;
     }
+    // a copy of this server left running by an older version keeps the folder busy; it goes with the folder
+    for (const qint64 pid : ServerProcesses::javaHolding(QDir(server->dir()).filePath(kJar))) {
+        ServerProcesses::stop(pid, 0);
+    }
     if (!FS::trash(server->dir())) {
         *error = tr("The folder could not be moved to the recycle bin. Is a file in it still open?");
         return false;
@@ -662,6 +669,13 @@ void ServerManager::start(YahuServer* server)
     if (java.isEmpty()) {
         server->setFailed(problem);
         return;
+    }
+    const auto leftovers = ServerProcesses::javaHolding(QDir(server->dir()).filePath(kJar));
+    if (!leftovers.isEmpty()) {
+        server->appendLog(tr("[Yahu] This server was still running in the background without Yahu Client. Saving and stopping it first."));
+        for (const qint64 pid : leftovers) {
+            ServerProcesses::stop(pid, 20000);
+        }
     }
     server->start(java);
 }

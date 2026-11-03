@@ -22,6 +22,8 @@ Under the hood it is still Prism, so every Prism feature works the same way: ins
 - Paper, Vanilla and Fabric are downloaded from their official sources; a fitting Java is picked by Minecraft version.
 - `server.properties` is rewritten from the settings on every start; keys Yahu Client doesn't manage stay untouched.
 - Closing the launcher saves and stops every running server (`ServerManager::shutdown`, called from `MainWindow::closeEvent`).
+- A server never outlives the launcher (`launcher/servers/ServerProcesses.cpp`): every server process goes into a Windows job with `KILL_ON_JOB_CLOSE`, so when the launcher crashes or is ended in the task manager, Windows ends its servers too. Before that, such a server kept running unseen and held its folder and port; deleting failed with "could not be moved to the recycle bin".
+- Servers left running by older versions are found through the Restart Manager (the Java process that has `server.jar` open). Starting the server first stops the old one with Ctrl+C, so it saves its world like after `stop`; deleting the server ends it right away.
 
 **No port forwarding** (`launcher/servers/PortMapper.cpp`): while a server runs, Yahu Client asks the home router via UPnP (IGD) to forward its TCP port.
 
@@ -66,6 +68,7 @@ Tests live in `tests/` (Qt Test, one `LauncherTests` executable). Yahu's own:
 - `RelativeTime_test.cpp`: the "2 days 5 hours ago" texts.
 - `AddressService_test.cpp`: a fake address service; covers claiming, updating, taken names, lost secrets, offline service and name rules.
 - `LocalHosts_test.cpp`: reading and rewriting the hosts file without touching other lines, dropping anything that isn't a host name.
+- `ServerProcesses_test.cpp` (needs `java` on the PATH, Windows only): a small Java program stands in for a server; covers finding the process that holds `server.jar`, stopping it so its shutdown hook (the world save) runs, and that a tied server ends when its launcher is killed.
 
 The address service has its own tests: `cd services/dns-worker` and `node --test`.
 
