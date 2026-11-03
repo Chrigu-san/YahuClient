@@ -1,7 +1,7 @@
 # 🟩 Yahu Client
 Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was Prism kann, aber mit eigenem Design und eigenen Features.
 
-**Aktuelle Version:** `0.1.3` (3. November 2026)
+**Aktuelle Version:** `0.1.4` (3. November 2026)
 **Download:** [YahuClient-Setup.exe](https://github.com/Chrigu-san/YahuClient/releases/latest/download/YahuClient-Setup.exe)
 -# Windows 10/11, 64 Bit. Falls Windows "Der Computer wurde durch Windows geschützt" anzeigt: **Weitere Informationen** und dann **Trotzdem ausführen**.
 
@@ -20,10 +20,11 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - Konsole direkt im Launcher, man sieht wer online ist
 - **Kein Port Forwarding nötig:** Yahu Client öffnet den Port automatisch auf dem Router (UPnP)
 - **Eigene Adresse:** Dein Server bekommt eine Adresse wie `chris.yahuclient.net`, die immer gleich bleibt. Deine Freunde müssen keine IP und keinen Port eintippen
+- Mit der eigenen Adresse auch selbst auf den eigenen Server joinen
 
 **Design**
 - Alles in einem Fenster, Dialoge öffnen sich als Overlay
-- Schwarzes Design mit grünem Akzent
+- Schwarzes Design mit grünem Akzent, dazu die Themes Night Grass und Ocean
 - Banner mit Pixel Landschaft und Glühwürmchen im Hintergrund
 
 ---- neue Nachricht ----
@@ -49,6 +50,9 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - Noch dunkleres Design
 - Server Einstellungen aufgeräumt, nichts wird mehr abgeschnitten
 
+---- neue Nachricht ----
+
+## 📅 Verlauf (Fortsetzung)
 **03.11.2026**
 - **Version 0.1.0:** Installer auf GitHub, mit Verknüpfung auf dem Desktop und im Startmenü
 - **Version 0.1.1:** Server öffnen ihren Port automatisch auf dem Router
@@ -56,12 +60,12 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - **Version 0.1.2:** Eigene Server Adressen wie `chris.yahuclient.net`, Freunde brauchen keine IP und keinen Port mehr
 - **Version 0.1.3:** Copy Knopf für die Adresse, auch wenn der Server aus ist. Hinter Fenstern sieht man wieder den Launcher statt nur Schwarz. Beim Server erstellen steht jetzt, warum man noch nicht auf "Create server" drücken kann
 
-**Nächste Version (noch nicht veröffentlicht)**
-- Fix: Während Minecraft läuft, kann man im Launcher wieder klicken
-- Serverseite aufgeräumt: Adresse gross mit kleinem Copy Knopf, keine private IP mehr
-- Mit der eigenen Adresse auch selber auf den eigenen Server joinen (einmal in Windows erlauben)
-- Fix: Text auf der leeren Serverseite wird nicht mehr abgeschnitten
-- Themes: Black, Night Grass und Ocean (Einstellungen, General, Theme)
+- **Version 0.1.4:**
+  - Fix: Während Minecraft läuft, kann man im Launcher wieder klicken
+  - Serverseite aufgeräumt: Adresse gross mit kleinem Copy Knopf, keine private IP mehr
+  - Mit der eigenen Adresse auch selbst auf den eigenen Server joinen (einmal in Windows erlauben)
+  - Fix: Text auf der leeren Serverseite wird nicht mehr abgeschnitten
+  - Themes: Black, Night Grass und Ocean (Einstellungen, General, Theme)
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten

@@ -95,7 +95,7 @@ The link `https://github.com/Chrigu-san/YahuClient/releases/latest/download/Yahu
 ## Working together
 
 - `main` is protected: changes only through pull requests (also for admins), no force pushes, open review conversations block the merge.
-- Branches: `<type>/<TICKET>-<short-name>`, e.g. `feature/YAHU-12-cosmetics-shop` (types: `feature`, `fix`, `ui`, `chore`, `docs`).
+- Branches: `<type>/<TICKET>-<short-name>`, e.g. `feature/KAN-12-cosmetics-shop` (types: `feature`, `fix`, `ui`, `chore`, `docs`).
 - Commits in English, imperative summary line, Jira key first when there is a ticket.
 - **Every change updates the docs in the same pull request**: this file, `README.md` and the Discord texts in `discord/` (player features and history in `features.md`, team rules in `dev-workflow.md`).
 
