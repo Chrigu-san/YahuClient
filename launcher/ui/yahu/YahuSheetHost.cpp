@@ -109,7 +109,9 @@ void YahuSheetHost::adopt(QWidget* w)
     w->setProperty(kOverlayProperty, true);
     w->setAttribute(Qt::WA_TranslucentBackground, true);
     const Qt::WindowFlags flags = (w->windowFlags() & Qt::WindowType_Mask) | Qt::FramelessWindowHint;
-    w->setParent(w->parentWidget() ? w->parentWidget() : m_window, flags);
+    // parent to the top-level window, not to whatever widget opened it: a native window under a child widget
+    // turned the whole page native while Minecraft launched and the launcher stopped taking clicks (KAN-12)
+    w->setParent(w->parentWidget() ? w->parentWidget()->window() : m_window, flags);
     w->winId();  // make sure the native window exists again before Qt continues showing it
     w->style()->unpolish(w);
     w->style()->polish(w);

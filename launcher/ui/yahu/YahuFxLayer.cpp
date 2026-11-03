@@ -26,6 +26,10 @@
 
 #include "YahuStyle.h"
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
 using namespace YahuStyle;
 
 namespace {
@@ -91,6 +95,19 @@ bool YahuFxLayer::eventFilter(QObject* watched, QEvent* event)
         }
     }
     return false;
+}
+
+bool YahuFxLayer::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
+{
+#ifdef Q_OS_WIN
+    // WA_TransparentForMouseEvents only works while the layer has no window of its own; if it gets one, tell
+    // Windows to send the mouse to whatever lies underneath
+    if (eventType == "windows_generic_MSG" && static_cast<MSG*>(message)->message == WM_NCHITTEST) {
+        *result = HTTRANSPARENT;
+        return true;
+    }
+#endif
+    return QWidget::nativeEvent(eventType, message, result);
 }
 
 void YahuFxLayer::tick()

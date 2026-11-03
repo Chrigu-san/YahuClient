@@ -56,6 +56,9 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - **Version 0.1.2:** Eigene Server Adressen wie `chris.yahuclient.net`, Freunde brauchen keine IP und keinen Port mehr
 - **Version 0.1.3:** Copy Knopf für die Adresse, auch wenn der Server aus ist. Hinter Fenstern sieht man wieder den Launcher statt nur Schwarz. Beim Server erstellen steht jetzt, warum man noch nicht auf "Create server" drücken kann
 
+**Nächste Version (noch nicht veröffentlicht)**
+- Fix: Während Minecraft läuft, kann man im Launcher wieder klicken
+
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
 - Yahu Mod fürs Spiel selbst
