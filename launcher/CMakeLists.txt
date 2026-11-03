@@ -888,6 +888,8 @@ SET(LAUNCHER_SOURCES
     servers/PortMapper.h
     servers/ServerManager.cpp
     servers/ServerManager.h
+    servers/ServerProcesses.cpp
+    servers/ServerProcesses.h
     ui/themes/ITheme.cpp
     ui/themes/ITheme.h
     ui/themes/HintOverrideProxyStyle.cpp
@@ -1321,6 +1323,10 @@ target_link_libraries(Launcher_logic
     LocalPeer
     Launcher_rainbow
 )
+if(WIN32)
+    # Restart Manager: finds server processes that hold a server folder (servers/ServerProcesses)
+    target_link_libraries(Launcher_logic Rstrtmgr)
+endif()
 if (TARGET ${Launcher_QT_DBUS})
     target_compile_definitions(Launcher_logic PUBLIC WITH_QTDBUS)
 endif()

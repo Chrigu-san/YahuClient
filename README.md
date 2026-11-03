@@ -19,7 +19,8 @@ own account.
 - **Server hosting:** Create Paper, Vanilla or Fabric servers that run on your PC, with a console and a player list. While a
   server runs, Yahu Client opens its port on your router (UPnP) and shows the address friends can join with, so nobody has to
   set up port forwarding. The port is closed again when the server stops. Each server can get its own address like
-  `chris.yahuclient.net`, so friends never have to type an IP.
+  `chris.yahuclient.net`, so friends never have to type an IP. Servers never keep running unseen after the launcher closes
+  or crashes.
 - **Sign-in:** Players sign in through the official Microsoft login page in their browser. The launcher receives a token
   only to verify game ownership and start Minecraft. Passwords never pass through the launcher.
 - **No cheats, no server tricks:** The launcher starts the unmodified game. It doesn't change network traffic or game behaviour.

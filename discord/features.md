@@ -67,6 +67,10 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Fix: Text auf der leeren Serverseite wird nicht mehr abgeschnitten
   - Themes: Black, Night Grass und Ocean (Einstellungen, General, Theme)
 
+**Nächste Version (noch nicht veröffentlicht)**
+- Fix: Server lassen sich wieder löschen, auch wenn noch ein alter Server unsichtbar im Hintergrund lief
+- Stürzt Yahu Client ab, laufen seine Server nicht mehr unsichtbar weiter
+
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
 - Yahu Mod fürs Spiel selbst

@@ -31,6 +31,7 @@ set(TEST_SOURCES
     RelativeTime_test.cpp
     AddressService_test.cpp
     LocalHosts_test.cpp
+    ServerProcesses_test.cpp
 )
 
 # NOTE(@getchoo): Very funny way of aliasing the Qt generated `main` test functions to respective filenames
