@@ -38,14 +38,64 @@ constexpr int kSoapTimeoutMs = 6000;
 // UPnP error codes from the WANIPConnection spec
 constexpr int kConflictInMappingEntry = 718;
 constexpr int kOnlyPermanentLeasesSupported = 725;
+}  // namespace
 
-// A router that reports one of these as its "public" address is itself behind another router or the provider's
-// carrier-grade NAT, so nothing from the internet can reach this PC through it.
-bool isSharedAddress(const QHostAddress& ip)
+bool PortMapper::isSharedAddress(const QHostAddress& ip)
 {
+    // private ranges, carrier-grade NAT (100.64.0.0/10) and nonsense: nothing from the internet reaches us through these
     return ip.isPrivateUse() || ip.isInSubnet(QHostAddress(QStringLiteral("100.64.0.0")), 10) || ip.isLoopback() || ip.isNull();
 }
-}  // namespace
+
+bool PortMapper::parseDescription(const QByteArray& xml, const QUrl& location, QUrl* controlUrl, QString* serviceType)
+{
+    // walk the device description and take the first WAN connection service
+    QXmlStreamReader reader(xml);
+    QUrl base = location;
+    QString type, control;
+    while (!reader.atEnd()) {
+        reader.readNext();
+        if (reader.isEndElement() && reader.name() == QLatin1String("service")) {
+            if (type.contains(QLatin1String("WANIPConnection")) || type.contains(QLatin1String("WANPPPConnection"))) {
+                *controlUrl = base.resolved(QUrl(control));
+                *serviceType = type;
+                return true;
+            }
+            type.clear();
+            control.clear();
+        } else if (reader.isStartElement()) {
+            if (reader.name() == QLatin1String("URLBase")) {
+                const QUrl urlBase(reader.readElementText().trimmed());
+                if (urlBase.isValid() && !urlBase.isEmpty()) {
+                    base = urlBase;
+                }
+            } else if (reader.name() == QLatin1String("serviceType")) {
+                type = reader.readElementText().trimmed();
+            } else if (reader.name() == QLatin1String("controlURL")) {
+                control = reader.readElementText().trimmed();
+            }
+        }
+    }
+    return false;
+}
+
+QString PortMapper::faultFromBody(const QByteArray& body)
+{
+    // UPnP faults come as HTTP 500 with <errorCode> and <errorDescription> in the body
+    static const QRegularExpression code(QStringLiteral("<errorCode>\\s*(\\d+)\\s*</errorCode>"));
+    static const QRegularExpression text(QStringLiteral("<errorDescription>([^<]*)</errorDescription>"));
+    const QString xml = QString::fromUtf8(body);
+    const auto c = code.match(xml);
+    if (!c.hasMatch()) {
+        return {};
+    }
+    const QString description = text.match(xml).captured(1).trimmed();
+    return description.isEmpty() ? c.captured(1) : QStringLiteral("%1 %2").arg(c.captured(1), description);
+}
+
+void PortMapper::useGateway(const QUrl& controlUrl, const QString& serviceType, const QHostAddress& localAddress)
+{
+    m_gateway = { controlUrl, serviceType, localAddress };
+}
 
 PortMapper::PortMapper(QObject* parent) : QObject(parent), m_network(new QNetworkAccessManager(this))
 {
@@ -232,40 +282,10 @@ void PortMapper::fetchDescription(const QList<QUrl>& locations, int index)
             fetchDescription(locations, index + 1);
             return;
         }
-        // walk the device description and take the first WAN connection service
-        QXmlStreamReader xml(reply->readAll());
-        QUrl base = locations[index];
-        QString serviceType, controlUrl, foundType, foundControl;
-        while (!xml.atEnd() && foundControl.isEmpty()) {
-            xml.readNext();
-            if (!xml.isStartElement()) {
-                if (xml.isEndElement() && xml.name() == QLatin1String("service")) {
-                    if (serviceType.contains(QLatin1String("WANIPConnection")) || serviceType.contains(QLatin1String("WANPPPConnection"))) {
-                        foundType = serviceType;
-                        foundControl = controlUrl;
-                    }
-                    serviceType.clear();
-                    controlUrl.clear();
-                }
-                continue;
-            }
-            if (xml.name() == QLatin1String("URLBase")) {
-                const QUrl urlBase(xml.readElementText().trimmed());
-                if (urlBase.isValid() && !urlBase.isEmpty()) {
-                    base = urlBase;
-                }
-            } else if (xml.name() == QLatin1String("serviceType")) {
-                serviceType = xml.readElementText().trimmed();
-            } else if (xml.name() == QLatin1String("controlURL")) {
-                controlUrl = xml.readElementText().trimmed();
-            }
-        }
-        if (foundControl.isEmpty()) {
+        if (!parseDescription(reply->readAll(), locations[index], &m_gateway.controlUrl, &m_gateway.serviceType)) {
             fetchDescription(locations, index + 1);
             return;
         }
-        m_gateway.controlUrl = base.resolved(QUrl(foundControl));
-        m_gateway.serviceType = foundType;
         m_gateway.localAddress = localAddressFor(QHostAddress(m_gateway.controlUrl.host()));
         fetchDescription({}, 0);  // done: run the waiting callbacks
     });
@@ -287,7 +307,14 @@ void PortMapper::addMapping(int port, int lease)
         const QByteArray body = reply->readAll();
         const State now = m_mappings.value(port).state;
         if (now != State::Opening && now != State::Open) {
-            return;  // the server stopped in the meantime
+            // the server stopped in the meantime; take back a mapping the router made anyway
+            if (reply->error() == QNetworkReply::NoError) {
+                auto* undo = soap(QStringLiteral("DeletePortMapping"), { { QStringLiteral("NewRemoteHost"), QString() },
+                                                                         { QStringLiteral("NewExternalPort"), QString::number(port) },
+                                                                         { QStringLiteral("NewProtocol"), QStringLiteral("TCP") } });
+                connect(undo, &QNetworkReply::finished, undo, &QObject::deleteLater);
+            }
+            return;
         }
         if (reply->error() == QNetworkReply::NoError) {
             m_renewTimer.start();
@@ -374,16 +401,8 @@ QNetworkReply* PortMapper::soap(const QString& action, const QList<QPair<QString
 
 QString PortMapper::soapError(QNetworkReply* reply, const QByteArray& body)
 {
-    // UPnP faults come as HTTP 500 with <errorCode> and <errorDescription> in the body
-    static const QRegularExpression code(QStringLiteral("<errorCode>\\s*(\\d+)\\s*</errorCode>"));
-    static const QRegularExpression text(QStringLiteral("<errorDescription>([^<]*)</errorDescription>"));
-    const QString xml = QString::fromUtf8(body);
-    const auto c = code.match(xml);
-    if (c.hasMatch()) {
-        const QString description = text.match(xml).captured(1).trimmed();
-        return description.isEmpty() ? c.captured(1) : QStringLiteral("%1 %2").arg(c.captured(1), description);
-    }
-    return reply->errorString();
+    const QString fault = faultFromBody(body);
+    return fault.isEmpty() ? reply->errorString() : fault;
 }
 
 QHostAddress PortMapper::localAddressFor(const QHostAddress& router)
