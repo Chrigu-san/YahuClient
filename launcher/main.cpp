@@ -48,6 +48,10 @@ int main(int argc, char* argv[])
     console::WindowsConsoleGuard _consoleGuard;
 #endif
 
+    // When one widget needs its own native window, Qt would otherwise give all its siblings one too. A native
+    // sibling ignores WA_TransparentForMouseEvents and swallows real clicks (KAN-12).
+    QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+
     // initialize Qt
     Application app(argc, argv);
     switch (app.status()) {

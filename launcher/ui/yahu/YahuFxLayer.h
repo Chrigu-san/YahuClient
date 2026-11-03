@@ -36,6 +36,7 @@ class YahuFxLayer : public QWidget {
 
    protected:
     void paintEvent(QPaintEvent* event) override;
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
 
    private:
