@@ -12,6 +12,6 @@ ZONE_NAME = "yahuclient.net"
 # create once with: npx wrangler kv namespace create NAMES   and put the id here
 [[kv_namespaces]]
 binding = "NAMES"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "7100d800c7a34db38455587e6b03b41e"
 
 # CF_API_TOKEN is a secret ("Edit zone DNS" for yahuclient.net), set with: npx wrangler secret put CF_API_TOKEN
