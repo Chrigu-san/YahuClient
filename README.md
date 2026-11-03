@@ -1,8 +1,14 @@
 # Yahu Client
 
-A private Minecraft launcher for me and a few friends, with its own look ("Night Grass") and lots of animation.
+A Minecraft launcher for me and my friends, with its own black look, lots of small animations and built-in server hosting.
 
 ![Yahu Client](docs/screenshot.png)
+
+## Download
+
+Get the installer from the [latest release](https://github.com/Chrigu-san/YahuClient/releases/latest/download/YahuClient-Setup.exe)
+(Windows 10/11, 64 bit). It needs no admin rights and puts Yahu Client on the desktop and in the Start menu.
+The installer is not signed yet, so Windows may show "Windows protected your PC": click **More info**, then **Run anyway**.
 
 ## What it is
 
@@ -10,22 +16,27 @@ Yahu Client is a desktop launcher that installs and starts the official Minecraf
 instances (versions, mod loaders such as Fabric, NeoForge or Quilt, mods from Modrinth) and starts the game with the player's
 own account.
 
+- **Server hosting:** Create Paper, Vanilla or Fabric servers that run on your PC, with a console and a player list. While a
+  server runs, Yahu Client opens its port on your router (UPnP) and shows the address friends can join with, so nobody has to
+  set up port forwarding. The port is closed again when the server stops.
 - **Sign-in:** Players sign in through the official Microsoft login page in their browser. The launcher receives a token
   only to verify game ownership and start Minecraft. Passwords never pass through the launcher.
 - **No cheats, no server tricks:** The launcher starts the unmodified game. It doesn't change network traffic or game behaviour.
 - **No data collection:** No telemetry, no accounts of its own, no backend. Everything stays on the player's PC
   (`%APPDATA%\YahuClient`).
 - **Downloads** come only from official sources (Mojang/Microsoft, Modrinth, mod loader projects) and are checked against their hashes.
+  Server software is downloaded straight from Mojang, PaperMC and Fabric.
 
 ## Based on Prism Launcher
 
 Yahu Client is a fork of the open-source launcher [Prism Launcher](https://github.com/PrismLauncher/PrismLauncher)
-(itself based on PolyMC and MultiMC). The game logic comes from there; Yahu Client adds its own interface, theme, icons and
-single-window navigation. Big thanks to the Prism Launcher, PolyMC and MultiMC contributors.
+(itself based on PolyMC and MultiMC). The game logic comes from there; Yahu Client adds its own interface, theme, icons,
+single-window navigation and server hosting. Big thanks to the Prism Launcher, PolyMC and MultiMC contributors.
 
-## Building
+## Building and contributing
 
-Windows build instructions, Microsoft login setup and notes are in [YAHU.md](YAHU.md).
+Windows build instructions, tests, Microsoft login setup and the release steps are in [YAHU.md](YAHU.md).
+`main` is protected: every change goes through a pull request.
 
 ## License
 
