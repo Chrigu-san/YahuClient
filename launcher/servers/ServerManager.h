@@ -62,7 +62,7 @@ struct ServerConfig {
     bool pvp = true;
     bool allowFlight = false;
     bool forceGamemode = false;
-    int viewDistance = 10;
+    int viewDistance = 24;  // further than vanilla's 10, so the world looks bigger
     int simulationDistance = 10;
     int idleTimeout = 0;
 

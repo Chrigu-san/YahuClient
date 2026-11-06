@@ -74,6 +74,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 
 **Nächste Version (noch nicht veröffentlicht)**
 - Selbst mit der eigenen Adresse joinen geht jetzt automatisch: Sobald der Server online ist, fragt Windows einmal nach Erlaubnis, einfach mit Ja bestätigen
+- Neue Server haben eine Sichtweite von 24 Chunks statt 10, man sieht viel weiter
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
