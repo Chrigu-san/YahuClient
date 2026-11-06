@@ -35,6 +35,7 @@
 #include "FileSystem.h"
 #include "java/JavaUtils.h"
 #include "servers/AddressService.h"
+#include "servers/LocalHosts.h"
 #include "servers/PortMapper.h"
 #include "servers/ServerProcesses.h"
 
@@ -508,6 +509,40 @@ ServerManager::ServerManager(const QString& root, QObject* parent) : QObject(par
             }
         }
     });
+    connect(m_addresses, &AddressService::statusChanged, this, [this](YahuServer* server) {
+        if (m_addresses->status(server).state == AddressService::State::Ready) {
+            // after the signal, so the page shows the live address before Windows asks
+            QTimer::singleShot(0, this, [this, server] {
+                if (m_servers.contains(server)) {
+                    pointNamesHere(server);
+                }
+            });
+        }
+    });
+}
+
+void ServerManager::pointNamesHere(YahuServer* server)
+{
+    // every server's name at once, so one permission covers them all
+    QStringList names;
+    for (auto* s : m_servers) {
+        if (AddressService::isValidName(s->config().address)) {
+            names << QStringLiteral("%1.%2").arg(s->config().address, AddressService::kDomain);
+        }
+    }
+    const QString own = QStringLiteral("%1.%2").arg(server->config().address, AddressService::kDomain);
+    if (m_hostsAsked.contains(own) || LocalHosts::covers({ own })) {
+        return;
+    }
+    for (const QString& name : names) {
+        m_hostsAsked.insert(name);
+    }
+    QString error;
+    if (LocalHosts::apply(names, &error)) {
+        server->appendLog(tr("[Yahu] You can now join with %1 from this PC too.").arg(own));
+    } else {
+        server->appendLog(tr("[Yahu] Joining with %1 from this PC won't work: %2 Yahu Client asks again next time.").arg(own, error));
+    }
 }
 
 ServerManager::~ServerManager()
