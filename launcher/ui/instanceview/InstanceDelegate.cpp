@@ -201,12 +201,11 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         painter->restore();
     }
 
-    // border; selected cards get a ring in the accent, slightly outside the card
+    // block edges; selected cards get a frame in the accent, slightly outside the card
+    blockEdges(*painter, card, kRadius, 3.0, 1.0 + 0.3 * hover);
     painter->setBrush(Qt::NoBrush);
-    painter->setPen(QPen(mix(withAlpha(text, 0.07), withAlpha(text, 0.16), hover), 1.0));
-    painter->drawPath(rounded(card.adjusted(0.5, 0.5, -0.5, -0.5), kRadius));
     if (selected) {
-        painter->setPen(QPen(tone, 2.0));
+        painter->setPen(QPen(tone, 3.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
         painter->drawPath(rounded(card.adjusted(-3, -3, 3, 3), kRadius + 3));
     }
 

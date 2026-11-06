@@ -1,6 +1,6 @@
 # Yahu Client
 
-A Minecraft launcher for me and my friends, with its own black look, lots of small animations and built-in server hosting.
+A Minecraft launcher for me and my friends, with its own colorful block look, lots of small animations and built-in server hosting.
 
 ![Yahu Client](docs/screenshot.png)
 

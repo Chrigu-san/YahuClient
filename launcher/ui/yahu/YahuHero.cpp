@@ -305,7 +305,7 @@ bool YahuHero::eventFilter(QObject* watched, QEvent* event)
 
 void YahuHero::paintEmblem(QPainter& p, const QPointF& center, qreal t)
 {
-    // the instance icon on a dark glass plate, circled by a slow comet; flat on purpose, nothing here can shimmer
+    // the instance icon on a dark block, circled by a slow comet; flat on purpose, nothing here can shimmer
     const QColor tone = m_running ? gold : accent;
     const qreal bob = qSin(t * kTau / 4.0) * 4.0;
     const QPointF plateCenter = center + QPointF(0, bob);
@@ -345,10 +345,9 @@ void YahuHero::paintEmblem(QPainter& p, const QPointF& center, qreal t)
     glass.setColorAt(0.0, withAlpha(raisedHi, 0.96));
     glass.setColorAt(1.0, withAlpha(ink, 0.96));
     p.setBrush(glass);
-    p.setPen(QPen(withAlpha(text, 0.10), 1.0));
+    p.setPen(Qt::NoPen);
     p.drawPath(rounded(plate, 26));
-    p.setPen(QPen(withAlpha(text, 0.16), 1.0));
-    p.drawLine(QPointF(plate.left() + 26, plate.top() + 0.5), QPointF(plate.right() - 26, plate.top() + 0.5));
+    blockEdges(p, plate, 26, 4.0, 1.2);
 
     // the icon, drawn from a pixmap at fractional positions so the float stays smooth
     const qreal size = 68.0 * (0.82 + 0.18 * m_swap);
@@ -364,33 +363,68 @@ void YahuHero::paintLandscape(QPainter& p, const QRectF& b, qreal t)
     const qreal lx = m_look.x();
     const qreal ly = m_look.y();
 
-    // sky: black at the top, a green dusk glow behind the hills so their silhouettes read
+    // sky in the palette's colors (a sunset or a night), with a glow behind the hills so their silhouettes read
     QLinearGradient sky(b.topLeft(), b.bottomLeft());
-    sky.setColorAt(0.0, QColor(0x07, 0x08, 0x0B));
-    sky.setColorAt(0.35, QColor(0x07, 0x09, 0x09));
-    sky.setColorAt(0.7, QColor(0x0F, 0x1A, 0x14));
-    sky.setColorAt(1.0, QColor(0x0B, 0x13, 0x0F));
+    sky.setColorAt(0.0, scene.sky[0]);
+    sky.setColorAt(0.35, scene.sky[1]);
+    sky.setColorAt(0.7, scene.sky[2]);
+    sky.setColorAt(1.0, scene.sky[3]);
     p.fillRect(b, sky);
     {
         QRadialGradient dusk(QPointF(b.center().x() - lx * 20, b.bottom()), b.width() * 0.55);
-        dusk.setColorAt(0.0, withAlpha(accent, 0.07));
-        dusk.setColorAt(1.0, withAlpha(accent, 0.0));
+        dusk.setColorAt(0.0, withAlpha(scene.sun ? gold : accent, scene.sun ? 0.22 : 0.07));
+        dusk.setColorAt(1.0, withAlpha(scene.sun ? gold : accent, 0.0));
         p.fillRect(b, dusk);
     }
 
-    // stars, twinkling, barely moving
+    // stars, twinkling, barely moving; at sunset only a few, high up
     p.setPen(Qt::NoPen);
-    for (int i = 0; i < 70; ++i) {
+    const int stars = scene.sun ? 24 : 70;
+    const qreal starHeight = scene.sun ? 0.3 : 0.62;
+    for (int i = 0; i < stars; ++i) {
         const qreal x = b.left() + (0.5 + 0.5 * hash(i * 7 + 1)) * b.width() - lx * 6;
-        const qreal y = b.top() + (0.5 + 0.5 * hash(i * 13 + 5)) * b.height() * 0.62 - ly * 3;
+        const qreal y = b.top() + (0.5 + 0.5 * hash(i * 13 + 5)) * b.height() * starHeight - ly * 3;
         const qreal tw = 0.35 + 0.65 * (0.5 + 0.5 * qSin(t * (1.0 + 0.8 * (0.5 + 0.5 * hash(i))) + i));
         const qreal s = hash(i * 3) > 0.7 ? 2.0 : 1.4;
         p.setBrush(withAlpha(i % 9 == 0 ? gold : text, 0.55 * tw));
         p.drawRect(QRectF(int(x), int(y), s, s));
     }
 
-    // pixel moon with a soft halo
-    {
+    if (scene.sun) {
+        // a big square sun sinking behind the hills, with rings of light around it
+        const QPointF m(b.left() + b.width() * 0.6 - lx * 10, b.top() + b.height() * 0.4 - ly * 5);
+        const qreal s = 44;
+        for (int ring = 3; ring >= 1; --ring) {
+            const qreal r = s / 2 + ring * 10;
+            p.setBrush(withAlpha(QColor(0xFF, 0xD8, 0x6A), 0.08 * (4 - ring)));
+            p.drawRect(QRectF(m.x() - r, m.y() - r, r * 2, r * 2));
+        }
+        p.setBrush(QColor(0xFF, 0xD5, 0x4A));
+        p.drawRect(QRectF(m.x() - s / 2, m.y() - s / 2, s, s));
+        p.setBrush(QColor(0xFF, 0xF0, 0x9A));
+        p.drawRect(QRectF(m.x() - s / 2, m.y() - s / 2, s, 6));
+        p.drawRect(QRectF(m.x() - s / 2, m.y() - s / 2, 6, s));
+        p.setBrush(QColor(0xF2, 0xA8, 0x2E));
+        p.drawRect(QRectF(m.x() + s / 2 - 6, m.y() - s / 2 + 6, 6, s - 6));
+    }
+    if (scene.clouds) {
+        // flat blocky clouds drifting slowly to the right
+        for (int i = 0; i < 6; ++i) {
+            const qreal block = 8;
+            const qreal w = block * (6 + int(4 * (0.5 + 0.5 * hash(i * 11))));
+            const qreal span = b.width() + w * 2;
+            const qreal x = b.left() - w + std::fmod(t * (6 + 3 * (0.5 + 0.5 * hash(i * 3))) + (0.5 + 0.5 * hash(i * 23)) * span, span) - lx * 14;
+            const qreal y = b.top() + 18 + (0.5 + 0.5 * hash(i * 31)) * b.height() * 0.32 - ly * 4;
+            p.setBrush(withAlpha(Qt::white, 0.22));
+            p.drawRect(QRectF(int(x), int(y), w, block * 2));
+            p.drawRect(QRectF(int(x + block * 2), int(y - block), w - block * 4, block));
+            p.setBrush(withAlpha(Qt::white, 0.12));
+            p.drawRect(QRectF(int(x), int(y + block * 2), w, block * 0.6));
+        }
+    }
+    if (!scene.sun) {
+        // pixel moon with a soft halo
+
         const QPointF m(b.left() + b.width() * 0.62 - lx * 10, b.top() + 52 - ly * 5);
         QRadialGradient halo(m, 70);
         halo.setColorAt(0.0, withAlpha(QColor(0xE8, 0xF0, 0xE0), 0.14));
@@ -419,9 +453,9 @@ void YahuHero::paintLandscape(QPainter& p, const QRectF& b, qreal t)
         int seed;
     };
     const std::array<Layer, 3> layers = { {
-        { 10, 0.72, 6.0, 10, QColor(0x0B, 0x13, 0x0E), 0.12, 11 },
-        { 14, 0.86, 5.0, 24, QColor(0x06, 0x0A, 0x08), 0.22, 37 },
-        { 18, 1.00, 4.0, 44, QColor(0x02, 0x03, 0x03), 0.50, 71 },
+        { 10, 0.72, 6.0, 10, scene.hills[0], scene.grass[0], 11 },
+        { 14, 0.86, 5.0, 24, scene.hills[1], scene.grass[1], 37 },
+        { 18, 1.00, 4.0, 44, scene.hills[2], scene.grass[2], 71 },
     } };
     for (const Layer& L : layers) {
         const qreal offset = -lx * L.shift;
@@ -494,17 +528,18 @@ void YahuHero::paintEvent(QPaintEvent*)
     // legibility veil on the left
     {
         QLinearGradient veil(banner.topLeft(), banner.topRight());
-        veil.setColorAt(0.0, withAlpha(ink, 0.82));
-        veil.setColorAt(0.5, withAlpha(ink, 0.35));
+        // lighter over a sunset, the white text still reads on it
+        veil.setColorAt(0.0, withAlpha(ink, scene.sun ? 0.6 : 0.82));
+        veil.setColorAt(0.5, withAlpha(ink, scene.sun ? 0.15 : 0.35));
         veil.setColorAt(0.75, withAlpha(ink, 0.0));
         p.fillRect(banner, veil);
     }
     p.restore();
 
-    // hairline border with a light top edge
-    p.setBrush(Qt::NoBrush);
-    p.setPen(QPen(withAlpha(text, 0.08), 1.0));
-    p.drawPath(rounded(banner.adjusted(0.5, 0.5, -0.5, -0.5), kRadiusCard + 4));
+    // block edges: light on top and left, dark at the bottom and right
+    p.setRenderHint(QPainter::Antialiasing, false);
+    blockEdges(p, banner, kRadiusCard + 4, 4.0);
+    p.setRenderHint(QPainter::Antialiasing, true);
 
     // text block
     {

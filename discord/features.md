@@ -24,8 +24,8 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 
 **Design**
 - Alles in einem Fenster, Dialoge öffnen sich als Overlay
-- Schwarzes Design mit grünem Akzent, dazu die Themes Night Grass und Ocean
-- Banner mit Pixel Landschaft und Glühwürmchen im Hintergrund
+- Block Design: Pixel Ecken, Knöpfe mit 3D Kante, viele Farben. Themes: Overworld, Black, Night Grass und Ocean
+- Banner mit Sonnenuntergang, Wolken und Gras Hügeln
 
 ---- neue Nachricht ----
 
@@ -75,6 +75,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 **Nächste Version (noch nicht veröffentlicht)**
 - Selbst mit der eigenen Adresse joinen geht jetzt automatisch: Sobald der Server online ist, fragt Windows einmal nach Erlaubnis, einfach mit Ja bestätigen
 - Neue Server haben eine Sichtweite von 24 Chunks statt 10, man sieht viel weiter
+- Neues Block Design: Pixel Ecken, Knöpfe mit 3D Kante, jede Seite mit eigener Farbe, Sonnenuntergang im Banner und das neue Standard Theme Overworld
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
