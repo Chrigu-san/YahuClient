@@ -48,7 +48,7 @@ constexpr int kMarginTop = 24;
 constexpr int kMarginBottom = 8;
 constexpr int kInnerPad = 32;     // text inset inside the banner
 constexpr qreal kOrbit = 84.0;    // half the width kept free for the floating instance on the right
-constexpr qreal kItem = 84.0;     // edge length of the floating instance icon
+constexpr qreal kItem = 96.0;     // edge length of the floating instance icon
 constexpr qreal kTau = 6.283185307179586;
 
 // Cheap deterministic noise so the landscape looks the same every frame.
@@ -305,52 +305,17 @@ bool YahuHero::eventFilter(QObject* watched, QEvent* event)
 
 void YahuHero::paintEmblem(QPainter& p, const QPointF& center, qreal t)
 {
-    // the instance floats over the hills: bobbing, with a pixel aura (square rings that grow out of it and fade),
-    // a pixel shadow on the ground and a few sparks in block colors rising around it; gold and quicker while the
-    // game runs
-    const QColor tone = m_running ? gold : accent;
-    const qreal bob = qSin(t * kTau / 3.0) * 6.0;
+    // kept simple on purpose: the instance icon floats gently over the hills, its soft shadow on the ground
+    // shrinks and fades a little as it rises
+    const qreal lift = 0.5 + 0.5 * qSin(t * kTau / 4.0);  // 0 low, 1 high
     const qreal size = kItem * (0.82 + 0.18 * m_swap);
-    const QPointF item = center + QPointF(0, bob - 8);
+    const QPointF item = center + QPointF(0, -10 - lift * 8);
 
     p.save();
-    p.setRenderHint(QPainter::Antialiasing, false);
     p.setPen(Qt::NoPen);
-
-    // aura: a soft square glow, and three rings stepping outwards one after another
-    for (int i = 3; i >= 1; --i) {
-        const qreal r = size / 2 + i * 6;
-        p.setBrush(withAlpha(tone, 0.05));
-        p.drawRect(QRectF(item.x() - r, item.y() - r, r * 2, r * 2));
-    }
-    const qreal speed = m_running ? 0.7 : 0.35;
-    for (int i = 0; i < 3; ++i) {
-        const qreal phase = std::fmod(t * speed + i / 3.0, 1.0);
-        const qreal r = std::round((size / 2 + 4 + phase * 34) / 2) * 2;  // on a 2px grid, so it steps like pixels
-        const qreal w = 3.0;
-        const QColor c = withAlpha(tone, 0.5 * (1.0 - phase));
-        p.fillRect(QRectF(item.x() - r, item.y() - r, r * 2, w), c);
-        p.fillRect(QRectF(item.x() - r, item.y() + r - w, r * 2, w), c);
-        p.fillRect(QRectF(item.x() - r, item.y() - r + w, w, r * 2 - w * 2), c);
-        p.fillRect(QRectF(item.x() + r - w, item.y() - r + w, w, r * 2 - w * 2), c);
-    }
-
-    // shadow: a flat dark block on the ground, smaller while the item is up high
-    const qreal shadow = size * (0.62 - bob * 0.012);
-    p.setBrush(withAlpha(Qt::black, 0.35));
-    p.drawRect(QRectF(center.x() - shadow / 2, center.y() + kItem * 0.62, shadow, 6));
-    p.setBrush(withAlpha(Qt::black, 0.2));
-    p.drawRect(QRectF(center.x() - shadow / 2 - 6, center.y() + kItem * 0.62 + 1.5, shadow + 12, 3));
-
-    // sparks rise from below, fade out, start again
-    for (int i = 0; i < 9; ++i) {
-        const qreal phase = std::fmod(t * (0.25 + 0.1 * (0.5 + 0.5 * hash(i * 7))) + (0.5 + 0.5 * hash(i * 13)), 1.0);
-        const qreal x = center.x() + hash(i * 5 + 2) * kItem * 0.9;
-        const qreal y = center.y() + kItem * 0.55 - phase * kItem * 1.4;
-        const qreal s = hash(i * 3) > 0.3 ? 4.0 : 6.0;
-        p.setBrush(withAlpha(m_running ? gold : blockColor(i), 0.85 * qSin(phase * M_PI)));
-        p.drawRect(QRectF(int(x), int(y), s, s));
-    }
+    const QPointF ground(center.x(), center.y() + kItem * 0.6);
+    p.setBrush(withAlpha(Qt::black, 0.32 - 0.1 * lift));
+    p.drawEllipse(ground, size * (0.36 - 0.06 * lift), 6 - 1.5 * lift);
     p.restore();
 
     // the icon, drawn from a pixmap so the float stays smooth
