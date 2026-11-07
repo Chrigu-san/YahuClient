@@ -19,6 +19,10 @@
 
 #include <QApplication>
 #include <QFontDatabase>
+#include <QPainter>
+
+#include <cmath>
+#include <iterator>
 
 namespace YahuStyle {
 
@@ -73,15 +77,66 @@ QPainterPath chamfer(const QRectF& r, qreal cut)
 
 QPainterPath rounded(const QRectF& r, qreal radius)
 {
-    radius = qMin(radius, qMin(r.width(), r.height()) / 2.0);
     QPainterPath path;
-    path.addRoundedRect(r, radius, radius);
+    if (radius <= 0.5) {
+        path.addRect(r);
+        return path;
+    }
+    // two steps per corner, like a rounded block in pixel art: the outer row is in by 2u, the next by u
+    const qreal u = qMin(qMax(2.0, std::round(radius / 4.0)), qMin(r.width(), r.height()) / 4.0);
+    const qreal L = r.left(), T = r.top(), R = r.right(), B = r.bottom();
+    path.moveTo(L, T + 2 * u);
+    path.lineTo(L + u, T + 2 * u);
+    path.lineTo(L + u, T + u);
+    path.lineTo(L + 2 * u, T + u);
+    path.lineTo(L + 2 * u, T);
+    path.lineTo(R - 2 * u, T);
+    path.lineTo(R - 2 * u, T + u);
+    path.lineTo(R - u, T + u);
+    path.lineTo(R - u, T + 2 * u);
+    path.lineTo(R, T + 2 * u);
+    path.lineTo(R, B - 2 * u);
+    path.lineTo(R - u, B - 2 * u);
+    path.lineTo(R - u, B - u);
+    path.lineTo(R - 2 * u, B - u);
+    path.lineTo(R - 2 * u, B);
+    path.lineTo(L + 2 * u, B);
+    path.lineTo(L + 2 * u, B - u);
+    path.lineTo(L + u, B - u);
+    path.lineTo(L + u, B - 2 * u);
+    path.lineTo(L, B - 2 * u);
+    path.closeSubpath();
     return path;
+}
+
+void blockEdges(QPainter& p, const QRectF& r, qreal radius, qreal width, qreal strength)
+{
+    p.save();
+    p.setClipPath(rounded(r, radius), Qt::IntersectClip);
+    p.setPen(Qt::NoPen);
+    const QColor hi = withAlpha(Qt::white, 0.16 * strength);
+    const QColor lo = withAlpha(Qt::black, 0.38 * strength);
+    p.fillRect(QRectF(r.left(), r.top(), r.width(), width), hi);
+    p.fillRect(QRectF(r.left(), r.top() + width, width, r.height() - 2 * width), hi);
+    p.fillRect(QRectF(r.left(), r.bottom() - width * 1.5, r.width(), width * 1.5), lo);
+    p.fillRect(QRectF(r.right() - width, r.top() + width, width, r.height() - width * 2.5), lo);
+    p.restore();
+}
+
+QColor blockColor(int index)
+{
+    const QColor colors[] = { accent, sky, gold, amethyst, copper, diamond, redstone };
+    const int n = int(std::size(colors));
+    return colors[((index % n) + n) % n];
 }
 
 QList<Palette> palettes()
 {
     return {
+        // the default: night blue surfaces under bright block colors
+        { QStringLiteral("overworld"), QObject::tr("Overworld"), QColor(0x10, 0x13, 0x1F), QColor(0x17, 0x1C, 0x2C),
+          QColor(0x1F, 0x26, 0x39), QColor(0x28, 0x31, 0x49), QColor(0x2A, 0x33, 0x50), QColor(0x3A, 0x46, 0x70), QColor(0xF7, 0xF8, 0xFC),
+          QColor(0xB4, 0xBC, 0xD6), QColor(0x6E, 0x78, 0x9A), QColor(0x6C, 0xD8, 0x3E), QColor(0x9C, 0xF0, 0x6C), QColor(0x3E, 0x9A, 0x22) },
         { QStringLiteral("black"), QObject::tr("Black"), QColor(0x03, 0x03, 0x04), QColor(0x09, 0x09, 0x0B), QColor(0x10, 0x10, 0x13),
           QColor(0x17, 0x17, 0x1B), QColor(0x1A, 0x1A, 0x1F), QColor(0x2A, 0x2A, 0x31), QColor(0xF4, 0xF5, 0xF2), QColor(0x9E, 0xA0, 0xA6),
           QColor(0x5C, 0x5E, 0x66), QColor(0x5B, 0xE3, 0x6B), QColor(0x86, 0xF2, 0x93), QColor(0x2F, 0x9C, 0x3E) },
@@ -117,6 +172,23 @@ QString applyPalette(const QString& id)
     accent = chosen.accent;
     accentHi = chosen.accentHi;
     accentLo = chosen.accentLo;
+
+    if (chosen.id == QStringLiteral("overworld")) {
+        // sunset: deep blue up high, violet, then orange at the horizon; grass on dirt hills
+        scene = { { QColor(0x2A, 0x3C, 0x9C), QColor(0x7A, 0x4F, 0xB8), QColor(0xE8, 0x70, 0x9A), QColor(0xFF, 0xB0, 0x6A) },
+                  true,
+                  { QColor(0x4B, 0x34, 0x6E), QColor(0x5A, 0x3B, 0x26), QColor(0x33, 0x22, 0x16) },
+                  { 0.55, 0.9, 1.0 },
+                  true };
+    } else {
+        // night: almost black, a little of the palette's surface color in the hills
+        scene = { { QColor(0x07, 0x08, 0x0B), QColor(0x07, 0x09, 0x09), mix(chosen.ink, chosen.accentLo, 0.12),
+                    mix(chosen.ink, chosen.accentLo, 0.08) },
+                  false,
+                  { mix(chosen.ink, chosen.surface, 0.8), mix(chosen.ink, Qt::black, 0.4), mix(chosen.ink, Qt::black, 0.8) },
+                  { 0.12, 0.22, 0.5 },
+                  false };
+    }
     return chosen.id;
 }
 

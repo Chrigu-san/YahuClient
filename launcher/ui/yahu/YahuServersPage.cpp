@@ -116,10 +116,12 @@ class ServerItemDelegate : public QStyledItemDelegate {
     }
 };
 
-QFrame* panel()
+// A block panel; the tone picks the color of its top edge (see YahuTheme).
+QFrame* panel(const char* tone = "sky")
 {
     auto* frame = new QFrame;
     frame->setObjectName(QStringLiteral("yahuPanel"));
+    frame->setProperty("yahuTone", QString::fromLatin1(tone));
     return frame;
 }
 
@@ -140,7 +142,7 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
 
     // ----- list of servers
     {
-        auto* side = panel();
+        auto* side = panel("grass");
         side->setFixedWidth(270);
         auto* layout = new QVBoxLayout(side);
         layout->setContentsMargins(14, 16, 14, 14);
@@ -228,6 +230,7 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
         m_settings = new QPushButton(tr("Settings"));
         m_folder = new QPushButton(tr("Folder"));
         m_delete = new QPushButton(tr("Delete"));
+        m_delete->setProperty("yahuDanger", true);
         for (auto* b : { m_settings, m_folder, m_delete }) {
             b->setCursor(Qt::PointingHandCursor);
         }
@@ -276,7 +279,7 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
         bold.setWeight(QFont::DemiBold);
 
         // console
-        auto* consolePanel = panel();
+        auto* consolePanel = panel("amethyst");
         auto* consoleLayout = new QVBoxLayout(consolePanel);
         consoleLayout->setContentsMargins(14, 12, 14, 14);
         consoleLayout->setSpacing(10);

@@ -24,15 +24,15 @@
 #include <QTimer>
 #include <QWidget>
 
-// A click-through layer on top of the whole window for small bursts of motion: every click pops a pixel
-// shockwave with sparks, and moving the mouse leaves a short trail of fading pixels.
+// A click-through layer on top of the whole window for a small, quick click effect: a pixel square that opens up
+// around the click and fades.
 class YahuFxLayer : public QWidget {
     Q_OBJECT
    public:
     explicit YahuFxLayer(QWidget* window);
 
-    // Celebrate something (e.g. pressing Play) with a bigger burst at a global position.
-    static void burst(const QPoint& globalPos, int sparks = 26);
+    // A bigger square for something that matters (e.g. pressing Play), at a global position.
+    static void burst(const QPoint& globalPos);
 
    protected:
     void paintEvent(QPaintEvent* event) override;
@@ -40,25 +40,16 @@ class YahuFxLayer : public QWidget {
     bool eventFilter(QObject* watched, QEvent* event) override;
 
    private:
-    struct Particle {
-        QPointF pos;
-        QPointF vel;
-        qreal life;  // 1 -> 0
-        qreal decay;
-        qreal size;
-        QColor color;
-    };
     struct Ring {
         QPointF center;
         qreal t;  // 0 -> 1
         qreal maxRadius;
     };
 
-    void spawnBurst(const QPointF& at, int sparks, qreal ringSize);
+    void spawnRing(const QPointF& at, qreal size);
     void tick();
     QRect dirtyRect() const;
 
-    QList<Particle> m_particles;
     QList<Ring> m_rings;
     QRect m_lastDirty;
     QTimer m_timer;

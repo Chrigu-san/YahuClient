@@ -318,18 +318,22 @@ void YahuSidebar::paintEvent(QPaintEvent*)
     if (m_slabAlpha > 0.01 && m_slabY >= 0) {
         const QRectF slab((kWidth - kTile) / 2.0, m_slabY, kTile, kItemHeight - 6);
         p.setPen(Qt::NoPen);
-        p.setBrush(withAlpha(raised, m_slabAlpha));
+        p.setBrush(withAlpha(m_hovered >= 0 ? mix(raised, blockColor(m_hovered), 0.14) : raised, m_slabAlpha));
         p.drawPath(rounded(slab, 12));
     }
 
-    // the active-page marker: a green pill hugging the left edge
+    // every entry has its own block color: the icon wears it, the active one sits on a block of it
+    const auto colorOf = [](int index) { return blockColor(index); };
+
+    // the active-page marker: a block of the page's color hugging the left edge
     if (m_activePage >= 0 && m_markerY >= 0) {
+        const QColor c = colorOf(m_activePage);
         p.setPen(Qt::NoPen);
-        p.setBrush(accent);
-        p.drawRoundedRect(QRectF(-3, m_markerY - 14, 7, 28), 3.5, 3.5);
+        p.setBrush(c);
+        p.drawRect(QRectF(0, m_markerY - 14, 5, 28));
         QRadialGradient glow(QPointF(0, m_markerY), 30);
-        glow.setColorAt(0.0, withAlpha(accent, 0.25));
-        glow.setColorAt(1.0, withAlpha(accent, 0.0));
+        glow.setColorAt(0.0, withAlpha(c, 0.3));
+        glow.setColorAt(1.0, withAlpha(c, 0.0));
         p.setBrush(glow);
         p.drawEllipse(QPointF(0, m_markerY), 30, 30);
     }
@@ -339,25 +343,33 @@ void YahuSidebar::paintEvent(QPaintEvent*)
         const QRectF r = itemRect(i);
         const bool active = item.page && i == m_activePage;
         const bool enabled = !item.action || item.action->isEnabled();
+        const QColor color = colorOf(i);
 
         if (active) {
             p.setPen(Qt::NoPen);
-            p.setBrush(raisedHi);
+            p.setBrush(mix(raisedHi, color, 0.28));
             p.drawPath(rounded(r, 12));
+            blockEdges(p, r, 12, 2.0);
         }
         if (item.flash > 0.01) {
             p.setPen(Qt::NoPen);
-            p.setBrush(withAlpha(accent, 0.18 * item.flash));
+            p.setBrush(withAlpha(color, 0.25 * item.flash));
             p.drawPath(rounded(r, 12));
         }
 
         const qreal lift = item.hover * 2.0;
         const QRect iconRect(int(r.center().x() - 11), int(r.top() + 9 - lift), 22, 22);
         p.save();
-        if (!active && enabled) {
-            p.setOpacity(0.72 + 0.28 * item.hover);
+        if (enabled) {
+            QPixmap pm = QIcon::fromTheme(item.iconName).pixmap(iconRect.size(), devicePixelRatioF());
+            QPainter tint(&pm);
+            tint.setCompositionMode(QPainter::CompositionMode_SourceIn);
+            tint.fillRect(pm.rect(), active ? mix(color, Qt::white, 0.25) : mix(color, muted, 0.12 - 0.12 * item.hover));
+            tint.end();
+            p.drawPixmap(iconRect, pm);
+        } else {
+            QIcon::fromTheme(item.iconName).paint(&p, iconRect, Qt::AlignCenter, QIcon::Disabled);
         }
-        QIcon::fromTheme(item.iconName).paint(&p, iconRect, Qt::AlignCenter, enabled ? QIcon::Normal : QIcon::Disabled);
         p.restore();
 
         QFont font = this->font();
