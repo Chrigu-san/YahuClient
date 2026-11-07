@@ -21,8 +21,9 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPointer>
-#include <QRandomGenerator>
 #include <QtMath>
+
+#include <cmath>
 
 #include "YahuStyle.h"
 
@@ -34,7 +35,6 @@ using namespace YahuStyle;
 
 namespace {
 QPointer<YahuFxLayer> s_layer;
-constexpr qreal kTau = 6.283185307179586;
 }  // namespace
 
 YahuFxLayer::YahuFxLayer(QWidget* window) : QWidget(window)
@@ -51,25 +51,16 @@ YahuFxLayer::YahuFxLayer(QWidget* window) : QWidget(window)
     s_layer = this;
 }
 
-void YahuFxLayer::burst(const QPoint& globalPos, int sparks)
+void YahuFxLayer::burst(const QPoint& globalPos)
 {
     if (s_layer) {
-        s_layer->spawnBurst(s_layer->mapFromGlobal(globalPos), sparks, 70.0);
+        s_layer->spawnRing(s_layer->mapFromGlobal(globalPos), 40.0);
     }
 }
 
-void YahuFxLayer::spawnBurst(const QPointF& at, int sparks, qreal ringSize)
+void YahuFxLayer::spawnRing(const QPointF& at, qreal size)
 {
-    auto* rng = QRandomGenerator::global();
-    m_rings.append({ at, 0.0, ringSize });
-    for (int i = 0; i < sparks; ++i) {
-        const qreal angle = rng->generateDouble() * kTau;
-        const qreal speed = 1.5 + rng->generateDouble() * 3.5;
-        const int pick = rng->bounded(6);
-        m_particles.append({ at, QPointF(qCos(angle), qSin(angle)) * speed - QPointF(0, 1.2), 1.0,
-                             0.022 + rng->generateDouble() * 0.02, rng->bounded(2) ? 3.0 : 2.0,
-                             pick == 0 ? gold : (pick == 1 ? text : accentHi) });
-    }
+    m_rings.append({ at, 0.0, size });
     raise();
     if (!m_timer.isActive()) {
         m_frame.start();
@@ -91,7 +82,7 @@ bool YahuFxLayer::eventFilter(QObject* watched, QEvent* event)
         auto* me = static_cast<QMouseEvent*>(event);
         // one burst per click, not one per widget in the propagation chain
         if (me->spontaneous() && w == QApplication::widgetAt(me->globalPosition().toPoint())) {
-            spawnBurst(mapFromGlobal(me->globalPosition()), 9, 26.0);
+            spawnRing(mapFromGlobal(me->globalPosition()), 14.0);
         }
     }
     return false;
@@ -113,23 +104,15 @@ bool YahuFxLayer::nativeEvent(const QByteArray& eventType, void* message, qintpt
 void YahuFxLayer::tick()
 {
     const qreal step = qMin<qreal>(m_frame.restart(), 40.0) / 16.0;
-    for (auto& p : m_particles) {
-        p.pos += p.vel * step;
-        p.vel.setY(p.vel.y() + 0.12 * step * (p.size > 2 ? 1.0 : 0.4));  // gravity, heavier sparks fall faster
-        p.vel *= 0.97;
-        p.life -= p.decay * step;
-    }
-    m_particles.erase(std::remove_if(m_particles.begin(), m_particles.end(), [](const Particle& p) { return p.life <= 0.0; }),
-                      m_particles.end());
     for (auto& r : m_rings) {
-        r.t += 0.045 * step;
+        r.t += 0.075 * step;  // about a quarter of a second
     }
     m_rings.erase(std::remove_if(m_rings.begin(), m_rings.end(), [](const Ring& r) { return r.t >= 1.0; }), m_rings.end());
 
     const QRect dirty = dirtyRect();
     update(dirty.united(m_lastDirty));
     m_lastDirty = dirty;
-    if (m_particles.isEmpty() && m_rings.isEmpty()) {
+    if (m_rings.isEmpty()) {
         m_timer.stop();
     }
 }
@@ -137,9 +120,6 @@ void YahuFxLayer::tick()
 QRect YahuFxLayer::dirtyRect() const
 {
     QRectF bounds;
-    for (const auto& p : m_particles) {
-        bounds |= QRectF(p.pos - QPointF(4, 4), QSizeF(8, 8));
-    }
     for (const auto& r : m_rings) {
         const qreal radius = r.maxRadius * r.t + 4;
         bounds |= QRectF(r.center - QPointF(radius, radius), QSizeF(radius * 2, radius * 2));
@@ -150,19 +130,16 @@ QRect YahuFxLayer::dirtyRect() const
 void YahuFxLayer::paintEvent(QPaintEvent*)
 {
     QPainter p(this);
-    for (const auto& r : m_rings) {
-        // a square shockwave that grows and fades, drawn in pixel steps
-        const qreal ease = 1.0 - qPow(1.0 - r.t, 3);
-        const qreal radius = r.maxRadius * ease;
-        p.setPen(QPen(withAlpha(accent, (1.0 - r.t) * 0.8), 2.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
-        p.setBrush(Qt::NoBrush);
-        p.setRenderHint(QPainter::Antialiasing, true);
-        p.drawPath(chamfer(QRectF(r.center.x() - radius, r.center.y() - radius, radius * 2, radius * 2), radius * 0.35));
-    }
     p.setRenderHint(QPainter::Antialiasing, false);
-    p.setPen(Qt::NoPen);
-    for (const auto& part : m_particles) {
-        p.setBrush(withAlpha(part.color, qMin(1.0, part.life * 1.3)));
-        p.drawRect(QRectF(part.pos.x(), part.pos.y(), part.size, part.size));
+    for (const auto& r : m_rings) {
+        // a square outline that opens up and fades; its size snaps to 2px so it steps like pixels
+        const qreal ease = 1.0 - qPow(1.0 - r.t, 3);
+        const qreal radius = std::round((4 + (r.maxRadius - 4) * ease) / 2) * 2;
+        const QColor c = withAlpha(Qt::white, (1.0 - r.t) * 0.7);
+        const QRectF box(std::round(r.center.x()) - radius, std::round(r.center.y()) - radius, radius * 2, radius * 2);
+        p.fillRect(QRectF(box.left(), box.top(), box.width(), 2), c);
+        p.fillRect(QRectF(box.left(), box.bottom() - 2, box.width(), 2), c);
+        p.fillRect(QRectF(box.left(), box.top() + 2, 2, box.height() - 4), c);
+        p.fillRect(QRectF(box.right() - 2, box.top() + 2, 2, box.height() - 4), c);
     }
 }

@@ -51,7 +51,7 @@ YahuPlayButton::YahuPlayButton(QWidget* parent) : QAbstractButton(parent)
     });
     connect(this, &QAbstractButton::pressed, this, [this] { animateTo(m_pressAnimation, m_press, 1.0, 80); });
     connect(this, &QAbstractButton::released, this, [this] { animateTo(m_pressAnimation, m_press, 0.0, 320); });
-    connect(this, &QAbstractButton::clicked, this, [this] { YahuFxLayer::burst(mapToGlobal(rect().center()), 40); });
+    connect(this, &QAbstractButton::clicked, this, [this] { YahuFxLayer::burst(mapToGlobal(rect().center())); });
 
     m_breathTimer.setInterval(33);
     connect(&m_breathTimer, &QTimer::timeout, this, QOverload<>::of(&QWidget::update));

@@ -17,14 +17,11 @@
 
 #pragma once
 
-#include <QElapsedTimer>
-#include <QList>
-#include <QPointF>
-#include <QTimer>
+#include <QPixmap>
 #include <QWidget>
 
-// The living background behind the launcher: a night meadow of drifting firefly pixels that flock towards the
-// cursor, and a soft lantern that follows the mouse and reveals the pixel grid underneath.
+// The background behind the launcher: a dark wall of blocks, each a shade lighter or darker, with soft colored light
+// from the edges. It doesn't move, so it costs nothing while the launcher is open.
 class YahuBackdrop : public QWidget {
     Q_OBJECT
    public:
@@ -32,28 +29,7 @@ class YahuBackdrop : public QWidget {
 
    protected:
     void paintEvent(QPaintEvent* event) override;
-    void resizeEvent(QResizeEvent* event) override;
-    void showEvent(QShowEvent* event) override;
-    void hideEvent(QHideEvent* event) override;
-    bool eventFilter(QObject* watched, QEvent* event) override;
 
    private:
-    struct Firefly {
-        QPointF pos;
-        QPointF vel;
-        qreal phase;
-        qreal size;
-        bool gold;
-    };
-
-    void tick();
-    void seed();
-    void updateRunning();
-
-    QList<Firefly> m_flies;
-    QPointF m_cursor{ -1000, -1000 };  // cursor position at the last tick
-    QPointF m_cursorTarget{ -1000, -1000 };
-    QTimer m_timer;
-    QElapsedTimer m_clock;
-    QElapsedTimer m_lastMove;
+    QPixmap m_wall;  // drawn once per size
 };

@@ -447,18 +447,6 @@ void YahuHero::paintLandscape(QPainter& p, const QRectF& b, qreal t)
             }
         }
     }
-
-    // a few fireflies drifting over the front hills
-    for (int i = 0; i < 14; ++i) {
-        const qreal phase = std::fmod(t * (0.03 + 0.02 * (0.5 + 0.5 * hash(i * 5))) + 0.5 + 0.5 * hash(i * 17), 1.0);
-        const qreal x = b.left() + phase * b.width() - lx * 30;
-        const qreal y = b.top() + b.height() * (0.62 + 0.25 * (0.5 + 0.5 * hash(i * 29))) + qSin(t * 1.3 + i) * 6;
-        const qreal a = 0.4 + 0.6 * (0.5 + 0.5 * qSin(t * 2.4 + i * 1.7));
-        p.setBrush(withAlpha(i % 4 == 0 ? gold : accentHi, a * 0.25));
-        p.drawRect(QRectF(x - 2, y - 2, 6, 6));
-        p.setBrush(withAlpha(i % 4 == 0 ? gold : accentHi, a));
-        p.drawRect(QRectF(x, y, 2, 2));
-    }
 }
 
 void YahuHero::paintEvent(QPaintEvent*)
