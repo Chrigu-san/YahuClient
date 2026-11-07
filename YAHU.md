@@ -21,6 +21,7 @@ Under the hood it is still Prism, so every Prism feature works the same way: ins
 
 - Paper, Vanilla and Fabric are downloaded from their official sources; a fitting Java is picked by Minecraft version.
 - `server.properties` is rewritten from the settings on every start; keys Yahu Client doesn't manage stay untouched.
+- New servers start with a view distance of 24 chunks (vanilla uses 10); servers that already exist keep theirs.
 - Closing the launcher saves and stops every running server (`ServerManager::shutdown`, called from `MainWindow::closeEvent`).
 - A server never outlives the launcher (`launcher/servers/ServerProcesses.cpp`): every server process goes into a Windows job with `KILL_ON_JOB_CLOSE`, so when the launcher crashes or is ended in the task manager, Windows ends its servers too. Before that, such a server kept running unseen and held its folder and port; deleting failed with "could not be moved to the recycle bin".
 - Servers left running by older versions are found through the Restart Manager (the Java process that has `server.jar` open). Starting the server first stops the old one with Ctrl+C, so it saves its world like after `stop`; deleting the server ends it right away.
