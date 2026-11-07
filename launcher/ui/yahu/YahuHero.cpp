@@ -305,11 +305,11 @@ bool YahuHero::eventFilter(QObject* watched, QEvent* event)
 
 void YahuHero::paintEmblem(QPainter& p, const QPointF& center, qreal t)
 {
-    // the instance floats over the hills like a dropped item: bobbing, slowly turning, a pixel shadow on the ground
-    // and a few sparks in block colors rising around it; while the game runs it turns faster and sparks in gold
+    // the instance floats over the hills: bobbing, with a pixel aura (square rings that grow out of it and fade),
+    // a pixel shadow on the ground and a few sparks in block colors rising around it; gold and quicker while the
+    // game runs
+    const QColor tone = m_running ? gold : accent;
     const qreal bob = qSin(t * kTau / 3.0) * 6.0;
-    const qreal turn = t * (m_running ? 2.4 : 0.9) + m_spin * 0.05;
-    const qreal width = qMax(0.12, qAbs(qCos(turn)));  // seen from the side it is thin, never gone
     const qreal size = kItem * (0.82 + 0.18 * m_swap);
     const QPointF item = center + QPointF(0, bob - 8);
 
@@ -317,8 +317,26 @@ void YahuHero::paintEmblem(QPainter& p, const QPointF& center, qreal t)
     p.setRenderHint(QPainter::Antialiasing, false);
     p.setPen(Qt::NoPen);
 
+    // aura: a soft square glow, and three rings stepping outwards one after another
+    for (int i = 3; i >= 1; --i) {
+        const qreal r = size / 2 + i * 6;
+        p.setBrush(withAlpha(tone, 0.05));
+        p.drawRect(QRectF(item.x() - r, item.y() - r, r * 2, r * 2));
+    }
+    const qreal speed = m_running ? 0.7 : 0.35;
+    for (int i = 0; i < 3; ++i) {
+        const qreal phase = std::fmod(t * speed + i / 3.0, 1.0);
+        const qreal r = std::round((size / 2 + 4 + phase * 34) / 2) * 2;  // on a 2px grid, so it steps like pixels
+        const qreal w = 3.0;
+        const QColor c = withAlpha(tone, 0.5 * (1.0 - phase));
+        p.fillRect(QRectF(item.x() - r, item.y() - r, r * 2, w), c);
+        p.fillRect(QRectF(item.x() - r, item.y() + r - w, r * 2, w), c);
+        p.fillRect(QRectF(item.x() - r, item.y() - r + w, w, r * 2 - w * 2), c);
+        p.fillRect(QRectF(item.x() + r - w, item.y() - r + w, w, r * 2 - w * 2), c);
+    }
+
     // shadow: a flat dark block on the ground, smaller while the item is up high
-    const qreal shadow = size * (0.62 - bob * 0.012) * (0.6 + 0.4 * width);
+    const qreal shadow = size * (0.62 - bob * 0.012);
     p.setBrush(withAlpha(Qt::black, 0.35));
     p.drawRect(QRectF(center.x() - shadow / 2, center.y() + kItem * 0.62, shadow, 6));
     p.setBrush(withAlpha(Qt::black, 0.2));
@@ -335,18 +353,12 @@ void YahuHero::paintEmblem(QPainter& p, const QPointF& center, qreal t)
     }
     p.restore();
 
-    // the icon, squeezed sideways to turn; drawn from a pixmap so the motion stays smooth
-    QPixmap pm = m_icon.pixmap(QSize(int(kItem), int(kItem)), devicePixelRatioF());
-    if (qCos(turn) < 0) {
-        // the back side is a bit darker, so the turn reads; only where the icon has pixels
-        QPainter shade(&pm);
-        shade.setCompositionMode(QPainter::CompositionMode_SourceAtop);
-        shade.fillRect(pm.rect(), withAlpha(Qt::black, 0.3));
-    }
+    // the icon, drawn from a pixmap so the float stays smooth
+    const QPixmap pm = m_icon.pixmap(QSize(int(kItem), int(kItem)), devicePixelRatioF());
     p.save();
     p.setOpacity(qBound(0.0, m_swap * 1.5, 1.0));
     p.setRenderHint(QPainter::SmoothPixmapTransform, false);  // keep pixel icons crisp
-    const QRectF target(item.x() - size * width / 2, item.y() - size / 2, size * width, size);
+    const QRectF target(item.x() - size / 2, item.y() - size / 2, size, size);
     p.drawPixmap(target, pm, QRectF(pm.rect()));
     p.restore();
 }
