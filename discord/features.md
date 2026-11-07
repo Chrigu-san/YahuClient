@@ -75,7 +75,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 **Nächste Version (noch nicht veröffentlicht)**
 - Selbst mit der eigenen Adresse joinen geht jetzt automatisch: Sobald der Server online ist, fragt Windows einmal nach Erlaubnis, einfach mit Ja bestätigen
 - Neue Server haben eine Sichtweite von 24 Chunks statt 10, man sieht viel weiter
-- Neues Block Design: Pixel Ecken, Knöpfe mit 3D Kante, jede Seite mit eigener Farbe, Sonnenuntergang im Banner, die Instanz schwebt oben rechts mit leuchtenden Pixel Ringen, aufgeräumte Instanz Karten und das neue Standard Theme Overworld
+- Neues Block Design: Pixel Ecken, Knöpfe mit 3D Kante, jede Seite mit eigener Farbe, Sonnenuntergang im Banner, Pixel Ringe um die Instanz oben rechts, aufgeräumte Instanz Karten und das neue Standard Theme Overworld
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
