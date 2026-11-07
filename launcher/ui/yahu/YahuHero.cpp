@@ -47,8 +47,8 @@ constexpr int kMarginX = 28;      // banner inset from the hero's edges
 constexpr int kMarginTop = 24;
 constexpr int kMarginBottom = 8;
 constexpr int kInnerPad = 32;     // text inset inside the banner
-constexpr qreal kOrbit = 84.0;    // radius of the comet orbit around the instance icon
-constexpr qreal kPlate = 112.0;   // edge length of the glass plate behind the icon
+constexpr qreal kOrbit = 84.0;    // half the width kept free for the floating instance on the right
+constexpr qreal kItem = 84.0;     // edge length of the floating instance icon
 constexpr qreal kTau = 6.283185307179586;
 
 // Cheap deterministic noise so the landscape looks the same every frame.
@@ -305,56 +305,49 @@ bool YahuHero::eventFilter(QObject* watched, QEvent* event)
 
 void YahuHero::paintEmblem(QPainter& p, const QPointF& center, qreal t)
 {
-    // the instance icon on a dark block, circled by a slow comet; flat on purpose, nothing here can shimmer
-    const QColor tone = m_running ? gold : accent;
-    const qreal bob = qSin(t * kTau / 4.0) * 4.0;
-    const QPointF plateCenter = center + QPointF(0, bob);
+    // the instance floats over the hills like a dropped item: bobbing, slowly turning, a pixel shadow on the ground
+    // and a few sparks in block colors rising around it; while the game runs it turns faster and sparks in gold
+    const qreal bob = qSin(t * kTau / 3.0) * 6.0;
+    const qreal turn = t * (m_running ? 2.4 : 0.9) + m_spin * 0.05;
+    const qreal width = qMax(0.12, qAbs(qCos(turn)));  // seen from the side it is thin, never gone
+    const qreal size = kItem * (0.82 + 0.18 * m_swap);
+    const QPointF item = center + QPointF(0, bob - 8);
 
-    // orbit track
-    p.setBrush(Qt::NoBrush);
-    p.setPen(QPen(withAlpha(text, 0.06), 1.0));
-    p.drawEllipse(center, kOrbit, kOrbit);
-
-    // the comet runs clockwise; its tail fades out behind it
-    const qreal head = -std::fmod(t * (m_running ? 150.0 : 42.0) + m_spin, 360.0);
-    const QRectF ring(center.x() - kOrbit, center.y() - kOrbit, kOrbit * 2, kOrbit * 2);
-    constexpr int kTail = 30;
-    for (int i = kTail - 1; i >= 0; --i) {
-        const qreal fade = 1.0 - qreal(i) / kTail;
-        p.setPen(QPen(withAlpha(tone, 0.75 * fade * fade), 2.0, Qt::SolidLine, Qt::RoundCap));
-        p.drawArc(ring, int((head + i * 3.0) * 16), 3 * 16 + 4);
-    }
-    const qreal rad = qDegreesToRadians(head);
-    const QPointF dot = center + QPointF(qCos(rad), -qSin(rad)) * kOrbit;
+    p.save();
+    p.setRenderHint(QPainter::Antialiasing, false);
     p.setPen(Qt::NoPen);
-    QRadialGradient spark(dot, 12);
-    spark.setColorAt(0.0, withAlpha(tone, 0.55));
-    spark.setColorAt(1.0, withAlpha(tone, 0.0));
-    p.setBrush(spark);
-    p.drawEllipse(dot, 12, 12);
-    p.setBrush(mix(tone, text, 0.5));
-    p.drawEllipse(dot, 2.6, 2.6);
 
-    // glass plate
-    const QRectF plate(plateCenter.x() - kPlate / 2, plateCenter.y() - kPlate / 2, kPlate, kPlate);
-    for (int i = 3; i >= 1; --i) {
-        p.setBrush(withAlpha(Qt::black, 0.16));
-        p.drawPath(rounded(plate.adjusted(-i * 2, -i + 8, i * 2, i * 2 + 8), 26 + i * 2));
+    // shadow: a flat dark block on the ground, smaller while the item is up high
+    const qreal shadow = size * (0.62 - bob * 0.012) * (0.6 + 0.4 * width);
+    p.setBrush(withAlpha(Qt::black, 0.35));
+    p.drawRect(QRectF(center.x() - shadow / 2, center.y() + kItem * 0.62, shadow, 6));
+    p.setBrush(withAlpha(Qt::black, 0.2));
+    p.drawRect(QRectF(center.x() - shadow / 2 - 6, center.y() + kItem * 0.62 + 1.5, shadow + 12, 3));
+
+    // sparks rise from below, fade out, start again
+    for (int i = 0; i < 9; ++i) {
+        const qreal phase = std::fmod(t * (0.25 + 0.1 * (0.5 + 0.5 * hash(i * 7))) + (0.5 + 0.5 * hash(i * 13)), 1.0);
+        const qreal x = center.x() + hash(i * 5 + 2) * kItem * 0.9;
+        const qreal y = center.y() + kItem * 0.55 - phase * kItem * 1.4;
+        const qreal s = hash(i * 3) > 0.3 ? 4.0 : 6.0;
+        p.setBrush(withAlpha(m_running ? gold : blockColor(i), 0.85 * qSin(phase * M_PI)));
+        p.drawRect(QRectF(int(x), int(y), s, s));
     }
-    QLinearGradient glass(plate.topLeft(), plate.bottomLeft());
-    glass.setColorAt(0.0, withAlpha(raisedHi, 0.96));
-    glass.setColorAt(1.0, withAlpha(ink, 0.96));
-    p.setBrush(glass);
-    p.setPen(Qt::NoPen);
-    p.drawPath(rounded(plate, 26));
-    blockEdges(p, plate, 26, 4.0, 1.2);
+    p.restore();
 
-    // the icon, drawn from a pixmap at fractional positions so the float stays smooth
-    const qreal size = 68.0 * (0.82 + 0.18 * m_swap);
-    const QPixmap pm = m_icon.pixmap(QSize(68, 68), devicePixelRatioF());
+    // the icon, squeezed sideways to turn; drawn from a pixmap so the motion stays smooth
+    QPixmap pm = m_icon.pixmap(QSize(int(kItem), int(kItem)), devicePixelRatioF());
+    if (qCos(turn) < 0) {
+        // the back side is a bit darker, so the turn reads; only where the icon has pixels
+        QPainter shade(&pm);
+        shade.setCompositionMode(QPainter::CompositionMode_SourceAtop);
+        shade.fillRect(pm.rect(), withAlpha(Qt::black, 0.3));
+    }
     p.save();
     p.setOpacity(qBound(0.0, m_swap * 1.5, 1.0));
-    p.drawPixmap(QRectF(plateCenter.x() - size / 2, plateCenter.y() - size / 2, size, size), pm, QRectF(pm.rect()));
+    p.setRenderHint(QPainter::SmoothPixmapTransform, false);  // keep pixel icons crisp
+    const QRectF target(item.x() - size * width / 2, item.y() - size / 2, size * width, size);
+    p.drawPixmap(target, pm, QRectF(pm.rect()));
     p.restore();
 }
 

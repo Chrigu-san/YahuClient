@@ -82,7 +82,6 @@ constexpr int kMetaHeight = 16;
 constexpr int kPadBottom = 14;
 constexpr int kTextInset = 12;
 constexpr qreal kRadius = 14.0;
-constexpr qreal kMaxTilt = 9.0;
 
 qreal easeOutCubic(qreal t)
 {
@@ -103,10 +102,10 @@ void drawStatusPixel(QPainter* painter, const QPointF& center, const QColor& col
     const qreal ring = 4.0 + 7.0 * pulse;
     painter->setPen(QPen(YahuStyle::withAlpha(color, 0.7 * (1.0 - pulse)), 1.5));
     painter->setBrush(Qt::NoBrush);
-    painter->drawEllipse(center, ring, ring);
+    painter->drawRect(QRectF(center.x() - ring, center.y() - ring, ring * 2, ring * 2));
     painter->setPen(Qt::NoPen);
     painter->setBrush(color);
-    painter->drawEllipse(center, 4, 4);
+    painter->drawRect(QRectF(center.x() - 4, center.y() - 4, 8, 8));
 }
 }  // namespace
 
@@ -149,77 +148,39 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
     painter->setOpacity(intro);
 
+    // a flat block card: it fades and slides in, and lifts a little while hovered; no tilt, glow or shine
     QRectF card = QRectF(opt.rect).adjusted(2, kLift + 1, -2, -1);
+    card.translate(0, (1.0 - intro) * 18.0 - hover * 3.0);
     const QPointF center = card.center();
 
-    // tilt the card towards the cursor while hovered, like holding it in your hand
-    QPointF rel(0, 0);
-    if (view && hover > 0.0) {
-        const QPointF cursor = view->cursorPosition();
-        rel = QPointF(qBound(-1.0, (cursor.x() - center.x()) / (card.width() / 2), 1.0),
-                      qBound(-1.0, (cursor.y() - center.y()) / (card.height() / 2), 1.0));
-    }
-    QTransform tilt;
-    tilt.translate(center.x(), center.y() + (1.0 - intro) * 18.0 - hover * kLift);
-    tilt.rotate(rel.x() * kMaxTilt * hover, Qt::YAxis);
-    tilt.rotate(-rel.y() * kMaxTilt * hover, Qt::XAxis);
-    const qreal scale = 0.92 + 0.08 * intro + 0.03 * hover;
-    tilt.scale(scale, scale);
-    tilt.translate(-center.x(), -center.y());
-    painter->setTransform(tilt, true);
-
-    const QPainterPath shape = rounded(card, kRadius);
-
-    // drop shadow + accent glow
-    if (hover > 0.01 || selected || running) {
-        const qreal strength = qMax(qMax(hover, selected ? 0.6 : 0.0), running ? 0.7 : 0.0);
-        painter->setPen(Qt::NoPen);
-        for (int i = 5; i >= 1; --i) {
-            painter->setBrush(withAlpha(tone, 0.03 * strength * (6 - i)));
-            painter->drawPath(rounded(card.adjusted(-i * 1.6, -i * 1.2 + 4, i * 1.6, i * 2.4 + 4), kRadius + i));
-        }
-    }
-
-    QColor fill = mix(withAlpha(raised, 0.92), withAlpha(raisedHi, 0.98), hover);
-    if (selected) {
-        fill = mix(fill, withAlpha(tone, 0.95), 0.05);
-    }
     painter->setPen(Qt::NoPen);
-    painter->setBrush(fill);
-    painter->drawPath(shape);
-
-    // light reflection that follows the cursor across the card
-    if (hover > 0.01) {
-        painter->save();
-        painter->setClipPath(shape);
-        const QPointF spot = center + QPointF(rel.x() * card.width() * 0.5, rel.y() * card.height() * 0.5);
-        QRadialGradient sheen(spot, card.width() * 0.8);
-        sheen.setColorAt(0.0, QColor(255, 255, 255, int(34 * hover)));
-        sheen.setColorAt(1.0, QColor(255, 255, 255, 0));
-        painter->setBrush(sheen);
-        painter->drawRect(card);
-        painter->restore();
-    }
-
-    // block edges; selected cards get a frame in the accent, slightly outside the card
-    blockEdges(*painter, card, kRadius, 3.0, 1.0 + 0.3 * hover);
-    painter->setBrush(Qt::NoBrush);
-    if (selected) {
-        painter->setPen(QPen(tone, 3.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
-        painter->drawPath(rounded(card.adjusted(-3, -3, 3, 3), kRadius + 3));
+    painter->setBrush(mix(raised, raisedHi, qMax(hover, selected ? 1.0 : 0.0)));
+    painter->drawPath(rounded(card, kRadius));
+    painter->setRenderHint(QPainter::Antialiasing, false);
+    blockEdges(*painter, card, kRadius, 2.0, 0.8);
+    if (selected || running) {
+        // a frame in the accent (gold while playing), inside the card so the grid stays calm
+        const qreal w = 2.0;
+        QPainterPath frame = rounded(card, kRadius) - rounded(card.adjusted(w, w, -w, -w), kRadius - w);
+        painter->setBrush(tone);
+        painter->drawPath(frame);
     }
 
     QIcon::Mode mode = enabled ? QIcon::Normal : QIcon::Disabled;
     QIcon::State state = opt.state & QStyle::State_Open ? QIcon::On : QIcon::Off;
 
-    // icon with a soft shadow under it, bobbing up on hover
+    // the icon sits in a slot, like an item in an inventory: sunk in, dark on top, light at the bottom
     {
-        const qreal size = kIconSize * (1.0 + 0.1 * hover);
-        const qreal top = card.top() + kPadTop - hover * 3.0;
-        QRectF iconBox(center.x() - size / 2.0, top + (kIconSize - size) / 2.0, size, size);
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(withAlpha(Qt::black, 0.35 + 0.15 * hover));
-        painter->drawEllipse(QPointF(center.x(), card.top() + kPadTop + kIconSize + 4), kIconSize * 0.34 - hover * 3, 3);
+        const qreal pad = 8.0;
+        const QRectF slot(center.x() - kIconSize / 2.0 - pad, card.top() + kPadTop - pad, kIconSize + pad * 2, kIconSize + pad * 2);
+        painter->setBrush(mix(ink, selected ? tone : ink, 0.12));
+        painter->drawRect(slot);
+        painter->fillRect(QRectF(slot.left(), slot.top(), slot.width(), 2), withAlpha(Qt::black, 0.45));
+        painter->fillRect(QRectF(slot.left(), slot.top(), 2, slot.height()), withAlpha(Qt::black, 0.45));
+        painter->fillRect(QRectF(slot.left(), slot.bottom() - 2, slot.width(), 2), withAlpha(Qt::white, 0.10));
+        painter->fillRect(QRectF(slot.right() - 2, slot.top(), 2, slot.height()), withAlpha(Qt::white, 0.10));
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        const QRectF iconBox(center.x() - kIconSize / 2.0, card.top() + kPadTop, kIconSize, kIconSize);
         opt.icon.paint(painter, iconBox.toRect(), Qt::AlignCenter, mode, state);
     }
 
