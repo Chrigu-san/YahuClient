@@ -1,7 +1,7 @@
 # 🟩 Yahu Client
 Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was Prism kann, aber mit eigenem Design und eigenen Features.
 
-**Aktuelle Version:** `0.1.5` (5. November 2026)
+**Aktuelle Version:** `0.1.6` (7. November 2026)
 **Download:** [YahuClient-Setup.exe](https://github.com/Chrigu-san/YahuClient/releases/latest/download/YahuClient-Setup.exe)
 -# Windows 10/11, 64 Bit. Falls Windows "Der Computer wurde durch Windows geschützt" anzeigt: **Weitere Informationen** und dann **Trotzdem ausführen**.
 
@@ -72,10 +72,11 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Fix: Server lassen sich wieder löschen, auch wenn noch ein alter Server unsichtbar im Hintergrund lief
   - Stürzt Yahu Client ab, laufen seine Server nicht mehr unsichtbar weiter
 
-**Nächste Version (noch nicht veröffentlicht)**
-- Selbst mit der eigenen Adresse joinen geht jetzt automatisch: Sobald der Server online ist, fragt Windows einmal nach Erlaubnis, einfach mit Ja bestätigen
-- Neue Server haben eine Sichtweite von 24 Chunks statt 10, man sieht viel weiter
-- Neues Block Design: Pixel Ecken, Knöpfe mit 3D Kante, jede Seite mit eigener Farbe, Sonnenuntergang im Banner, die Instanz schwebt oben rechts, aufgeräumte Karten, schlichter Klick Effekt und das neue Standard Theme Overworld
+**07.11.2026**
+- **Version 0.1.6:**
+  - Selbst mit der eigenen Adresse joinen geht jetzt automatisch: Sobald der Server online ist, fragt Windows einmal nach Erlaubnis, einfach mit Ja bestätigen
+  - Neue Server haben eine Sichtweite von 24 Chunks statt 10, man sieht viel weiter
+  - Neues Block Design: Pixel Ecken, Knöpfe mit 3D Kante, jede Seite mit eigener Farbe, Sonnenuntergang im Banner, die Instanz schwebt oben rechts, aufgeräumte Karten, schlichter Klick Effekt und das neue Standard Theme Overworld
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
