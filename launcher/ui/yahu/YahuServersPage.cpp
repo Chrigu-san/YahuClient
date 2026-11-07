@@ -41,7 +41,6 @@
 #include "YahuStyle.h"
 #include "minecraft/auth/AccountList.h"
 #include "servers/AddressService.h"
-#include "servers/LocalHosts.h"
 #include "servers/PortMapper.h"
 #include "servers/ServerManager.h"
 #include "ui/dialogs/ServerSettingsDialog.h"
@@ -265,19 +264,6 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
         m_addressNote->setWordWrap(true);
         joinLayout->addWidget(m_addressNote);
 
-        // routers rarely reach their own public address, so this PC needs the name pointed at itself once
-        m_hostsRow = new QWidget;
-        auto* hostsLayout = new QHBoxLayout(m_hostsRow);
-        hostsLayout->setContentsMargins(0, 4, 0, 0);
-        m_hostsNote = caption(tr("To join with this address from this PC too, Windows has to allow it once."));
-        m_hostsNote->setWordWrap(true);
-        hostsLayout->addWidget(m_hostsNote, 1);
-        m_hostsButton = new QPushButton(tr("Allow"));
-        m_hostsButton->setCursor(Qt::PointingHandCursor);
-        m_hostsButton->setStyleSheet(QStringLiteral("QPushButton { padding: 3px 10px; font-size: 9pt; }"));
-        hostsLayout->addWidget(m_hostsButton, 0, Qt::AlignVCenter);
-        joinLayout->addWidget(m_hostsRow);
-
         auto* playersRow = new QHBoxLayout;
         playersRow->addWidget(caption(tr("Online")));
         m_players = new QLabel;
@@ -344,20 +330,6 @@ YahuServersPage::YahuServersPage(ServerManager* manager, QWidget* parent) : QWid
         if (!error.isEmpty()) {
             m_addressNote->setText(tr("Couldn't find it out: %1").arg(error));
             return;
-        }
-        refreshAddresses();
-    });
-    connect(m_hostsButton, &QPushButton::clicked, this, [this] {
-        // every server's name at once, so one permission covers them all
-        QStringList names;
-        for (auto* server : m_manager->servers()) {
-            if (AddressService::isValidName(server->config().address)) {
-                names << QStringLiteral("%1.%2").arg(server->config().address, AddressService::kDomain);
-            }
-        }
-        QString error;
-        if (!LocalHosts::apply(names, &error)) {
-            QMessageBox::warning(this, tr("Join from this PC"), error);
         }
         refreshAddresses();
     });
@@ -562,9 +534,6 @@ void YahuServersPage::refreshAddresses()
         note = tr("%1 Without that, your router must forward TCP port %2 to this PC.").arg(mapping.detail).arg(m_current->config().port);
     }
     m_addressNote->setText(note);
-
-    const QString own = nameAddress();
-    m_hostsRow->setVisible(!own.isEmpty() && !LocalHosts::covers({ own }));
 }
 
 void YahuServersPage::refreshPlayers()

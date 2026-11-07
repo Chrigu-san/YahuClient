@@ -199,6 +199,8 @@ class ServerManager : public QObject {
     void load();
     void watch(YahuServer* server);
     void install(YahuServer* server);
+    // Once a name is live, lets this PC join with it too (see LocalHosts); asks Windows at most once per name and run.
+    void pointNamesHere(YahuServer* server);
     QNetworkReply* get(const QString& url);
     // GETs JSON, calling done(json, error) when finished. The guard object stops the chain if it is deleted.
     void getJson(const QString& url, QObject* guard, std::function<void(const QJsonDocument&, const QString&)> done);
@@ -213,4 +215,5 @@ class ServerManager : public QObject {
     QString m_publicAddress;
     PortMapper* m_ports;
     AddressService* m_addresses;
+    QSet<QString> m_hostsAsked;
 };

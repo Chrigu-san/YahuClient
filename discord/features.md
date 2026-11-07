@@ -72,6 +72,9 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Fix: Server lassen sich wieder löschen, auch wenn noch ein alter Server unsichtbar im Hintergrund lief
   - Stürzt Yahu Client ab, laufen seine Server nicht mehr unsichtbar weiter
 
+**Nächste Version (noch nicht veröffentlicht)**
+- Selbst mit der eigenen Adresse joinen geht jetzt automatisch: Sobald der Server online ist, fragt Windows einmal nach Erlaubnis, einfach mit Ja bestätigen
+
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
 - Yahu Mod fürs Spiel selbst
