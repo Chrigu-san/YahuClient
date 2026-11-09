@@ -20,7 +20,11 @@ public abstract class AbstractButtonMixin extends AbstractWidget.WithInactiveMes
 
 	@Inject(method = "extractDefaultSprite", at = @At("HEAD"), cancellable = true)
 	private void yahu$blockButton(GuiGraphicsExtractor g, CallbackInfo ci) {
-		BlockWidgets.button(g, getX(), getY(), width, height, isActive(), isHoveredOrFocused(), alpha);
+		if (BlockWidgets.HIGHLIGHTED.contains(this)) {
+			BlockWidgets.greenButton(g, getX(), getY(), width, height, isHoveredOrFocused(), alpha);
+		} else {
+			BlockWidgets.button(g, getX(), getY(), width, height, isActive(), isHoveredOrFocused(), alpha);
+		}
 		ci.cancel();
 	}
 }

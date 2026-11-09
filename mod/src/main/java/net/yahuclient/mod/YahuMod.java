@@ -12,6 +12,7 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
@@ -19,6 +20,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.yahuclient.mod.config.YahuConfig;
@@ -26,6 +28,7 @@ import net.yahuclient.mod.crosshair.CrosshairRenderer;
 import net.yahuclient.mod.lyrics.LyricsController;
 import net.yahuclient.mod.lyrics.SkyLyricsRenderer;
 import net.yahuclient.mod.lyrics.SyncedLyrics;
+import net.yahuclient.mod.ui.BlockWidgets;
 import net.yahuclient.mod.ui.Control;
 import net.yahuclient.mod.ui.ModEntry;
 import net.yahuclient.mod.ui.YahuScreen;
@@ -92,10 +95,18 @@ public class YahuMod implements ClientModInitializer {
 					moment.next() != null ? moment.next().text() : null, song != null ? song.title() + " – " + song.artist() : null);
 		});
 
-		// a small Yahu button in the top left corner of the pause menu
+		// a green "Yahu Mods" button at the top of the title screen and the pause menu, and Right Shift works there too
+		// (key mappings only fire while playing, not in menus)
 		ScreenEvents.AFTER_INIT.register((mc, screen, width, height) -> {
-			if (screen instanceof PauseScreen) {
-				Screens.getWidgets(screen).add(Button.builder(Component.literal("Yahu"), b -> openMenu(mc, screen)).bounds(6, 6, 48, 20).build());
+			if (screen instanceof PauseScreen || screen instanceof TitleScreen) {
+				Button button = Button.builder(Component.literal("Yahu Mods"), b -> openMenu(mc, screen)).bounds(width / 2 - 60, 6, 120, 20).build();
+				BlockWidgets.HIGHLIGHTED.add(button);
+				Screens.getWidgets(screen).add(button);
+				ScreenKeyboardEvents.afterKeyPress(screen).register((s, key) -> {
+					if (key.key() == MENU_KEY) {
+						openMenu(mc, s);
+					}
+				});
 			}
 		});
 	}

@@ -87,7 +87,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 
 ## 📅 Verlauf (Fortsetzung)
 **Nächste Version (noch nicht veröffentlicht)**
-- Yahu Menü im Spiel mit Rechts Shift, mit einem Tab für unsere eigenen Mods
+- Grüner Knopf **Yahu Mods** im Titelbild und Pause Menü (oder Rechts Shift), mit einem Tab für unsere eigenen Mods
 - Die Minecraft Menüs selbst im Block Look vom Launcher: nachtblaue Knöpfe, Blockwand als Hintergrund, Schieberegler in Grün
 - Mod **Crosshair**: eigenes Fadenkreuz mit Form, Grösse, Lücke, Dicke und Farbe
 - Mod **Lyrics**: der Songtext läuft wie Karaoke am Himmel mit, zum Song in Spotify oder im Browser

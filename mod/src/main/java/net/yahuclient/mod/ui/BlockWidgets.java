@@ -1,5 +1,9 @@
 package net.yahuclient.mod.ui;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
+
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
@@ -7,7 +11,18 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
  * net.yahuclient.mod.mixin call these in place of the vanilla sprites; the text on top stays vanilla's.
  */
 public final class BlockWidgets {
+	/** Buttons drawn in grass instead of night blue, like the launcher's main button: our "Yahu Mods" entries. */
+	public static final Set<Object> HIGHLIGHTED = Collections.newSetFromMap(new WeakHashMap<>());
+
 	private BlockWidgets() {
+	}
+
+	/** A highlighted button: grass face, lighter while hovered. */
+	public static void greenButton(GuiGraphicsExtractor g, int x, int y, int w, int h, boolean hot, float alpha) {
+		g.fill(x, y, x + w, y + h, fade(hot ? YahuUi.GRASS_HI : YahuUi.GRASS, alpha));
+		g.fill(x, y, x + w, y + 1, fade(0x60FFFFFF, alpha));
+		g.fill(x, y + h - 2, x + w, y + h, fade(YahuUi.GRASS_LO, alpha));
+		g.fill(x + w - 1, y + 1, x + w, y + h - 2, fade(0x40000000, alpha));
 	}
 
 	private static int fade(int color, float alpha) {

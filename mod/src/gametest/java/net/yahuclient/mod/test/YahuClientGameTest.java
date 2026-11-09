@@ -80,7 +80,7 @@ public class YahuClientGameTest implements FabricClientGameTest {
 			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitForScreen(PauseScreen.class);
 			context.takeScreenshot("yahu-pause-menu");
-			context.clickScreenButton("Yahu");
+			context.clickScreenButton("Yahu Mods");
 			context.waitForScreen(YahuScreen.class);
 			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitForScreen(PauseScreen.class);
