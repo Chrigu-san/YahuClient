@@ -22,12 +22,23 @@ public final class YahuConfig {
 		public int gap = 2;         // free space around the middle
 		public int thickness = 1;
 		public int color = 0xFFFFFFFF;  // ARGB
+		public int opacity = 100;       // percent
 		public boolean outline = true;  // a dark rim so it reads on bright blocks
+		public int outlineColor = 0xFF000000;
 		public boolean dot = false;     // an extra dot in the middle
+
+		// PvP
+		public boolean targetColorOn = true;       // another color while aiming at a player or mob
+		public int targetColor = 0xFFFF5252;
+		public boolean hitMarker = true;           // a short X when a hit lands
+		public int hitMarkerColor = 0xFFFFFFFF;
+		public boolean cooldown = true;            // the attack charge as a bar under the crosshair
+		public boolean dynamicGap = false;         // opens up while moving, sprinting or in the air
 	}
 
 	public static final class Lyrics {
 		public boolean enabled = true;
+		public LyricsMode mode = LyricsMode.SKY;
 		public float height = 0.62f;    // how high in the sky, 0 = horizon, 1 = straight up
 		public float scale = 1.0f;
 		public int sungColor = 0xFF6CD83E;     // the part already sung: grass green
@@ -74,6 +85,9 @@ public final class YahuConfig {
 		}
 		if (lyrics == null) {
 			lyrics = new Lyrics();
+		}
+		if (lyrics.mode == null) {
+			lyrics.mode = LyricsMode.SKY;
 		}
 	}
 }

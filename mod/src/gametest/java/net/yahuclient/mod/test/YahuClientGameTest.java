@@ -56,6 +56,29 @@ public class YahuClientGameTest implements FabricClientGameTest {
 			context.waitTicks(2);
 			context.takeScreenshot("yahu-crosshair-circle");
 
+			// lyrics in the sky, with made-up lines in place of a real song
+			context.runOnClient(mc -> {
+				YahuMod.config().lyrics.enabled = true;
+				YahuMod.showTestLyrics("Hello from the sky above", 0.55, "this line comes up next", "Test Song – Yahu");
+			});
+			context.getInput().lookAt(0, -20);
+			context.waitTicks(20);
+			context.takeScreenshot("yahu-lyrics-sky");
+			// turning the camera must leave the lyrics where they are in the sky, like a cloud
+			context.getInput().lookAt(25, -20);
+			context.waitTicks(5);
+			context.takeScreenshot("yahu-lyrics-sky-turned");
+			context.runOnClient(mc -> YahuMod.config().lyrics.mode = net.yahuclient.mod.config.LyricsMode.FOLLOW);
+			context.waitTicks(5);
+			context.takeScreenshot("yahu-lyrics-follow");
+			context.runOnClient(mc -> {
+				YahuMod.config().lyrics.mode = net.yahuclient.mod.config.LyricsMode.SKY;
+				YahuMod.config().lyrics.enabled = false;
+				YahuMod.showTestLyrics(null, 0, null, null);
+			});
+			context.getInput().lookAt(0, 0);
+			context.waitTicks(2);
+
 			// Right Shift opens the menu on the Mods tab with the first mod, Right Shift closes it again
 			context.getInput().pressKey(InputConstants.KEY_RSHIFT);
 			context.waitForScreen(YahuScreen.class);

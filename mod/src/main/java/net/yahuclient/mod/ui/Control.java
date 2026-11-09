@@ -60,6 +60,19 @@ public abstract class Control {
 		return w - w / 2;
 	}
 
+	/** A small title over a group of settings, with a line under it. */
+	public static final class Heading extends Control {
+		public Heading(String label) {
+			super(label);
+		}
+
+		@Override
+		public void extract(GuiGraphicsExtractor g, Font font, int mouseX, int mouseY) {
+			g.text(font, label.toUpperCase(), x, y + 6, YahuUi.GOLD, false);
+			g.fill(x + font.width(label.toUpperCase()) + 6, y + 10, x + w, y + 11, YahuUi.LINE);
+		}
+	}
+
 	/** An on/off switch: a sunk track with a block that slides to the right and turns green when on. */
 	public static final class Toggle extends Control {
 		private final Supplier<Boolean> get;

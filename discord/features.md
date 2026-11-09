@@ -89,8 +89,8 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 **Nächste Version (noch nicht veröffentlicht)**
 - Grüner Knopf **Yahu Mods** im Titelbild und Pause Menü (oder Rechts Shift), mit einem Tab für unsere eigenen Mods
 - Die Minecraft Menüs selbst im Block Look vom Launcher: nachtblaue Knöpfe, Blockwand als Hintergrund, Schieberegler in Grün
-- Mod **Crosshair**: eigenes Fadenkreuz mit Form, Grösse, Lücke, Dicke und Farbe
-- Mod **Lyrics**: der Songtext läuft wie Karaoke am Himmel mit, zum Song in Spotify oder im Browser
+- Mod **Crosshair** für PvP: Form, Grösse, Farbe, Deckkraft, andere Farbe wenn du auf einen Gegner zielst, Hit Marker, Schlag Ladebalken und Lücke die beim Laufen aufgeht
+- Mod **Lyrics**: der Songtext hängt gross am Himmel wie eine Wolke und läuft wie Karaoke mit, zum Song in Spotify oder im Browser. Auf Wunsch auch fest im Bild
 - Der Launcher legt die Mod automatisch in Fabric Instanzen für 26.3
 
 ## 🔜 Bald
