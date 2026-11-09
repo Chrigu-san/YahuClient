@@ -92,6 +92,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - Mod **Crosshair** für PvP: Form, Grösse, Farbe, Deckkraft, andere Farbe wenn du auf einen Gegner zielst, Hit Marker, Schlag Ladebalken und Lücke die beim Laufen aufgeht
 - Mod **Lyrics**: der Songtext hängt gross am Himmel wie eine Wolke und läuft wie Karaoke mit, zum Song in Spotify oder im Browser. Auf Wunsch auch fest im Bild
 - Der Launcher legt die Mod automatisch in Fabric Instanzen für 26.3
+- Beim Spielstart kein Fenster mit Ladebalken mehr: unter dem Play Knopf steht, was gerade geladen wird und wie lange es noch etwa dauert
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten

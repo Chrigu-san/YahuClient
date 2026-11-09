@@ -34,6 +34,7 @@
 #include "Application.h"
 #include "BaseInstance.h"
 #include "InstanceList.h"
+#include "LaunchProgress.h"
 #include "YahuPlayButton.h"
 #include "YahuStyle.h"
 #include "icons/IconList.h"
@@ -164,6 +165,13 @@ YahuHero::YahuHero(QAction* launchAction,
     });
     m_clock.start();
     qApp->installEventFilter(this);
+
+    // the start of the selected instance shows here, no progress window
+    connect(LaunchProgress::instance(), &LaunchProgress::changed, this, [this](const QString& id) {
+        if (m_instance && m_instance->id() == id) {
+            update();
+        }
+    });
 
     setInstance(nullptr);
 }
@@ -522,5 +530,34 @@ void YahuHero::paintEvent(QPaintEvent*)
         p.setPen(muted);
         p.drawText(QPointF(left + slide * 1.5, y + mm.ascent()), mm.elidedText(m_meta, Qt::ElideRight, qMax(80.0, textWidth)));
         p.setOpacity(1.0);
+    }
+
+    // the start in progress: one quiet line right under the Play button, and a thin bar along the bottom of the banner
+    if (m_instance) {
+        const auto state = LaunchProgress::instance()->state(m_instance->id());
+        if (state.active) {
+            QFont small = font();
+            small.setPointSizeF(small.pointSizeF() - 0.5);
+            small.setWeight(QFont::DemiBold);
+            p.setFont(small);
+            p.setPen(withAlpha(text, 0.85));
+            const QRect play = m_play->geometry();
+            // the Play button has a 12px glow pad around its face
+            p.drawText(QPointF(play.left() + 14, play.bottom() - 12 + QFontMetricsF(small).ascent() + 4),
+                       LaunchProgress::describe(state));
+
+            p.setRenderHint(QPainter::Antialiasing, false);
+            const QRectF track(banner.left() + 4, banner.bottom() - 9, banner.width() - 8, 4);
+            p.fillRect(track, withAlpha(Qt::black, 0.35));
+            if (state.fraction >= 0) {
+                p.fillRect(QRectF(track.left(), track.top(), track.width() * qBound(0.0, state.fraction, 1.0), track.height()), accent);
+            } else {
+                // nothing to measure yet: a short block runs back and forth
+                const qreal w = track.width() * 0.18;
+                const qreal phase = 0.5 + 0.5 * qSin(m_clock.elapsed() / 1000.0 * 2.6);
+                p.fillRect(QRectF(track.left() + (track.width() - w) * phase, track.top(), w, track.height()), accent);
+            }
+            p.setRenderHint(QPainter::Antialiasing, true);
+        }
     }
 }
