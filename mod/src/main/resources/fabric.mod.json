@@ -1,0 +1,24 @@
+{
+	"schemaVersion": 1,
+	"id": "yahu",
+	"version": "${version}",
+	"name": "Yahu Client",
+	"description": "The in-game part of Yahu Client: the Yahu menu (Right Shift) with our own mods, a custom crosshair and karaoke lyrics in the sky.",
+	"authors": ["Chris Reidy"],
+	"contact": {
+		"homepage": "https://yahuclient.net",
+		"sources": "https://github.com/Chrigu-san/YahuClient"
+	},
+	"license": "GPL-3.0-only",
+	"icon": "assets/yahu/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["net.yahuclient.mod.YahuMod"]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
