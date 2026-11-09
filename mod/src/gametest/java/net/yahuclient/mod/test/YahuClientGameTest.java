@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.yahuclient.mod.YahuMod;
 import net.yahuclient.mod.config.CrosshairShape;
 import net.yahuclient.mod.ui.YahuScreen;
@@ -22,6 +23,20 @@ public class YahuClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		context.runOnClient(mc -> YahuMod.config().lyrics.enabled = false);
+
+		// Minecraft's own screens in the block look: title screen, then options with its buttons and sliders
+		context.waitForScreen(TitleScreen.class);
+		context.waitTicks(60);  // the title screen fades its buttons in
+		context.takeScreenshot("yahu-title-screen");
+		context.clickScreenButton("menu.options");
+		context.waitTicks(5);
+		context.takeScreenshot("yahu-options");
+		context.clickScreenButton("options.video");
+		context.waitTicks(5);
+		context.takeScreenshot("yahu-video-settings");
+		context.setScreen(() -> null);
+		context.setScreen(() -> new TitleScreen());
+		context.waitForScreen(TitleScreen.class);
 
 		try (TestSingleplayerContext world = context.worldBuilder().create()) {
 			world.getServer().runCommand("time set day");

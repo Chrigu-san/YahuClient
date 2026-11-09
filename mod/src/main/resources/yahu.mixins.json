@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "net.yahuclient.mod.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"AbstractButtonMixin",
+		"AbstractSliderButtonMixin",
+		"ScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 0
+	}
+}

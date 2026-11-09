@@ -22,7 +22,8 @@ own account.
   `chris.yahuclient.net`, so friends never have to type an IP. Servers never keep running unseen after the launcher closes
   or crashes.
 - **In-game Yahu menu:** In Fabric instances for Minecraft 26.3 (with Fabric API), the launcher adds the small Yahu mod.
-  Right Shift (or the Yahu button in the pause menu) opens a menu in the launcher's look with a Mods tab for our own mods:
+  It puts Minecraft's own menus into the launcher's block look (buttons, sliders, backgrounds). Right Shift (or the Yahu
+  button in the pause menu) opens the Yahu menu with a Mods tab for our own mods:
   a custom crosshair, and karaoke lyrics in the sky for the song you play in Spotify or your browser.
 - **Sign-in:** Players sign in through the official Microsoft login page in their browser. The launcher receives a token
   only to verify game ownership and start Minecraft. Passwords never pass through the launcher.

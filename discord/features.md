@@ -23,7 +23,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - Mit der eigenen Adresse auch selbst auf den eigenen Server joinen
 
 **Im Spiel** (Fabric 26.3)
-- Yahu Menü mit **Rechts Shift**, Tab **Mods** mit unseren eigenen Mods
+- Menüs im Block Look vom Launcher, Yahu Menü mit **Rechts Shift** und Tab **Mods**
 - **Crosshair:** eigene Form, Grösse und Farbe
 - **Lyrics:** Karaoke am Himmel zum Song in Spotify oder im Browser
 
@@ -88,6 +88,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 ## 📅 Verlauf (Fortsetzung)
 **Nächste Version (noch nicht veröffentlicht)**
 - Yahu Menü im Spiel mit Rechts Shift, mit einem Tab für unsere eigenen Mods
+- Die Minecraft Menüs selbst im Block Look vom Launcher: nachtblaue Knöpfe, Blockwand als Hintergrund, Schieberegler in Grün
 - Mod **Crosshair**: eigenes Fadenkreuz mit Form, Grösse, Lücke, Dicke und Farbe
 - Mod **Lyrics**: der Songtext läuft wie Karaoke am Himmel mit, zum Song in Spotify oder im Browser
 - Der Launcher legt die Mod automatisch in Fabric Instanzen für 26.3
