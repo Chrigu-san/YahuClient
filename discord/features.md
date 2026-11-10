@@ -1,7 +1,7 @@
 # 🟩 Yahu Client
 Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was Prism kann, aber mit eigenem Design und eigenen Features.
 
-**Aktuelle Version:** `0.1.6` (7. November 2026)
+**Aktuelle Version:** `0.1.7` (10. November 2026)
 **Download:** [YahuClient-Setup.exe](https://github.com/Chrigu-san/YahuClient/releases/latest/download/YahuClient-Setup.exe)
 -# Windows 10/11, 64 Bit. Falls Windows "Der Computer wurde durch Windows geschützt" anzeigt: **Weitere Informationen** und dann **Trotzdem ausführen**.
 
@@ -87,14 +87,15 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 ---- neue Nachricht ----
 
 ## 📅 Verlauf (Fortsetzung)
-**Nächste Version (noch nicht veröffentlicht)**
-- Knopf **Yahu Mods** im Titelbild und Pause Menü (oder Rechts Shift), mit unseren eigenen Mods
-- Komplett neues dunkles Design im Spiel mit sanft bewegtem Hintergrund und ruhigen Animationen
-- Mod **Skybox**: Himmel mit schwarzem Loch, klarer Tag, goldene Stunde, Polarlicht, Nebel oder ein eigenes Bild
-- Mod **Crosshair** für PvP: pixelgenau, Arme, Punkt und Kreis in jeder Grösse, Vorlagen, Farbe auf Gegner, Hit Marker, Ladebalken
-- Mod **Lyrics**: der Songtext hängt am Himmel wie eine Wolke. Zeile, Wort für Wort oder Kinetic, 4 Schriften, Umrandung und Farben einstellbar
-- Der Launcher legt die Mod automatisch in Fabric Instanzen für 26.3
-- Beim Spielstart kein Fenster mit Ladebalken mehr: unter dem Play Knopf steht, was gerade geladen wird und wie lange es noch etwa dauert
+**10.11.2026**
+- **Version 0.1.7:**
+  - Knopf **Yahu Mods** im Titelbild und Pause Menü (oder Rechts Shift), mit unseren eigenen Mods
+  - Komplett neues dunkles Design im Spiel mit sanft bewegtem Hintergrund und ruhigen Animationen
+  - Mod **Skybox**: Himmel mit schwarzem Loch, klarer Tag, goldene Stunde, Polarlicht, Nebel oder ein eigenes Bild
+  - Mod **Crosshair** für PvP: pixelgenau, Arme, Punkt und Kreis in jeder Grösse, Vorlagen, Farbe auf Gegner, Hit Marker, Ladebalken
+  - Mod **Lyrics**: der Songtext hängt am Himmel wie eine Wolke. Zeile, Wort für Wort oder Kinetic, 4 Schriften, Umrandung und Farben einstellbar
+  - Der Launcher legt die Mod automatisch in Fabric Instanzen für 26.3
+  - Beim Spielstart kein Fenster mit Ladebalken mehr: unter dem Play Knopf steht, was gerade geladen wird und wie lange es noch etwa dauert
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
