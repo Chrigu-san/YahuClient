@@ -12,39 +12,79 @@ import java.nio.file.StandardCopyOption;
 
 /** Everything the Yahu mods remember, saved as config/yahu.json in the instance. Missing fields keep their defaults. */
 public final class YahuConfig {
+	public int version = 2;
 	public Crosshair crosshair = new Crosshair();
 	public Lyrics lyrics = new Lyrics();
+	public Skybox skybox = new Skybox();
 
+	/** The crosshair is built from three parts that can be combined: arms, a center dot and a ring. Sizes are screen pixels. */
 	public static final class Crosshair {
 		public boolean enabled = true;
-		public CrosshairShape shape = CrosshairShape.CROSS;
-		public int size = 5;        // arm length in pixels (GUI scale)
-		public int gap = 2;         // free space around the middle
-		public int thickness = 1;
-		public int color = 0xFFFFFFFF;  // ARGB
-		public int opacity = 100;       // percent
-		public boolean outline = true;  // a dark rim so it reads on bright blocks
+
+		public Arms arms = Arms.CROSS;
+		public int armLength = 6;
+		public int armThickness = 2;
+		public int gap = 3;           // may go below zero: the arms then overlap the middle
+
+		public boolean dot = false;
+		public int dotSize = 3;
+		public boolean dotRound = true;
+		public int dotColor = 0xFFFFFFFF;
+		public boolean dotOwnColor = false;
+
+		public boolean ring = false;
+		public int ringRadius = 9;
+		public int ringThickness = 1;
+
+		public int color = 0xFFFFFFFF;
+		public int opacity = 100;
+		public int outline = 1;       // outline width in pixels, 0 = none
 		public int outlineColor = 0xFF000000;
-		public boolean dot = false;     // an extra dot in the middle
+		public int outlineOpacity = 80;
 
 		// PvP
-		public boolean targetColorOn = true;       // another color while aiming at a player or mob
-		public int targetColor = 0xFFFF5252;
-		public boolean hitMarker = true;           // a short X when a hit lands
+		public boolean targetColorOn = true;
+		public int targetColor = 0xFFFF5C7A;
+		public boolean hitMarker = true;
 		public int hitMarkerColor = 0xFFFFFFFF;
-		public boolean cooldown = true;            // the attack charge as a bar under the crosshair
-		public boolean dynamicGap = false;         // opens up while moving, sprinting or in the air
+		public int hitMarkerSize = 6;
+		public int hitMarkerMs = 260;
+		public Charge charge = Charge.BAR;
+		public int spread = 0;        // how many pixels the crosshair opens up while moving, 0 = off
+		public boolean hideInThirdPerson = true;
 	}
+
+	public enum Arms { NONE, CROSS, T, X }
+
+	public enum Charge { OFF, BAR, RING }
 
 	public static final class Lyrics {
 		public boolean enabled = true;
-		public LyricsMode mode = LyricsMode.SKY;
-		public float height = 0.62f;    // how high in the sky, 0 = horizon, 1 = straight up
+		public LyricsMode mode = LyricsMode.SKY;      // where
+		public LyricsStyle style = LyricsStyle.WORDS; // how they appear
+		public LyricsFont font = LyricsFont.UNBOUNDED;
+		public float height = 0.55f;    // how high in the sky, 0 = horizon, 1 = high up
 		public float scale = 1.0f;
-		public int sungColor = 0xFF6CD83E;     // the part already sung: grass green
+		public int maxWidth = 70;       // the line wraps beyond this share of the view, in percent, so it never runs off
+		public int outline = 1;         // outline width, 0 = none
+		public int outlineColor = 0xFF0B0C12;
+		public int sungColor = 0xFF8B6CFF;
 		public int upcomingColor = 0xFFFFFFFF;
-		public boolean showNext = true;  // the next line, small, under the current one
+		public boolean gradient = true; // sung text runs from the sung color to cyan
+		public boolean uppercase = false;
+		public boolean showNext = true;
 		public boolean showSongTitle = true;
+		public int popStrength = 60;    // how much words pop when they appear, in percent
+	}
+
+	public static final class Skybox {
+		public boolean enabled = false;
+		public SkyPreset preset = SkyPreset.BLACK_HOLE;
+		public String customFile = "";
+		public boolean followDayNight = false;  // darker at night, like the normal sky
+		public int brightness = 100;
+		public int rotationSpeed = 10;          // degrees per minute
+		public boolean overworldOnly = true;
 	}
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -75,13 +115,17 @@ public final class YahuConfig {
 		}
 	}
 
-	// sections missing from an older file come back as defaults instead of null
+	// sections and enums missing from an older file come back as defaults instead of null
 	private void fillGaps() {
-		if (crosshair == null) {
+		if (crosshair == null || version < 2) {
+			// the first crosshair settings meant something else; start fresh rather than misread them
 			crosshair = new Crosshair();
 		}
-		if (crosshair.shape == null) {
-			crosshair.shape = CrosshairShape.CROSS;
+		if (crosshair.arms == null) {
+			crosshair.arms = Arms.CROSS;
+		}
+		if (crosshair.charge == null) {
+			crosshair.charge = Charge.BAR;
 		}
 		if (lyrics == null) {
 			lyrics = new Lyrics();
@@ -89,5 +133,25 @@ public final class YahuConfig {
 		if (lyrics.mode == null) {
 			lyrics.mode = LyricsMode.SKY;
 		}
+		if (lyrics.style == null) {
+			lyrics.style = LyricsStyle.WORDS;
+		}
+		if (lyrics.font == null) {
+			lyrics.font = LyricsFont.UNBOUNDED;
+		}
+		if (lyrics.maxWidth < 20 || lyrics.maxWidth > 100) {
+			// older files held font pixels here; a share of the view is what works in the sky and on the screen alike
+			lyrics.maxWidth = 70;
+		}
+		if (skybox == null) {
+			skybox = new Skybox();
+		}
+		if (skybox.preset == null) {
+			skybox.preset = SkyPreset.BLACK_HOLE;
+		}
+		if (skybox.customFile == null) {
+			skybox.customFile = "";
+		}
+		version = 2;
 	}
 }

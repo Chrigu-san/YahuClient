@@ -6,7 +6,8 @@
 	"client": [
 		"AbstractButtonMixin",
 		"AbstractSliderButtonMixin",
-		"ScreenMixin"
+		"ScreenMixin",
+		"SkyRendererMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

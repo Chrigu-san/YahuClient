@@ -27,6 +27,13 @@ public abstract class ScreenMixin {
 		ci.cancel();
 	}
 
+	// the title screen's spinning panorama makes way for the dark Yahu background
+	@Inject(method = "extractPanorama", at = @At("HEAD"), cancellable = true)
+	private void yahu$panorama(GuiGraphicsExtractor g, float alpha, CallbackInfo ci) {
+		BlockWidgets.wall(g, 0, 0, g.guiWidth(), g.guiHeight());
+		ci.cancel();
+	}
+
 	@Inject(method = "extractTransparentBackground", at = @At("HEAD"), cancellable = true)
 	private void yahu$transparentBackground(GuiGraphicsExtractor g, CallbackInfo ci) {
 		BlockWidgets.veil(g, 0, 0, g.guiWidth(), g.guiHeight());
