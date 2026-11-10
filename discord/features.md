@@ -22,6 +22,11 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - **Eigene Adresse:** Dein Server bekommt eine Adresse wie `chris.yahuclient.net`, die immer gleich bleibt. Deine Freunde müssen keine IP und keinen Port eintippen
 - Mit der eigenen Adresse auch selbst auf den eigenen Server joinen
 
+**Im Spiel** (Fabric 26.3)
+- Menüs im Block Look vom Launcher, Yahu Menü mit **Rechts Shift** und Tab **Mods**
+- **Crosshair:** eigene Form, Grösse und Farbe
+- **Lyrics:** Karaoke am Himmel zum Song in Spotify oder im Browser
+
 **Design**
 - Alles in einem Fenster, Dialoge öffnen sich als Overlay
 - Block Design: Pixel Ecken, Knöpfe mit 3D Kante, viele Farben. Themes: Overworld, Black, Night Grass und Ocean
@@ -78,7 +83,16 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Neue Server haben eine Sichtweite von 24 Chunks statt 10, man sieht viel weiter
   - Neues Block Design: Pixel Ecken, Knöpfe mit 3D Kante, jede Seite mit eigener Farbe, Sonnenuntergang im Banner, die Instanz schwebt oben rechts, aufgeräumte Karten, schlichter Klick Effekt und das neue Standard Theme Overworld
 
+---- neue Nachricht ----
+
+## 📅 Verlauf (Fortsetzung)
+**Nächste Version (noch nicht veröffentlicht)**
+- Grüner Knopf **Yahu Mods** im Titelbild und Pause Menü (oder Rechts Shift), mit einem Tab für unsere eigenen Mods
+- Die Minecraft Menüs selbst im Block Look vom Launcher: nachtblaue Knöpfe, Blockwand als Hintergrund, Schieberegler in Grün
+- Mod **Crosshair** für PvP: Form, Grösse, Farbe, Deckkraft, andere Farbe wenn du auf einen Gegner zielst, Hit Marker, Schlag Ladebalken und Lücke die beim Laufen aufgeht
+- Mod **Lyrics**: der Songtext hängt gross am Himmel wie eine Wolke und läuft wie Karaoke mit, zum Song in Spotify oder im Browser. Auf Wunsch auch fest im Bild
+- Der Launcher legt die Mod automatisch in Fabric Instanzen für 26.3
+
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
-- Yahu Mod fürs Spiel selbst
 -# Fragen oder Fehler gefunden? Schreib es hier auf dem Server.

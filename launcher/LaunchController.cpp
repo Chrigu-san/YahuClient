@@ -39,6 +39,8 @@
 #include "launch/steps/PrintServers.h"
 #include "minecraft/auth/AccountData.h"
 #include "minecraft/auth/AccountList.h"
+#include "minecraft/MinecraftInstance.h"
+#include "minecraft/YahuMods.h"
 
 #include "net/NetUtils.h"
 #include "ui/InstanceWindow.h"
@@ -376,6 +378,9 @@ void LaunchController::launchInstance()
         return;
     }
 
+    // the Yahu mod goes into fitting Fabric instances before the game starts (see minecraft/YahuMods.h)
+    const QString yahuModNote = YahuMods::install(m_instance, YahuMods::bundledJar());
+
     m_launcher = m_instance->createLaunchTask(m_session, m_targetToJoin);
     if (!m_launcher) {
         emitFailed(tr("Couldn't instantiate a launcher."));
@@ -405,6 +410,9 @@ void LaunchController::launchInstance()
         online_mode = m_actualLaunchMode == LaunchMode::Demo ? "demo" : "offline";
     }
 
+    if (!yahuModNote.isEmpty()) {
+        m_launcher->prependStep(makeShared<TextPrint>(m_launcher, yahuModNote + "\n", MessageLevel::Launcher));
+    }
     m_launcher->prependStep(makeShared<TextPrint>(m_launcher, "Launched instance in " + online_mode + " mode\n", MessageLevel::Launcher));
 
     // Prepend Version

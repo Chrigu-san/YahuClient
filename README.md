@@ -21,12 +21,18 @@ own account.
   set up port forwarding. The port is closed again when the server stops. Each server can get its own address like
   `chris.yahuclient.net`, so friends never have to type an IP. Servers never keep running unseen after the launcher closes
   or crashes.
+- **In-game Yahu menu:** In Fabric instances for Minecraft 26.3 (with Fabric API), the launcher adds the small Yahu mod.
+  It puts Minecraft's own menus into the launcher's block look (buttons, sliders, backgrounds). The green Yahu Mods button (title screen and pause
+  menu) or Right Shift opens the Yahu menu with a Mods tab for our own mods:
+  a custom crosshair, and karaoke lyrics in the sky for the song you play in Spotify or your browser.
 - **Sign-in:** Players sign in through the official Microsoft login page in their browser. The launcher receives a token
   only to verify game ownership and start Minecraft. Passwords never pass through the launcher.
-- **No cheats, no server tricks:** The launcher starts the unmodified game. It doesn't change network traffic or game behaviour.
+- **No cheats, no server tricks:** The launcher starts the official game; the Yahu mod only draws things for the player
+  (crosshair, lyrics, its menu). It doesn't change network traffic or what the game sends to servers.
 - **No data collection:** No telemetry and no accounts of its own. Everything stays on the player's PC
   (`%APPDATA%\YahuClient`). The only Yahu service is the address service for server names: it stores the name, its
-  current IP and port, nothing else.
+  current IP and port, nothing else. The lyrics mod, while it is on, asks [LRCLIB](https://lrclib.net) for the lyrics of
+  the playing song (title, artist, album and length); no lyrics are stored in Yahu Client itself.
 - **Downloads** come only from official sources (Mojang/Microsoft, Modrinth, mod loader projects) and are checked against their hashes.
   Server software is downloaded straight from Mojang, PaperMC and Fabric.
 

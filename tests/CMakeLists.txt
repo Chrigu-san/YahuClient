@@ -32,6 +32,7 @@ set(TEST_SOURCES
     AddressService_test.cpp
     LocalHosts_test.cpp
     ServerProcesses_test.cpp
+    YahuMods_test.cpp
 )
 
 # NOTE(@getchoo): Very funny way of aliasing the Qt generated `main` test functions to respective filenames

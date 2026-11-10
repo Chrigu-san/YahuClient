@@ -275,6 +275,8 @@ set(MINECRAFT_SOURCES
     minecraft/GradleSpecifier.h
     minecraft/MinecraftInstance.cpp
     minecraft/MinecraftInstance.h
+    minecraft/YahuMods.cpp
+    minecraft/YahuMods.h
     minecraft/LaunchProfile.cpp
     minecraft/LaunchProfile.h
     minecraft/Component.cpp
@@ -1586,6 +1588,13 @@ if(WIN32 OR (UNIX AND APPLE))
         FILES "qtlogging.ini"
         DESTINATION "${RESOURCES_DEST_DIR}"
         COMPONENT bundle
+    )
+    # The Yahu mod (mod/, built with Gradle first); the launcher copies it into fitting Fabric instances (minecraft/YahuMods)
+    install(
+        FILES "${CMAKE_SOURCE_DIR}/mod/build/libs/yahu-mod.jar"
+        DESTINATION "${BINARY_DEST_DIR}/mods"
+        COMPONENT bundle
+        OPTIONAL
     )
 endif()
 

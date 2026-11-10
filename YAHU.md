@@ -50,6 +50,31 @@ Tested with a Sagemcom F3896LG (Sunrise). Not covered yet: networks without any 
 
 The Cloudflare API token lives only in the worker as a secret; see `services/dns-worker/README.md` for the API, tests and deployment.
 
+## In-game mod (KAN-4, `mod/`)
+
+A Fabric mod (`yahu`, client only) for Minecraft 26.3, built with Gradle and Fabric Loom 1.19 against the versions Fabric instances for 26.3 ship (loader 0.19.5, Fabric API 0.164.0); it needs Java 25. 26.x is unobfuscated, so there are no mappings. The launcher ships `mods/yahu-mod.jar` and copies it into an instance before it starts (`launcher/minecraft/YahuMods.cpp`), but only into Fabric instances for 26.3 that have Fabric API: without Fabric API the game would refuse to start. An older copy is replaced, the instance log says what happened.
+
+- **Yahu menu** (`ui/YahuScreen`): the green **Yahu Mods** button at the top of the title screen and the pause menu, or Right Shift (`InputConstants.KEY_RSHIFT`; 26.x has its own key codes, not GLFW's). Key mappings only fire while playing, so on those two screens Right Shift is caught through `ScreenKeyboardEvents` as well. Same look as the launcher's Overworld theme (`ui/YahuUi`: block edges, night blue, block colors). The Mods tab lists our mods with on/off switches; the chosen one shows its settings (`ui/Control`: toggle, slider, cycle, color swatches) and a live preview. The panel shrinks to the window and its settings scroll when they don't fit. Settings are saved to `config/yahu.json` in the instance.
+- **Minecraft's own screens in the block look** (`mixin/`, drawing in `ui/BlockWidgets`): every vanilla button (title screen, pause menu, options...) is a night blue block with a thick dark bottom edge that turns green on hover, sliders get a sunk track filling with grass and a block handle, menu backgrounds outside a world are the launcher's dark wall of blocks and inside a world a night blue veil over the game. Only the sprites are swapped, the text stays vanilla's. The mixins are not required (`defaultRequire: 0`): if another mod in a big pack changes the same spots, the restyle quietly stays off there instead of crashing the game.
+- **Crosshair** (`crosshair/`): replaces the vanilla crosshair through `HudElementRegistry.replaceElement` while it is on (first person only); off, the vanilla one comes back. Shapes: cross, T, dot, circle, box, X, with size, gap, thickness, color, opacity, outline (with its own color) and a center dot. For PvP: another color while aiming at a player or mob (`crosshairPickEntity`), a short hit marker when a hit lands (`AttackEntityCallback` on the client), the attack charge as a bar under it (the vanilla attack indicator is part of the crosshair it replaces) and, if wanted, a gap that opens while walking, sprinting or in the air. `CrosshairLayout` turns the settings into pixel rectangles, so the shapes are tested without a game.
+- **Lyrics** (`lyrics/`): karaoke in the sky for the song playing anywhere on the PC.
+  - `now-playing.ps1` reads the Windows media session (Spotify, browsers, any app in the Windows media overlay) and prints title, artist, album, length, position and play state as JSON lines; `MediaWatcher` keeps it running while the mod is on. The position is extrapolated between reports.
+  - `LyricsService` asks [LRCLIB](https://lrclib.net) for time-stamped lyrics (exact match with the song's length first, then a search), once per song. Nothing is bundled: the mod and the repository contain no song texts (the tests use made-up lines).
+  - `SyncedLyrics` reads the LRC format and finds the line being sung and how far into it the song is; Two ways to show it (`LyricsMode`):
+    - **In the sky** (default, `SkyWorldRenderer`): a big sign hung in the world's sky, drawn in the level render (`LevelRenderEvents.COLLECT_SUBMITS`, `submitText` with a dark glyph outline) 64 blocks away at a fixed compass direction and height, placed relative to the camera. Turning the camera leaves it where it is, like a cloud; `SkyAnchor` moves it in front of the player only when a new line starts and the old spot is more than 60 degrees out of view. The sung letters run from the sung color to sky blue, the letter being sung lights up and hops, a new line fades and grows in, the song title sits small and gold above, the next line pale below.
+    - **Follow view** (`SkyLyricsRenderer`): on the screen, at a height that moves a little with looking up and down, always in view.
+- **In-game test** (`src/gametest`, `gradlew runClientGameTest`): starts the game, makes a world and plays through the crosshair, the menu (opened with Right Shift), both mod pages, scrolling and the pause menu button, with screenshots in `build/run/clientGameTest/screenshots`. The live lyrics stay off there, so no real song ends up in a screenshot.
+
+Build it before the launcher's install step (the install takes `mod/build/libs/yahu-mod.jar` if it is there):
+
+```bat
+cd mod
+set JAVA_HOME=%APPDATA%\YahuClient\java\java-runtime-epsilon
+gradlew build
+```
+
+`gradlew build` also runs the unit tests (LRC parsing, title clean-up, position extrapolation, crosshair shapes).
+
 ## Building (Windows)
 
 You need: VS 2026 Build Tools (C++), Qt 6.11.2 `msvc2022_64` (with qtimageformats and qtnetworkauth) under `C:\Qt`, CMake, Ninja and JDK 17.
@@ -69,6 +94,7 @@ Tests live in `tests/` (Qt Test, one `LauncherTests` executable). Yahu's own:
 - `RelativeTime_test.cpp`: the "2 days 5 hours ago" texts.
 - `AddressService_test.cpp`: a fake address service; covers claiming, updating, taken names, lost secrets, offline service and name rules.
 - `LocalHosts_test.cpp`: reading and rewriting the hosts file without touching other lines, dropping anything that isn't a host name.
+- `YahuMods_test.cpp`: which instances get the Yahu mod (Fabric, Minecraft 26.3 or 26.3.x, Fabric API present).
 - `ServerProcesses_test.cpp` (needs `java` on the PATH, Windows only): a small Java program stands in for a server; covers finding the process that holds `server.jar`, stopping it so its shutdown hook (the world save) runs, and that a tied server ends when its launcher is killed.
 
 The address service has its own tests: `cd services/dns-worker` and `node --test`.
@@ -86,7 +112,7 @@ Prism's `FileSystem` test currently fails on Windows; it is unrelated to the Yah
 ## Releasing
 
 1. Bump `Launcher_VERSION_MAJOR/MINOR/PATCH` in `CMakeLists.txt` (through a pull request).
-2. Build, then install into `install\` (`cmake --install build --config Release --prefix install`).
+2. Build the mod (`mod\gradlew build`, see above), then the launcher, then install into `install\` (`cmake --install build --config Release --prefix install`); the install puts the mod into `mods\`.
 3. Make the installer with [NSIS](https://nsis.sourceforge.io): copy `install\` to `build\stage\`, add the VC++ runtime DLLs from `VC\Redist\MSVC\<version>\x64\Microsoft.VC145.CRT`, then run from `build\stage\`:
    ```bat
    makensis -NOCD ..\program_info\win_install.nsi

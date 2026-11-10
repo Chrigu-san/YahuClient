@@ -1,0 +1,13 @@
+{
+	"schemaVersion": 1,
+	"id": "yahu-gametest",
+	"version": "1.0.0",
+	"name": "Yahu Client in-game tests",
+	"environment": "client",
+	"entrypoints": {
+		"fabric-client-gametest": ["net.yahuclient.mod.test.YahuClientGameTest"]
+	},
+	"depends": {
+		"yahu": "*"
+	}
+}
