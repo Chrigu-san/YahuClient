@@ -23,9 +23,10 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 - Mit der eigenen Adresse auch selbst auf den eigenen Server joinen
 
 **Im Spiel** (Fabric 26.3)
-- Menüs im Block Look vom Launcher, Yahu Menü mit **Rechts Shift** und Tab **Mods**
-- **Crosshair:** eigene Form, Grösse und Farbe
-- **Lyrics:** Karaoke am Himmel zum Song in Spotify oder im Browser
+- Dunkles, modernes Design für alle Menüs, Yahu Menü mit **Rechts Shift** und unseren Mods
+- **Crosshair:** pixelgenau, Punkt, Kreis, Arme frei kombinierbar, für PvP
+- **Lyrics:** Karaoke am Himmel, Zeile, Wort für Wort oder Kinetic
+- **Skybox:** Schwarzes Loch, echter Tag, Polarlicht und eigene Bilder
 
 **Design**
 - Alles in einem Fenster, Dialoge öffnen sich als Overlay
@@ -87,10 +88,11 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 
 ## 📅 Verlauf (Fortsetzung)
 **Nächste Version (noch nicht veröffentlicht)**
-- Grüner Knopf **Yahu Mods** im Titelbild und Pause Menü (oder Rechts Shift), mit einem Tab für unsere eigenen Mods
-- Die Minecraft Menüs selbst im Block Look vom Launcher: nachtblaue Knöpfe, Blockwand als Hintergrund, Schieberegler in Grün
-- Mod **Crosshair** für PvP: Form, Grösse, Farbe, Deckkraft, andere Farbe wenn du auf einen Gegner zielst, Hit Marker, Schlag Ladebalken und Lücke die beim Laufen aufgeht
-- Mod **Lyrics**: der Songtext hängt gross am Himmel wie eine Wolke und läuft wie Karaoke mit, zum Song in Spotify oder im Browser. Auf Wunsch auch fest im Bild
+- Knopf **Yahu Mods** im Titelbild und Pause Menü (oder Rechts Shift), mit unseren eigenen Mods
+- Komplett neues dunkles Design im Spiel mit sanft bewegtem Hintergrund und ruhigen Animationen
+- Mod **Skybox**: Himmel mit schwarzem Loch, klarer Tag, goldene Stunde, Polarlicht, Nebel oder ein eigenes Bild
+- Mod **Crosshair** für PvP: pixelgenau, Arme, Punkt und Kreis in jeder Grösse, Vorlagen, Farbe auf Gegner, Hit Marker, Ladebalken
+- Mod **Lyrics**: der Songtext hängt am Himmel wie eine Wolke. Zeile, Wort für Wort oder Kinetic, 4 Schriften, Umrandung und Farben einstellbar
 - Der Launcher legt die Mod automatisch in Fabric Instanzen für 26.3
 - Beim Spielstart kein Fenster mit Ladebalken mehr: unter dem Play Knopf steht, was gerade geladen wird und wie lange es noch etwa dauert
 

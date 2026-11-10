@@ -4,15 +4,12 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
 import net.yahuclient.mod.config.YahuConfig;
-import net.yahuclient.mod.ui.YahuUi;
 
 /**
- * Draws the line being sung big in the sky, karaoke style: the part already sung turns into the sung color from left to
- * right, the next line waits small underneath.
- *
- * The text hangs at a fixed height above the horizon: looking up moves it down the screen and looking down moves it up, as
- * if it were in the sky. It follows where you look sideways so it is never behind you.
+ * The lyrics on the screen ("follow view"): always in view, high up, moving a little with looking up and down. Also draws
+ * the preview in the Yahu menu.
  */
 public final class SkyLyricsRenderer {
 	private SkyLyricsRenderer() {
@@ -33,53 +30,60 @@ public final class SkyLyricsRenderer {
 		return (float) (screenHeight / 2.0 - Math.tan(angle) / Math.tan(half) * screenHeight / 2.0);
 	}
 
-	public static void draw(GuiGraphicsExtractor g, Font font, YahuConfig.Lyrics config, String current, double progress, String next,
-			String title) {
+	/** The lyrics on the screen, where the camera puts them. */
+	public static void draw(GuiGraphicsExtractor g, Font font, YahuConfig.Lyrics config, LyricsPainter.Frame frame) {
 		Minecraft mc = Minecraft.getInstance();
 		Camera camera = mc.gameRenderer.mainCamera();
-		int w = g.guiWidth(), h = g.guiHeight();
+		int h = g.guiHeight();
 		float y = camera.isInitialized() ? screenY(elevation(config.height), camera.xRot(), camera.getFov(), h) : h * 0.25f;
-		// never leave the screen: when you look far down it stays at the top edge
-		y = Math.max(18, Math.min(h * 0.45f, y));
-		drawAt(g, font, config, current, progress, next, title, w / 2, Math.round(y));
+		y = Math.max(40, Math.min(h * 0.42f, y));
+		drawAt(g, font, config, frame, g.guiWidth() / 2f, y, 2.0f * Math.max(0.5f, Math.min(2.5f, config.scale)), g.guiWidth());
 	}
 
-	/** Draws the lyrics centered on (cx, y); the menu preview uses this too. */
-	public static void drawAt(GuiGraphicsExtractor g, Font font, YahuConfig.Lyrics config, String current, double progress, String next,
-			String title, int cx, int y) {
-		float scale = 2.0f * Math.max(0.5f, Math.min(2.0f, config.scale));
-		if (config.showSongTitle && title != null && !title.isEmpty()) {
-			String t = "♪ " + title;
-			g.text(font, t, cx - font.width(t) / 2, y - 12 - Math.round(font.lineHeight * scale / 2), YahuUi.withAlpha(YahuUi.MUTED, 0.85f), true);
+	/** The lyrics centered on (cx, cy), scaled, wrapping within their share of the given width; the menu preview uses this too. */
+	public static void drawAt(GuiGraphicsExtractor g, Font font, YahuConfig.Lyrics config, LyricsPainter.Frame frame, float cx, float cy, float scale,
+			float availableWidth) {
+		g.pose().pushMatrix();
+		g.pose().translate(cx, cy);
+		g.pose().scale(scale, scale);
+		LyricsPainter.paint(new HudSink(g, font), font, config, frame, availableWidth * Math.max(20, Math.min(100, config.maxWidth)) / 100f / scale);
+		g.pose().popMatrix();
+	}
+
+	/** Text on the screen: outline copies around, then the text itself. */
+	static final class HudSink implements LyricsPainter.Sink {
+		private final GuiGraphicsExtractor g;
+		private final Font font;
+
+		HudSink(GuiGraphicsExtractor g, Font font) {
+			this.g = g;
+			this.font = font;
 		}
-		if (current != null && !current.isEmpty()) {
-			int textW = font.width(current);
-			float left = cx - textW * scale / 2;
-			float top = y - font.lineHeight * scale / 2;
-			int upcoming = config.upcomingColor | 0xFF000000;
-			int sung = config.sungColor | 0xFF000000;
 
-			g.pose().pushMatrix();
-			g.pose().translate(left, top);
-			g.pose().scale(scale, scale);
-			g.text(font, current, 0, 0, upcoming, true);
-			g.pose().popMatrix();
-
-			// the sung part: the same text again in the sung color, cut off where the song is
-			int sweep = Math.round(textW * scale * (float) Math.max(0, Math.min(1, progress)));
-			if (sweep > 0) {
-				g.enableScissor(Math.round(left) - 1, Math.round(top) - 2, Math.round(left) + sweep, Math.round(top + font.lineHeight * scale) + 2);
-				g.pose().pushMatrix();
-				g.pose().translate(left, top);
-				g.pose().scale(scale, scale);
-				g.text(font, current, 0, 0, sung, true);
-				g.pose().popMatrix();
-				g.disableScissor();
+		@Override
+		public void text(Component text, float cx, float cy, float scale, float rotation, int color, int outlineColor, int outlineWidth) {
+			if ((color >>> 24) < 4) {
+				return;
 			}
-		}
-		if (config.showNext && next != null && !next.isEmpty()) {
-			int ny = y + Math.round(font.lineHeight * scale / 2) + 6;
-			g.text(font, next, cx - font.width(next) / 2, ny, YahuUi.withAlpha(YahuUi.TEXT, 0.6f), true);
+			int w = font.width(text);
+			g.pose().pushMatrix();
+			g.pose().translate(cx, cy);
+			if (rotation != 0) {
+				g.pose().rotate((float) Math.toRadians(rotation));
+			}
+			g.pose().scale(scale, scale);
+			int x = -w / 2, y = -font.lineHeight / 2;
+			for (int k = 1; k <= outlineWidth; k++) {
+				for (int dx = -1; dx <= 1; dx++) {
+					for (int dy = -1; dy <= 1; dy++) {
+						if (dx != 0 || dy != 0) {
+							g.text(font, text, x + dx * k, y + dy * k, outlineColor, false);
+						}
+					}
+				}
+			}
+			g.text(font, text, x, y, color, false);
+			g.pose().popMatrix();
 		}
 	}
 }

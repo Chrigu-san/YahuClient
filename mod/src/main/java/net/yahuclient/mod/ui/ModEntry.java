@@ -8,10 +8,10 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
- * One of our own mods as the Mods tab shows it: name, a line about it, its block color, on/off, its settings and, if it has
- * one, a live preview drawn above the settings.
+ * One of our own mods as the Mods tab shows it: name, a short line about it, its color and icon letter, on/off, its settings
+ * and, if it has one, a live preview drawn above them.
  */
-public record ModEntry(String name, String description, int color, Supplier<Boolean> enabled, Consumer<Boolean> setEnabled,
+public record ModEntry(String name, String tagline, String description, int color, String icon, Supplier<Boolean> enabled, Consumer<Boolean> setEnabled,
 		List<Control> controls, Preview preview, Supplier<String> status) {
 	/** Draws a small live picture of the mod into the given box. */
 	public interface Preview {
