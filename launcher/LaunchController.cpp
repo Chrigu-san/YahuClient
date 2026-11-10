@@ -36,6 +36,7 @@
 
 #include "LaunchController.h"
 #include "Application.h"
+#include "LaunchProgress.h"
 #include "launch/steps/PrintServers.h"
 #include "minecraft/auth/AccountData.h"
 #include "minecraft/auth/AccountList.h"
@@ -54,6 +55,7 @@
 #include <QInputDialog>
 #include <QList>
 #include <QPushButton>
+#include <QTimer>
 #include <utility>
 
 #include "BuildConfig.h"
@@ -378,6 +380,15 @@ void LaunchController::launchInstance()
         return;
     }
 
+    // the banner shows the start under the Play button until the game runs (or the start fails)
+    const QString progressId = m_instance->id();
+    LaunchProgress::instance()->begin(progressId);
+    connect(m_instance, &BaseInstance::runningStatusChanged, this, [progressId](bool running) {
+        if (running) {
+            LaunchProgress::instance()->end(progressId);
+        }
+    });
+
     // the Yahu mod goes into fitting Fabric instances before the game starts (see minecraft/YahuMods.h)
     const QString yahuModNote = YahuMods::install(m_instance, YahuMods::bundledJar());
 
@@ -426,6 +437,11 @@ void LaunchController::launchInstance()
 
 void LaunchController::readyForLaunch()
 {
+    // everything is downloaded and Java is starting; the game takes a little while to open its window, then the line goes
+    const QString id = m_instance->id();
+    LaunchProgress::instance()->update(id, tr("Starting Minecraft"), -1);
+    QTimer::singleShot(20000, LaunchProgress::instance(), [id] { LaunchProgress::instance()->end(id); });
+
     if (!m_profiler) {
         m_launcher->proceed();
         return;
@@ -474,11 +490,13 @@ void LaunchController::readyForLaunch()
 
 void LaunchController::onSucceeded()
 {
+    LaunchProgress::instance()->end(m_instance->id());
     emitSucceeded();
 }
 
 void LaunchController::onFailed(QString reason)
 {
+    LaunchProgress::instance()->end(m_instance->id());
     if (m_instance->settings()->get("ShowConsoleOnError").toBool()) {
         APPLICATION->showInstanceWindow(m_instance, "console");
     }
@@ -487,10 +505,15 @@ void LaunchController::onFailed(QString reason)
 
 void LaunchController::onProgressRequested(Task* task) const
 {
-    ProgressDialog progDialog(m_parentWidget);
-    progDialog.showSkipButton();
+    // no progress window: the banner under the Play button shows how far the start is (LaunchProgress)
+    const QString id = m_instance->id();
+    auto* progress = LaunchProgress::instance();
+    connect(task, &Task::status, progress, [id](const QString& status) { LaunchProgress::instance()->update(id, status, -1); });
+    connect(task, &Task::progress, progress, [id, task](qint64 current, qint64 total) {
+        LaunchProgress::instance()->update(id, task->getStatus(), total > 0 ? double(current) / double(total) : -1);
+    });
+    // the task is the launch step itself, already running; proceeding starts the work inside it (TaskStepWrapper::proceed)
     m_launcher->proceed();
-    progDialog.execWithTask(task);
 }
 
 bool LaunchController::abort()

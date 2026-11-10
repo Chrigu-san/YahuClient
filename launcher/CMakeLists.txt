@@ -277,6 +277,8 @@ set(MINECRAFT_SOURCES
     minecraft/MinecraftInstance.h
     minecraft/YahuMods.cpp
     minecraft/YahuMods.h
+    LaunchProgress.cpp
+    LaunchProgress.h
     minecraft/LaunchProfile.cpp
     minecraft/LaunchProfile.h
     minecraft/Component.cpp
