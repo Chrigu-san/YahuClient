@@ -8,21 +8,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.resources.Identifier;
-import net.yahuclient.mod.ui.BlockWidgets;
+import net.yahuclient.mod.ui.Background;
+import net.yahuclient.mod.ui.TitleLayout;
 
 /**
- * Menu backgrounds in the launcher's look: outside a world the dark wall of night blue blocks instead of the dirt texture,
- * inside a world a night blue veil over the game instead of the grey one.
+ * Menu backgrounds for the glass look: what is behind a menu (the title panorama, or the game) is blurred by Minecraft's
+ * own menu blur, and instead of the dirt texture or the grey veil a soft colored tint goes over it. The glass panes and
+ * buttons then sit on that.
  */
 @Mixin(Screen.class)
 public abstract class ScreenMixin {
 	@Inject(method = "extractMenuBackgroundTexture", at = @At("HEAD"), cancellable = true)
 	private static void yahu$menuBackground(GuiGraphicsExtractor g, Identifier texture, int x, int y, float u, float v, int w, int h, CallbackInfo ci) {
-		if (Minecraft.getInstance().level == null) {
-			BlockWidgets.wall(g, x, y, w, h);
-		} else {
-			BlockWidgets.veil(g, x, y, w, h);
+		// small cut-outs (the chosen tab on the create world screen) would show as a darker box: leave them out
+		if (h >= 40 || w >= Minecraft.getInstance().getWindow().getGuiScaledWidth() * 0.6f) {
+			Background.tint(g, x, y, w, h, Minecraft.getInstance().level != null);
 		}
 		ci.cancel();
 	}
@@ -49,20 +51,21 @@ public abstract class ScreenMixin {
 		net.yahuclient.mod.ui.MenuFont.end();
 	}
 
-	// the title screen's spinning panorama makes way for the dark Yahu background
-	@Inject(method = "extractPanorama", at = @At("HEAD"), cancellable = true)
+	// the title screen draws its panorama without blur or menu background: blur it here, tint it, and put the glass
+	// panel for the main menu on it
+	@Inject(method = "extractPanorama", at = @At("TAIL"))
 	private void yahu$panorama(GuiGraphicsExtractor g, float alpha, CallbackInfo ci) {
-		BlockWidgets.wall(g, 0, 0, g.guiWidth(), g.guiHeight());
-		if ((Object) this instanceof net.minecraft.client.gui.screens.TitleScreen) {
-			net.yahuclient.mod.ui.TitleLayout.frame();
-			net.yahuclient.mod.ui.TitleLayout.shade(g, g.guiWidth(), g.guiHeight());
+		if ((Object) this instanceof TitleScreen) {
+			g.blurBeforeThisStratum();
+			Background.tint(g, 0, 0, g.guiWidth(), g.guiHeight(), false);
+			TitleLayout.frame();
+			TitleLayout.panel(g);
 		}
-		ci.cancel();
 	}
 
 	@Inject(method = "extractTransparentBackground", at = @At("HEAD"), cancellable = true)
 	private void yahu$transparentBackground(GuiGraphicsExtractor g, CallbackInfo ci) {
-		BlockWidgets.veil(g, 0, 0, g.guiWidth(), g.guiHeight());
+		Background.tint(g, 0, 0, g.guiWidth(), g.guiHeight(), true);
 		ci.cancel();
 	}
 }

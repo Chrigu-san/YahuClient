@@ -17,13 +17,13 @@ public final class Theme {
 	public static final int PANEL = 0xF0111218;
 	public static final int CARD = 0xFF16181F;
 	public static final int CARD_HI = 0xFF1D2029;
-	public static final int FIELD = 0xFF0D0E13;
+	public static final int FIELD = 0x40000000;
 	public static final int BORDER = 0x1FFFFFFF;
 	public static final int BORDER_HI = 0x38FFFFFF;
 
 	public static final int TEXT = 0xFFF2F3F7;
-	public static final int MUTED = 0xFF959BA8;
-	public static final int FAINT = 0xFF5C6270;
+	public static final int MUTED = 0xFFB8BDC8;
+	public static final int FAINT = 0xFF858B98;
 
 	public static final int ACCENT = 0xFF8B6CFF;     // violet
 	public static final int ACCENT_HI = 0xFFA892FF;

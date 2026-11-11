@@ -35,6 +35,7 @@ public final class TitleLayout {
 
 	private static int left = 28;
 	private static int logoTop = 30;
+	private static int panelX, panelY, panelW, panelH;
 	private static long lastFrame = System.nanoTime();
 	private static float dt;
 
@@ -81,11 +82,11 @@ public final class TitleLayout {
 		icons.sort(order);
 
 		int width = Math.max(120, Math.min(170, screen.width / 3));
-		left = Math.max(16, Math.min(40, screen.width / 16));
+		left = Math.max(30, Math.min(48, screen.width / 14));
 		int items = nav.size() + end.size();
 		int gap = end.isEmpty() ? 0 : 8;
 		int total = LOGO_H + 14 + items * (ITEM_H + ITEM_GAP) + gap;
-		logoTop = Math.max(8, (screen.height - total) / 2 - 4);
+		logoTop = Math.max(18, (screen.height - total) / 2 + 2);
 		int y = logoTop + LOGO_H + 14;
 		for (AbstractWidget w : nav) {
 			place(w, y, width);
@@ -96,6 +97,11 @@ public final class TitleLayout {
 			place(w, y, width);
 			y += ITEM_H + ITEM_GAP;
 		}
+		// the glass panel around the word mark and the navigation
+		panelX = left - 16;
+		panelY = logoTop - 14;
+		panelW = width + 16;
+		panelH = y - panelY + 8;
 		// icon buttons in a row bottom right, above the copyright line
 		int x = screen.width - 6;
 		for (int i = icons.size() - 1; i >= 0; i--) {
@@ -117,17 +123,12 @@ public final class TitleLayout {
 		return message.getContents() instanceof TranslatableContents t ? t.getKey() : "";
 	}
 
-	/** A darker band behind the menu on the left, so the entries read well on any background. */
-	public static void shade(GuiGraphicsExtractor g, int width, int height) {
-		int band = Math.min(width, left + 260);
-		int steps = 32;
-		for (int i = 0; i < steps; i++) {
-			int x0 = band * i / steps, x1 = band * (i + 1) / steps;
-			float t = 1f - (float) i / steps;
-			g.fill(x0, 0, x1, height, Theme.alpha(0xFF06070A, 0.55f * t * t));
+	/** The frosted panel behind the word mark and the navigation. */
+	public static void panel(GuiGraphicsExtractor g) {
+		if (panelW > 0) {
+			Glass.panel(g, panelX, panelY, panelW, panelH, 10, 1f);
 		}
 	}
-
 	/** Called once per drawn frame for the hover animation. */
 	public static void frame() {
 		long now = System.nanoTime();
@@ -142,8 +143,8 @@ public final class TitleLayout {
 		float t = h[0];
 		int x = w.getX(), y = w.getY(), wd = w.getWidth(), ht = w.getHeight();
 		if (t > 0.01f) {
-			Draw.round(g, x, y, wd, ht, 5, Theme.alpha(0x16FFFFFF, alpha * t));
-			Draw.pill(g, x + 2, y + ht / 2f - 5 * t, 2, Math.max(1, 10 * t), Theme.alpha(Theme.ACCENT, alpha * t));
+			// a frosted pill fades in under the mouse
+			Glass.pane(g, x, y, wd, ht, 6, Theme.alpha(Glass.FILL_HOT, t), Theme.alpha(0x60FFFFFF, t), alpha);
 		}
 		int color;
 		if (!active) {
@@ -151,10 +152,10 @@ public final class TitleLayout {
 		} else if (highlighted) {
 			color = Theme.mix(Theme.ACCENT_HI, 0xFFFFFFFF, t * 0.5f);
 		} else {
-			color = Theme.mix(0xFFB9BECA, Theme.TEXT, t);
+			color = Theme.mix(0xFFDCE0E8, 0xFFFFFFFF, t);
 		}
 		var font = Minecraft.getInstance().font;
-		int tx = x + 8 + Math.round(4 * t);
+		int tx = x + 8 + Math.round(3 * t);
 		int ty = y + (ht - 8) / 2;
 		if (highlighted) {
 			Draw.circle(g, tx + 2.5f, y + ht / 2f, 2.5f, Theme.alpha(Theme.ACCENT, alpha));

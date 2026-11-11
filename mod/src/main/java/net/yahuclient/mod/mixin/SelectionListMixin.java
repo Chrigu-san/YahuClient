@@ -26,7 +26,7 @@ public abstract class SelectionListMixin extends AbstractWidget {
 
 	@Inject(method = "extractListBackground", at = @At("HEAD"), cancellable = true)
 	private void yahu$background(GuiGraphicsExtractor g, CallbackInfo ci) {
-		g.fill(getX(), getY(), getRight(), getBottom(), Theme.alpha(0xFF000000, 0.28f));
+		g.fill(getX(), getY(), getRight(), getBottom(), Theme.alpha(0xFF000000, 0.14f));
 		ci.cancel();
 	}
 
@@ -40,8 +40,7 @@ public abstract class SelectionListMixin extends AbstractWidget {
 	@Inject(method = "extractSelection", at = @At("HEAD"), cancellable = true)
 	private void yahu$selection(GuiGraphicsExtractor g, @Coerce LayoutElement entry, int outlineColor, CallbackInfo ci) {
 		int x = entry.getX(), y = entry.getY(), w = entry.getWidth(), h = entry.getHeight();
-		Draw.card(g, x, y, w, h, 7, Theme.alpha(Theme.CARD_HI, 0.92f), isFocused() ? Theme.ACCENT : Theme.BORDER_HI);
-		Draw.pill(g, x + 1, y + 6, 3, h - 12, Theme.ACCENT);
+		net.yahuclient.mod.ui.Glass.pane(g, x, y, w, h, 5, 0x2AFFFFFF, isFocused() ? 0x90FFFFFF : 0x50FFFFFF, 1f);
 		ci.cancel();
 	}
 }

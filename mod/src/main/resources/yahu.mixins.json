@@ -6,9 +6,11 @@
 	"client": [
 		"AbstractButtonMixin",
 		"AbstractSliderButtonMixin",
+		"CreateWorldScreenMixin",
 		"GuiGraphicsExtractorMixin",
 		"GuiTextRenderStateMixin",
 		"ScreenMixin",
+		"OptionsBlurMixin",
 		"SelectionListMixin",
 		"SkyRendererMixin",
 		"SplashRendererMixin",

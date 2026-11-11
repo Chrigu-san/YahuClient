@@ -144,7 +144,7 @@ public abstract class Control {
 			super.extract(g, font, mouseX, mouseY, seconds);
 			float target = get.get() ? 1 : 0;
 			on = on < 0 ? target : Theme.approach(on, target, seconds, 16);
-			switchAt(g, x + w - 26, y + (ROW - 14) / 2, on, hover);
+			switchAt(g, x + w - 22, y + (ROW - 11) / 2, on, hover);
 		}
 
 		@Override
@@ -157,12 +157,12 @@ public abstract class Control {
 		}
 	}
 
-	/** The switch itself, shared with the mod list: 26 by 14, t from off (0) to on (1). */
+	/** The switch itself, shared with the mod list: 22 by 11, flat with a square knob, t from off (0) to on (1). */
 	public static void switchAt(GuiGraphicsExtractor g, float sx, float sy, float t, float hover) {
-		int track = Theme.mix(Theme.mix(0xFF2A2D38, 0xFF343844, hover), Theme.ACCENT, t);
-		Draw.pill(g, sx, sy, 26, 14, track);
-		float knobX = sx + 7 + 12 * Theme.easeOutCubic(t);
-		Draw.circle(g, knobX, sy + 7, 5.5f, Theme.mix(0xFFC9CDD6, 0xFFFFFFFF, Math.max(t, hover)));
+		int track = Theme.mix(Theme.mix(0xFF262932, 0xFF30343F, hover), Theme.ACCENT, t);
+		Draw.round(g, sx, sy, 22, 11, 2, track);
+		float knobX = sx + 2 + 11 * Theme.easeOutCubic(t);
+		Draw.round(g, knobX, sy + 2, 7, 7, 1.5f, Theme.mix(0xFFAEB3BF, 0xFFFFFFFF, Math.max(t, hover)));
 	}
 
 	/** A slider: a thin track filled with the accent up to the value, a round knob that grows under the mouse. */
@@ -206,13 +206,10 @@ public abstract class Control {
 			boolean hot = dragging || inside(mouseX, mouseY, trackX() - 4, y, trackW() + 8, ROW);
 			grab = Theme.approach(grab, hot ? 1 : 0, seconds, 18);
 			float tx = trackX(), tw = trackW(), cy = y + ROW / 2f;
-			Draw.pill(g, tx, cy - 1.5f, tw, 3, 0xFF2A2D38);
-			Draw.pill(g, tx, cy - 1.5f, Math.max(3, tw * t), 3, Theme.mix(Theme.ACCENT, Theme.ACCENT_2, t * 0.6f));
+			g.fill(Math.round(tx), Math.round(cy - 1), Math.round(tx + tw), Math.round(cy + 1), 0xFF262932);
+			g.fill(Math.round(tx), Math.round(cy - 1), Math.round(tx + tw * t), Math.round(cy + 1), Theme.mix(Theme.ACCENT, Theme.ACCENT_2, t * 0.6f));
 			float kx = tx + tw * t;
-			if (grab > 0.01f) {
-				Draw.circle(g, kx, cy, 7 * grab + 3, Theme.alpha(Theme.ACCENT, 0.25f * grab));
-			}
-			Draw.circle(g, kx, cy, 4.5f + grab, 0xFFFFFFFF);
+			Draw.round(g, kx - 1.5f, cy - 5 - grab, 3, 10 + 2 * grab, 1, 0xFFFFFFFF);
 			String text = format.apply(value);
 			var c = Theme.ui(text);
 			g.text(font, c, x + w - font.width(c), y + (ROW - font.lineHeight) / 2 + 1, Theme.mix(Theme.MUTED, Theme.TEXT, grab), false);
@@ -277,12 +274,12 @@ public abstract class Control {
 				needed += font.width(Theme.ui(name.apply(o))) + 14;
 			}
 			segmented = needed <= fw && !all.isEmpty();
-			Draw.round(g, fx, fy, fw, fh, 5, Theme.FIELD);
+			Glass.pane(g, fx, fy, fw, fh, 6, Glass.FILL_DARK, Glass.EDGE, 1f);
 			int index = Math.max(0, all.indexOf(get.get()));
 			if (segmented) {
 				float cell = (fw - 4) / (float) all.size();
 				slide = slide < 0 ? index : Theme.approach(slide, index, seconds, 16);
-				Draw.round(g, fx + 2 + slide * cell, fy + 2, cell, fh - 4, 4, Theme.mix(Theme.CARD_HI, Theme.ACCENT, 0.55f));
+				Glass.pane(g, fx + 2 + slide * cell, fy + 2, cell, fh - 4, 5, 0x38FFFFFF, 0x70FFFFFF, 1f);
 				for (int i = 0; i < all.size(); i++) {
 					var c = Theme.ui(name.apply(all.get(i)));
 					float cx = fx + 2 + i * cell + cell / 2f;
@@ -422,7 +419,7 @@ public abstract class Control {
 			for (int i = 0; i < actions.size(); i++) {
 				float[] b = bounds(font, i);
 				hot[i] = Theme.approach(hot[i], inside(mouseX, mouseY, b[0], b[1], b[2], b[3]) ? 1 : 0, seconds, 18);
-				Draw.card(g, b[0], b[1], b[2], b[3], 5, Theme.mix(Theme.CARD_HI, 0xFF2A2D38, hot[i]), Theme.mix(Theme.BORDER_HI, Theme.ACCENT, hot[i]));
+				Glass.pane(g, b[0], b[1], b[2], b[3], 6, Theme.mix(Glass.FILL, Glass.FILL_HOT, hot[i]), Theme.mix(Glass.EDGE, Glass.EDGE_HOT, hot[i]), 1f);
 				var c = Theme.ui(actions.get(i).text());
 				g.text(font, c, Math.round(b[0] + 8), Math.round(b[1] + (b[3] - 8) / 2f), Theme.TEXT, false);
 			}

@@ -232,7 +232,7 @@ public class YahuMod implements ClientModInitializer {
 	}
 
 	private void openMenu(Minecraft mc, Screen parent) {
-		mc.setScreenAndShow(new YahuScreen(parent, mods(), () -> config.save(configFile), MENU_KEY, mc.level != null));
+		mc.setScreenAndShow(new YahuScreen(parent, mods(), () -> config.save(configFile), mc.level != null));
 	}
 
 	// -------------------------------------------------------------------------------------------------------------------

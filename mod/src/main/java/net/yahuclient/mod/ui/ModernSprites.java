@@ -20,28 +20,29 @@ public final class ModernSprites {
 				BlockWidgets.button(g, x, y, w, h, !name.endsWith("disabled"), name.endsWith("highlighted"), alpha);
 			case "text_field", "text_field_highlighted" -> {
 				boolean focused = name.endsWith("highlighted");
-				Draw.card(g, x, y, w, h, 5, Theme.alpha(Theme.FIELD, alpha), Theme.alpha(focused ? Theme.ACCENT : Theme.BORDER_HI, alpha));
+				// a darker pane, its edge lights up while typing
+				Glass.pane(g, x, y, w, h, 5, Glass.FILL_DARK, focused ? 0xB0FFFFFF : Glass.EDGE, alpha);
 			}
 			case "checkbox", "checkbox_highlighted", "checkbox_selected", "checkbox_selected_highlighted" -> {
 				boolean on = name.contains("selected");
 				boolean hot = name.endsWith("highlighted");
 				if (on) {
-					Draw.round(g, x, y, w, h, 4, Theme.alpha(hot ? Theme.ACCENT_HI : Theme.ACCENT, alpha));
-					check(g, x, y, w, h, Theme.alpha(0xFFFFFFFF, alpha));
+					Draw.round(g, x, y, w, h, 4, Theme.alpha(hot ? 0xFFFFFFFF : 0xE6FFFFFF, alpha));
+					check(g, x, y, w, h, Theme.alpha(0xFF1B1D26, alpha));
 				} else {
-					Draw.card(g, x, y, w, h, 4, Theme.alpha(Theme.FIELD, alpha), Theme.alpha(hot ? Theme.ACCENT : Theme.BORDER_HI, alpha));
+					Glass.pane(g, x, y, w, h, 4, hot ? Glass.FILL_HOT : Glass.FILL, hot ? Glass.EDGE_HOT : Glass.EDGE, alpha);
 				}
 			}
-			case "scroller" -> Draw.pill(g, x + w / 2f - 2, y, 4, h, Theme.alpha(0x55FFFFFF, alpha));
-			case "scroller_background" -> Draw.pill(g, x + w / 2f - 2, y, 4, h, Theme.alpha(0x14FFFFFF, alpha));
+			case "scroller" -> Draw.pill(g, x + w / 2f - 1.5f, y, 3, h, Theme.alpha(0x80FFFFFF, alpha));
+			case "scroller_background" -> Draw.pill(g, x + w / 2f - 1.5f, y, 3, h, Theme.alpha(0x14FFFFFF, alpha));
 			case "tab", "tab_highlighted", "tab_selected", "tab_selected_highlighted" -> {
+				// the chosen tab is a frosted pill, the others only frost under the mouse
 				boolean selected = name.startsWith("tab_selected");
 				boolean hot = name.endsWith("highlighted");
 				if (selected) {
-					Draw.round(g, x + 2, y + 2, w - 4, h - 4, 7, Theme.alpha(Theme.CARD_HI, alpha));
-					Draw.pill(g, x + w / 2f - Math.min(14, w / 4f), y + h - 4, Math.min(28, w / 2f), 2, Theme.alpha(Theme.ACCENT, alpha));
+					Glass.pane(g, x + 3, y + 3, w - 6, h - 6, 6, Glass.FILL_HOT, Glass.EDGE_HOT, alpha);
 				} else if (hot) {
-					Draw.round(g, x + 2, y + 2, w - 4, h - 4, 7, Theme.alpha(Theme.CARD, alpha));
+					Glass.pane(g, x + 3, y + 3, w - 6, h - 6, 6, Glass.FILL_DIM, Glass.EDGE, alpha);
 				}
 			}
 			default -> {
