@@ -37,7 +37,7 @@ public final class Background {
 	 * the frosted panes have color to pick up. Lighter in a world, so the game still shows.
 	 */
 	public static void tint(GuiGraphicsExtractor g, int x, int y, int w, int h, boolean inWorld) {
-		float k = inWorld ? 0.8f : 1f;
+		float k = inWorld ? 0.55f : 0.8f;
 		g.fillGradient(x, y, x + w, y + h, Theme.alpha(0xFF1B1238, 0.58f * k), Theme.alpha(0xFF0B2A33, 0.58f * k));
 		lights(g, x, y, w, h, inWorld ? 0.45f : 0.8f);
 		int band = Math.max(24, h / 5);

@@ -98,10 +98,11 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Beim Spielstart kein Fenster mit Ladebalken mehr: unter dem Play Knopf steht, was gerade geladen wird und wie lange es noch etwa dauert
 
 **Nächste Version:**
-  - Komplett neues Menü im Spiel aus Milchglas: das Spiel oder das Titelbild scheint verschwommen durch, eigene Schrift, Knöpfe, Felder, Listen und Tabs aus Glas
+  - Komplett neues Menü im Spiel aus echtem Milchglas: nur hinter den Scheiben ist alles verschwommen, rundherum bleibt das Spiel scharf. Eigene Schrift, Knöpfe, Felder, Listen und Tabs aus Glas
   - Neues Hauptmenü: Glas Panel links mit YAHU Logo und schlanker Navigation statt der Minecraft Knopfsäule
   - Mod Menü im Vollbild mit Glas Seitenleiste, schliesst nur noch mit Esc
-  - Alles gestochen scharf und glatt: haarfeine Ränder, runde Ecken und weiche Schrift ohne Pixel
+  - Alles gestochen scharf und glatt: haarfeine Ränder mit Lichtkante, runde Ecken und weiche Schrift ohne Pixel
+  - Fix: Nach einem Absturz läuft das Lyrics Hilfsprogramm nicht mehr unsichtbar weiter
   - Der Knopf **Yahu Mods** ist jetzt bei den anderen Knöpfen statt oben am Rand
 
 ## 🔜 Bald

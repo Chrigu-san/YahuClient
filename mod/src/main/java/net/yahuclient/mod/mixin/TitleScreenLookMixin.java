@@ -29,7 +29,7 @@ public abstract class TitleScreenLookMixin {
 			g.pose().popMatrix();
 			g.pose().pushMatrix();
 			g.pose().translate(x, y + 9 * s + 4);
-			g.text(font, Theme.ui("C L I E N T"), 0, 0, Theme.alpha(Theme.ACCENT_HI, alpha), false);
+			g.text(font, Theme.ui("C L I E N T"), 0, 0, Theme.alpha(0xD0FFFFFF, alpha), false);
 			g.pose().popMatrix();
 			ci.cancel();
 			return;

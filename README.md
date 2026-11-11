@@ -22,7 +22,7 @@ own account.
   `chris.yahuclient.net`, so friends never have to type an IP. Servers never keep running unseen after the launcher closes
   or crashes.
 - **In-game Yahu menu:** In Fabric instances for Minecraft 26.3 (with Fabric API), the launcher adds the small Yahu mod.
-  It turns all of Minecraft's menus into frosted glass over the blurred game or title panorama (own font, word mark, glass
+  It turns all of Minecraft's menus into real frosted glass (only what is behind a pane is blurred, the game around stays sharp) (own font, word mark, glass
   buttons, fields and lists), and gives the main menu a new layout: a glass panel on the left with the logo and a slim
   navigation. The Yahu Mods button (in the button column of the title screen and pause menu) or Right Shift opens the Yahu menu with our own mods: a pixel-exact PvP crosshair, karaoke lyrics in the sky for
   the song you play in Spotify or your browser (line by line, word by word or kinetic), and custom skies (a black hole, a
