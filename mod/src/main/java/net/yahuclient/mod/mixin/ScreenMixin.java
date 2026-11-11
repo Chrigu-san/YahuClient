@@ -53,6 +53,10 @@ public abstract class ScreenMixin {
 	@Inject(method = "extractPanorama", at = @At("HEAD"), cancellable = true)
 	private void yahu$panorama(GuiGraphicsExtractor g, float alpha, CallbackInfo ci) {
 		BlockWidgets.wall(g, 0, 0, g.guiWidth(), g.guiHeight());
+		if ((Object) this instanceof net.minecraft.client.gui.screens.TitleScreen) {
+			net.yahuclient.mod.ui.TitleLayout.frame();
+			net.yahuclient.mod.ui.TitleLayout.shade(g, g.guiWidth(), g.guiHeight());
+		}
 		ci.cancel();
 	}
 

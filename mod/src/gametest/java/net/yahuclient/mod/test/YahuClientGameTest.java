@@ -33,6 +33,17 @@ public class YahuClientGameTest implements FabricClientGameTest {
 		context.waitForScreen(TitleScreen.class);
 		context.waitTicks(60);  // the title screen fades its buttons in
 		context.takeScreenshot("yahu-title-screen");
+		// the mouse over the first entry: the hover look of the navigation
+		double[] at = context.computeOnClient(mc -> {
+			var w = net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(mc.gui.screen()).stream()
+					.filter(b -> b.getMessage().getString().equals("Singleplayer")).findFirst().orElseThrow();
+			double s = mc.getWindow().getGuiScale();
+			return new double[] {(w.getX() + 30) * s, (w.getY() + w.getHeight() / 2.0) * s};
+		});
+		context.getInput().setCursorPos(at[0], at[1]);
+		context.waitTicks(10);
+		context.takeScreenshot("yahu-title-hover");
+		context.getInput().setCursorPos(0, 0);
 		context.clickScreenButton("menu.options");
 		context.waitTicks(5);
 		context.takeScreenshot("yahu-options");

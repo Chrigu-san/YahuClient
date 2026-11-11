@@ -20,11 +20,21 @@ public abstract class AbstractButtonMixin extends AbstractWidget.WithInactiveMes
 
 	@Inject(method = "extractDefaultSprite", at = @At("HEAD"), cancellable = true)
 	private void yahu$blockButton(GuiGraphicsExtractor g, CallbackInfo ci) {
-		if (BlockWidgets.HIGHLIGHTED.contains(this)) {
+		if (net.yahuclient.mod.ui.TitleLayout.NAV.contains(this)) {
+			net.yahuclient.mod.ui.TitleLayout.drawEntry(g, this, isActive(), isHoveredOrFocused(), BlockWidgets.HIGHLIGHTED.contains(this), alpha);
+		} else if (BlockWidgets.HIGHLIGHTED.contains(this)) {
 			BlockWidgets.greenButton(g, getX(), getY(), width, height, isHoveredOrFocused(), alpha);
 		} else {
 			BlockWidgets.button(g, getX(), getY(), width, height, isActive(), isHoveredOrFocused(), alpha);
 		}
 		ci.cancel();
+	}
+
+	// navigation entries on the main menu draw their own left-aligned label (TitleLayout)
+	@Inject(method = "extractDefaultLabel", at = @At("HEAD"), cancellable = true)
+	private void yahu$navLabel(net.minecraft.client.gui.ActiveTextCollector output, CallbackInfo ci) {
+		if (net.yahuclient.mod.ui.TitleLayout.NAV.contains(this)) {
+			ci.cancel();
+		}
 	}
 }

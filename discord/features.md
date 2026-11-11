@@ -99,6 +99,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 
 **Nächste Version:**
   - Das ganze Menü im Spiel ist jetzt dunkel und sieht nicht mehr nach Minecraft aus: eigene Schrift, YAHU Logo im Titelbild, dunkle Textfelder, Listen, Tabs und Häkchen
+  - Neues Hauptmenü: YAHU Logo oben links, darunter eine schlanke Navigation statt der Minecraft Knopfsäule, mit violettem Balken beim Drüberfahren
   - Der Knopf **Yahu Mods** ist jetzt bei den anderen Knöpfen statt oben am Rand
 
 ## 🔜 Bald

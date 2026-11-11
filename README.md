@@ -23,7 +23,7 @@ own account.
   or crashes.
 - **In-game Yahu menu:** In Fabric instances for Minecraft 26.3 (with Fabric API), the launcher adds the small Yahu mod.
   It gives all of Minecraft's menus a dark, modern look (own font, word mark, dark buttons, fields and lists) with a softly
-  moving background. The Yahu Mods button (in the button column of the title screen and pause menu) or Right Shift opens the Yahu menu with our own mods: a pixel-exact PvP crosshair, karaoke lyrics in the sky for
+  moving background, and the main menu a new layout: logo top left with a slim navigation under it. The Yahu Mods button (in the button column of the title screen and pause menu) or Right Shift opens the Yahu menu with our own mods: a pixel-exact PvP crosshair, karaoke lyrics in the sky for
   the song you play in Spotify or your browser (line by line, word by word or kinetic), and custom skies (a black hole, a
   real-looking day, golden hour, aurora, nebula, or a picture of your own).
 - **Sign-in:** Players sign in through the official Microsoft login page in their browser. The launcher receives a token
