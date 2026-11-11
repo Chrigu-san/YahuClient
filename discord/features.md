@@ -97,6 +97,10 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Der Launcher legt die Mod automatisch in Fabric Instanzen für 26.3
   - Beim Spielstart kein Fenster mit Ladebalken mehr: unter dem Play Knopf steht, was gerade geladen wird und wie lange es noch etwa dauert
 
+**Nächste Version:**
+  - Das ganze Menü im Spiel ist jetzt dunkel und sieht nicht mehr nach Minecraft aus: eigene Schrift, YAHU Logo im Titelbild, dunkle Textfelder, Listen, Tabs und Häkchen
+  - Der Knopf **Yahu Mods** ist jetzt bei den anderen Knöpfen statt oben am Rand
+
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten
 -# Fragen oder Fehler gefunden? Schreib es hier auf dem Server.

@@ -42,6 +42,13 @@ public class YahuClientGameTest implements FabricClientGameTest {
 		context.setScreen(() -> new TitleScreen());
 		context.waitForScreen(TitleScreen.class);
 
+		// with no worlds yet, Singleplayer opens the create world screen: tabs, text fields, switches
+		context.clickScreenButton("menu.singleplayer");
+		context.waitTicks(10);
+		context.takeScreenshot("yahu-create-world");
+		context.setScreen(() -> new TitleScreen());
+		context.waitForScreen(TitleScreen.class);
+
 		// the Yahu menu from the title screen: every page
 		context.getInput().pressKey(InputConstants.KEY_RSHIFT);
 		context.waitForScreen(YahuScreen.class);

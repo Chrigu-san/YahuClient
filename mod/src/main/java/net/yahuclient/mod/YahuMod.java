@@ -180,9 +180,7 @@ public class YahuMod implements ClientModInitializer {
 		// (key mappings only fire while playing, not in menus)
 		ScreenEvents.AFTER_INIT.register((mc, screen, width, height) -> {
 			if (screen instanceof PauseScreen || screen instanceof TitleScreen) {
-				Button button = Button.builder(Component.literal("Yahu Mods"), b -> openMenu(mc, screen)).bounds(width / 2 - 60, 6, 120, 20).build();
-				BlockWidgets.HIGHLIGHTED.add(button);
-				Screens.getWidgets(screen).add(button);
+				addMenuButton(mc, screen, width, screen instanceof TitleScreen ? "menu.online" : "menu.returnToGame");
 				ScreenKeyboardEvents.afterKeyPress(screen).register((s, key) -> {
 					if (key.key() == MENU_KEY) {
 						openMenu(mc, s);
@@ -190,6 +188,43 @@ public class YahuMod implements ClientModInitializer {
 				});
 			}
 		});
+	}
+
+	/**
+	 * Puts "Yahu Mods" into the screen's own button column, right under the anchor button (Realms on the title screen, Back to
+	 * Game in the pause menu), as wide as it; everything below moves down a row. Without the anchor (another mod rebuilt the
+	 * screen), it goes to the top.
+	 */
+	private void addMenuButton(Minecraft mc, Screen screen, int width, String anchorKey) {
+		var widgets = Screens.getWidgets(screen);
+		net.minecraft.client.gui.components.AbstractWidget anchor = null;
+		for (var w : widgets) {
+			if (w.getMessage().getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t && t.getKey().equals(anchorKey)) {
+				anchor = w;
+				break;
+			}
+		}
+		Button button;
+		if (anchor != null) {
+			int row = anchor.getHeight() + 4;
+			int below = anchor.getY() + anchor.getHeight();
+			boolean title = screen instanceof TitleScreen;
+			for (var w : widgets) {
+				if (title && w.getY() < below) {
+					// the title screen has no room at the bottom: the buttons above make space by moving up a row
+					w.setY(w.getY() - row);
+				} else if (!title && w.getY() >= below) {
+					w.setY(w.getY() + row);
+				}
+			}
+			// right under the anchor (on the title screen the anchor moved up, so that is where it used to be)
+			button = Button.builder(Component.literal("Yahu Mods"), b -> openMenu(mc, screen))
+					.bounds(anchor.getX(), anchor.getY() + row, anchor.getWidth(), anchor.getHeight()).build();
+		} else {
+			button = Button.builder(Component.literal("Yahu Mods"), b -> openMenu(mc, screen)).bounds(width / 2 - 60, 6, 120, 20).build();
+		}
+		BlockWidgets.HIGHLIGHTED.add(button);
+		widgets.add(button);
 	}
 
 	private void openMenu(Minecraft mc, Screen parent) {

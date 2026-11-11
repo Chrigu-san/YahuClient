@@ -27,6 +27,28 @@ public abstract class ScreenMixin {
 		ci.cancel();
 	}
 
+	// screens size their labels while they are built; measure with the UI font then too, or labels get cut short
+	@Inject(method = "init(II)V", at = @At("HEAD"))
+	private void yahu$initFontOn(int width, int height, CallbackInfo ci) {
+		net.yahuclient.mod.ui.MenuFont.begin();
+	}
+
+	@Inject(method = "init(II)V", at = @At("RETURN"))
+	private void yahu$initFontOff(int width, int height, CallbackInfo ci) {
+		net.yahuclient.mod.ui.MenuFont.end();
+	}
+
+	// menu text in the Yahu UI font while a screen draws (see MenuFont)
+	@Inject(method = "extractRenderStateWithTooltipAndSubtitles", at = @At("HEAD"))
+	private void yahu$fontOn(GuiGraphicsExtractor g, int mouseX, int mouseY, float a, CallbackInfo ci) {
+		net.yahuclient.mod.ui.MenuFont.begin();
+	}
+
+	@Inject(method = "extractRenderStateWithTooltipAndSubtitles", at = @At("RETURN"))
+	private void yahu$fontOff(GuiGraphicsExtractor g, int mouseX, int mouseY, float a, CallbackInfo ci) {
+		net.yahuclient.mod.ui.MenuFont.end();
+	}
+
 	// the title screen's spinning panorama makes way for the dark Yahu background
 	@Inject(method = "extractPanorama", at = @At("HEAD"), cancellable = true)
 	private void yahu$panorama(GuiGraphicsExtractor g, float alpha, CallbackInfo ci) {

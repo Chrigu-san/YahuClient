@@ -6,8 +6,15 @@
 	"client": [
 		"AbstractButtonMixin",
 		"AbstractSliderButtonMixin",
+		"GuiGraphicsExtractorMixin",
+		"GuiTextRenderStateMixin",
 		"ScreenMixin",
-		"SkyRendererMixin"
+		"SelectionListMixin",
+		"SkyRendererMixin",
+		"SplashRendererMixin",
+		"StyleAccessor",
+		"StyleMixin",
+		"TitleScreenLookMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0
