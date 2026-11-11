@@ -7,6 +7,7 @@
 		"AbstractButtonMixin",
 		"AbstractSliderButtonMixin",
 		"CreateWorldScreenMixin",
+		"FontTextureMixin",
 		"GuiGraphicsExtractorMixin",
 		"GuiTextRenderStateMixin",
 		"ScreenMixin",

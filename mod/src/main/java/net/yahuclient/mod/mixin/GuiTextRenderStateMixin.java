@@ -18,4 +18,10 @@ public abstract class GuiTextRenderStateMixin {
 	private static FormattedCharSequence yahu$menuFont(FormattedCharSequence text) {
 		return MenuFont.active() ? MenuFont.wrap(text) : text;
 	}
+
+	// no hard one-pixel drop shadow under menu text: it makes smooth text look pixelated
+	@ModifyVariable(method = "<init>", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	private static boolean yahu$noShadow(boolean dropShadow) {
+		return MenuFont.active() ? false : dropShadow;
+	}
 }

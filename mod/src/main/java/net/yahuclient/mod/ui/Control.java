@@ -159,10 +159,12 @@ public abstract class Control {
 
 	/** The switch itself, shared with the mod list: 22 by 11, flat with a square knob, t from off (0) to on (1). */
 	public static void switchAt(GuiGraphicsExtractor g, float sx, float sy, float t, float hover) {
-		int track = Theme.mix(Theme.mix(0xFF262932, 0xFF30343F, hover), Theme.ACCENT, t);
-		Draw.round(g, sx, sy, 22, 11, 2, track);
-		float knobX = sx + 2 + 11 * Theme.easeOutCubic(t);
-		Draw.round(g, knobX, sy + 2, 7, 7, 1.5f, Theme.mix(0xFFAEB3BF, 0xFFFFFFFF, Math.max(t, hover)));
+		// a frosted pill that fills with the accent, a white knob sliding across
+		int track = Theme.mix(Theme.mix(0x30FFFFFF, 0x44FFFFFF, hover), Theme.ACCENT | 0xFF000000, t);
+		Draw.pill(g, sx, sy, 22, 11, track);
+		float knobX = sx + 5.5f + 11 * Theme.easeOutCubic(t);
+		Draw.circle(g, knobX, sy + 6f, 4f, 0x40000000);
+		Draw.circle(g, knobX, sy + 5.5f, 4f, Theme.mix(0xFFE4E7EE, 0xFFFFFFFF, Math.max(t, hover)));
 	}
 
 	/** A slider: a thin track filled with the accent up to the value, a round knob that grows under the mouse. */
@@ -206,10 +208,15 @@ public abstract class Control {
 			boolean hot = dragging || inside(mouseX, mouseY, trackX() - 4, y, trackW() + 8, ROW);
 			grab = Theme.approach(grab, hot ? 1 : 0, seconds, 18);
 			float tx = trackX(), tw = trackW(), cy = y + ROW / 2f;
-			g.fill(Math.round(tx), Math.round(cy - 1), Math.round(tx + tw), Math.round(cy + 1), 0xFF262932);
-			g.fill(Math.round(tx), Math.round(cy - 1), Math.round(tx + tw * t), Math.round(cy + 1), Theme.mix(Theme.ACCENT, Theme.ACCENT_2, t * 0.6f));
+			// a thin frosted track, filled in the accent up to the value, and a round white knob
+			Draw.pill(g, tx, cy - 1.5f, tw, 3, 0x26FFFFFF);
+			Draw.pill(g, tx, cy - 1.5f, Math.max(3, tw * t), 3, Theme.mix(Theme.ACCENT, Theme.ACCENT_2, t * 0.6f));
 			float kx = tx + tw * t;
-			Draw.round(g, kx - 1.5f, cy - 5 - grab, 3, 10 + 2 * grab, 1, 0xFFFFFFFF);
+			if (grab > 0.01f) {
+				Draw.circle(g, kx, cy, 6 + 2 * grab, Theme.alpha(0xFFFFFFFF, 0.18f * grab));
+			}
+			Draw.circle(g, kx, cy + 0.5f, 4.5f, 0x40000000);
+			Draw.circle(g, kx, cy, 4.5f, 0xFFFFFFFF);
 			String text = format.apply(value);
 			var c = Theme.ui(text);
 			g.text(font, c, x + w - font.width(c), y + (ROW - font.lineHeight) / 2 + 1, Theme.mix(Theme.MUTED, Theme.TEXT, grab), false);

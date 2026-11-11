@@ -101,6 +101,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Komplett neues Menü im Spiel aus Milchglas: das Spiel oder das Titelbild scheint verschwommen durch, eigene Schrift, Knöpfe, Felder, Listen und Tabs aus Glas
   - Neues Hauptmenü: Glas Panel links mit YAHU Logo und schlanker Navigation statt der Minecraft Knopfsäule
   - Mod Menü im Vollbild mit Glas Seitenleiste, schliesst nur noch mit Esc
+  - Alles gestochen scharf und glatt: haarfeine Ränder, runde Ecken und weiche Schrift ohne Pixel
   - Der Knopf **Yahu Mods** ist jetzt bei den anderen Knöpfen statt oben am Rand
 
 ## 🔜 Bald

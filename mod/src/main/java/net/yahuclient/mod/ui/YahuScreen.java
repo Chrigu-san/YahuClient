@@ -127,7 +127,7 @@ public class YahuScreen extends Screen {
 				Draw.round(g, 13, iy + 1, NAV_W - 18, ITEM_H - 2, 6, Theme.alpha(Glass.FILL_DIM, navHover[i] * appear));
 			}
 			// a small square in the mod's color, bright while it is on
-			Draw.round(g, x, iy + ITEM_H / 2f - 3, 6, 6, 1.5f, Theme.alpha(Theme.mix(0xFF3A3E4A, mod.color(), navOn[i]), appear));
+			Draw.circle(g, x + 3, iy + ITEM_H / 2f, 3, Theme.alpha(Theme.mix(0x50FFFFFF, mod.color(), navOn[i]), appear));
 			int nameColor = i == selected ? 0xFFFFFFFF : Theme.mix(0xFFC4C9D4, 0xFFFFFFFF, navHover[i]);
 			g.text(font, Theme.ui(mod.name()), x + 13, iy + (ITEM_H - 8) / 2, Theme.alpha(nameColor, appear), false);
 			Control.switchAt(g, NAV_W - 38, iy + (ITEM_H - 11) / 2f, navOn[i], hot ? 1 : 0);
@@ -156,7 +156,7 @@ public class YahuScreen extends Screen {
 		boolean on = mod.enabled().get();
 		var state = Theme.ui(on ? "ACTIVE" : "OFF");
 		int stateX = cx + cw - font.width(state);
-		g.fill(stateX - 8, y + 6, stateX - 4, y + 10, Theme.alpha(on ? Theme.GOOD : Theme.FAINT, fade));
+		Draw.circle(g, stateX - 6, y + 8, 2.5f, Theme.alpha(on ? Theme.GOOD : Theme.FAINT, fade));
 		g.text(font, state, stateX, y + 4, Theme.alpha(on ? Theme.GOOD : Theme.MUTED, fade), false);
 		y += 20;
 		var lines = font.split(Theme.ui(mod.description()), cw);
@@ -174,7 +174,7 @@ public class YahuScreen extends Screen {
 		y += 8;
 
 		if (mod.preview() != null) {
-			Glass.pane(g, cx, y, cw, PREVIEW_H, 8, Glass.FILL_DARK, Glass.EDGE, fade);
+			Glass.pane(g, cx, y, cw, PREVIEW_H, 4, Glass.FILL_DARK, Glass.EDGE, fade);
 			g.enableScissor(cx + 1, Math.max(y + 1, top), cx + cw - 1, Math.min(y + PREVIEW_H - 1, bottom));
 			mod.preview().extract(g, font, cx + 1, y + 1, cw - 2, PREVIEW_H - 2);
 			g.disableScissor();
@@ -212,7 +212,7 @@ public class YahuScreen extends Screen {
 					c.extract(g, font, mouseX - Math.round(slide), mouseY, dt);
 					ry += c.height();
 					if (i < gr.size() - 1 && !gr.get(i + 1).isSection()) {
-						g.fill(cx + 10, ry, cx + cw - 10, ry + 1, Theme.alpha(0x14FFFFFF, fade));
+						Draw.hairline(g, cx + 10, cx + cw - 10, ry, Theme.alpha(0x1CFFFFFF, fade));
 					}
 				}
 				y += h + 8 + 8;

@@ -33,17 +33,15 @@ public final class BlockWidgets {
 		if (active) {
 			float t = (float) Math.max(0, Math.min(1, value));
 			float end = 4 + (w - 8) * t;
-			Draw.round(g, x + 1, y + 1, Math.max(4, end), h - 2, 4, Theme.alpha(0x1EFFFFFF, alpha));
+			Draw.round(g, x, y, Math.max(12, end), h, 6, Theme.alpha(0x1AFFFFFF, alpha));
 		}
 	}
 
-	/** The slider's handle: a slim white pill with a soft light around it. */
+	/** The slider's handle: a short white pill along the bottom edge, under the label instead of over it. */
 	public static void sliderHandle(GuiGraphicsExtractor g, int x, int y, int w, int h, boolean hot, float alpha) {
 		float cx = x + w / 2f;
-		if (hot) {
-			Draw.glow(g, cx, y + h / 2f, 10, Theme.alpha(0xFFFFFFFF, 0.25f * alpha));
-		}
-		Draw.pill(g, cx - 1.5f, y + 4, 3, h - 8, Theme.alpha(0xFFFFFFFF, alpha));
+		float pw = hot ? 12 : 9;
+		Draw.pill(g, cx - pw / 2f, y + h - 4.5f, pw, 2.5f, Theme.alpha(0xFFFFFFFF, alpha));
 	}
 
 	/** The menu background outside a world. */
