@@ -270,6 +270,18 @@ public final class Skybox {
 	}
 
 	/** Whether to draw the custom sky instead of the normal one this frame. */
+	private static volatile long lastDrawn;
+
+	/** The custom sky was just drawn (the normal sky was replaced). */
+	public static void markDrawn() {
+		lastDrawn = System.nanoTime();
+	}
+
+	/** Clouds stay away while a custom sky is up and the player turned them off. */
+	public static boolean hideClouds(YahuConfig.Skybox config) {
+		return config.enabled && config.hideClouds && System.nanoTime() - lastDrawn < 500_000_000L;
+	}
+
 	public static boolean shouldDraw(YahuConfig.Skybox config, SkyRenderState state) {
 		if (!config.enabled || cube == null || !readyKey.equals(wantedKey) || !problem.isEmpty()) {
 			return false;

@@ -25,4 +25,14 @@ public abstract class GuiGraphicsExtractorMixin {
 			ci.cancel();
 		}
 	}
+
+	// the simple container panels (inventory, chests, ...) are redrawn by the inventory mod instead of their texture
+	@Inject(method = "blit(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIIIII)V", at = @At("HEAD"),
+			cancellable = true)
+	private void yahu$containerPanel(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int srcWidth,
+			int srcHeight, int textureWidth, int textureHeight, int color, CallbackInfo ci) {
+		if (net.yahuclient.mod.inventory.InventoryLook.replaceContainerTexture((GuiGraphicsExtractor) (Object) this, texture, x, y)) {
+			ci.cancel();
+		}
+	}
 }

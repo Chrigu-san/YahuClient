@@ -23,7 +23,8 @@ import net.minecraft.client.renderer.texture.AbstractTexture;
 public abstract class FontTextureMixin extends AbstractTexture {
 	@Inject(method = "<init>", at = @At("TAIL"))
 	private void yahu$smooth(Supplier<String> label, GlyphRenderTypes renderTypes, boolean colored, CallbackInfo ci) {
-		if (label.get().startsWith("yahu:")) {
+		// the pixel font stays sharp-edged on purpose
+		if (label.get().startsWith("yahu:") && !label.get().startsWith("yahu:pixel")) {
 			this.sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
 		}
 	}

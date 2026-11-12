@@ -64,7 +64,7 @@ public class YahuScreen extends Screen {
 
 	// full screen: the mod list as a sidebar on the left edge, the chosen mod's page to its right
 	private int contentW() {
-		return Math.min(MAX_CONTENT_W, width - NAV_W - 56);
+		return Math.min(MAX_CONTENT_W, width - NAV_W - 48);
 	}
 
 	private int contentX() {
@@ -72,7 +72,7 @@ public class YahuScreen extends Screen {
 	}
 
 	private int contentTop() {
-		return 36;
+		return 18;
 	}
 
 	private int contentBottom() {
@@ -103,29 +103,6 @@ public class YahuScreen extends Screen {
 		if (selected < mods.size()) {
 			extractPage(g, mods.get(selected), mouseX, mouseY, dt, appear);
 		}
-		extractClose(g, mouseX, mouseY, dt, appear);
-	}
-
-	private static final int CLOSE = 20;
-	private float closeHover;
-
-	private int closeX() {
-		return width - CLOSE - 8;
-	}
-
-	/** Top right: a close X, and an ESC key cap next to it that says the same without words. */
-	private void extractClose(GuiGraphicsExtractor g, int mouseX, int mouseY, float dt, float appear) {
-		int x = closeX(), y = 8;
-		boolean hot = inside(mouseX, mouseY, x, y, CLOSE, CLOSE);
-		closeHover = Theme.approach(closeHover, hot ? 1 : 0, dt, 18);
-		Glass.pane(g, x, y, CLOSE, CLOSE, Glass.RADIUS, Theme.mix(Glass.FILL, Glass.FILL_HOT, closeHover), Theme.mix(Glass.EDGE, Glass.EDGE_HOT, closeHover), appear);
-		float icon = CLOSE * 0.5f;
-		Icons.draw(g, "close", Icons.CLOSE, x + (CLOSE - icon) / 2f, y + (CLOSE - icon) / 2f, icon, Theme.alpha(Theme.mix(0xD0FFFFFF, 0xFFFFFFFF, closeHover), appear));
-		var esc = Theme.ui("ESC");
-		float capW = Spaced.width(esc, 0.8f) + 10;
-		float capX = x - 6 - capW, capY = y + 4;
-		Glass.pane(g, capX, capY, capW, 12, 2.5f, 0x1EFFFFFF, 0x40FFFFFF, appear);
-		Spaced.draw(g, esc, capX + capW / 2f, capY + 2.5f, 0.8f, Theme.alpha(0xB0FFFFFF, appear), true);
 	}
 
 	private void extractNav(GuiGraphicsExtractor g, int mouseX, int mouseY, float dt, float appear) {
@@ -268,10 +245,7 @@ public class YahuScreen extends Screen {
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		double mx = event.x(), my = event.y();
-		if (inside(mx, my, closeX(), 8, CLOSE, CLOSE)) {
-			onClose();
-			return true;
-		}
+
 		for (int i = 0; i < mods.size(); i++) {
 			int iy = LIST_Y + i * ITEM_H;
 			if (inside(mx, my, 0, iy, NAV_W, ITEM_H)) {

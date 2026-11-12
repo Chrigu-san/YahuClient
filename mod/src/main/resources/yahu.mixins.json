@@ -5,7 +5,10 @@
 	"compatibilityLevel": "JAVA_25",
 	"client": [
 		"AbstractButtonMixin",
+		"AbstractContainerScreenAccessor",
 		"AbstractSliderButtonMixin",
+		"CloudRendererMixin",
+		"ContainerLabelsMixin",
 		"CreateWorldScreenMixin",
 		"FontTextureMixin",
 		"GuiGraphicsExtractorMixin",

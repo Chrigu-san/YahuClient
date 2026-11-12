@@ -10,6 +10,9 @@ public final class ModernSprites {
 
 	/** Draws the Yahu version of this sprite; false if it isn't one we replace. */
 	public static boolean draw(GuiGraphicsExtractor g, Identifier sprite, int x, int y, int w, int h, int color) {
+		if ("minecraft".equals(sprite.getNamespace()) && inventorySprite(g, sprite.getPath(), x, y)) {
+			return true;
+		}
 		if (!"minecraft".equals(sprite.getNamespace()) || !sprite.getPath().startsWith("widget/")) {
 			return false;
 		}
@@ -44,6 +47,46 @@ public final class ModernSprites {
 				} else if (hot) {
 					Glass.pane(g, x + 3, y + 3, w - 6, h - 6, 6, Glass.FILL_DIM, Glass.EDGE, alpha);
 				}
+			}
+			default -> {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/** The hotbar and slot highlights in the inventory mod's look; false if the mod leaves this sprite alone. */
+	private static boolean inventorySprite(GuiGraphicsExtractor g, String path, int x, int y) {
+		switch (path) {
+			case "hud/hotbar" -> {
+				if (!net.yahuclient.mod.inventory.InventoryLook.hotbarOn()) {
+					return false;
+				}
+				net.yahuclient.mod.inventory.InventoryLook.hotbar(g, x, y);
+			}
+			case "hud/hotbar_selection" -> {
+				if (!net.yahuclient.mod.inventory.InventoryLook.hotbarOn()) {
+					return false;
+				}
+				net.yahuclient.mod.inventory.InventoryLook.hotbarSelection(g, x, y);
+			}
+			case "hud/hotbar_offhand_left", "hud/hotbar_offhand_right" -> {
+				if (!net.yahuclient.mod.inventory.InventoryLook.hotbarOn()) {
+					return false;
+				}
+				net.yahuclient.mod.inventory.InventoryLook.offhand(g, x, y, path.endsWith("left"));
+			}
+			case "container/slot_highlight_back" -> {
+				if (!net.yahuclient.mod.inventory.InventoryLook.containersOn()) {
+					return false;
+				}
+				net.yahuclient.mod.inventory.InventoryLook.highlightBack(g, x, y);
+			}
+			case "container/slot_highlight_front" -> {
+				if (!net.yahuclient.mod.inventory.InventoryLook.containersOn()) {
+					return false;
+				}
+				net.yahuclient.mod.inventory.InventoryLook.highlightFront(g, x, y);
 			}
 			default -> {
 				return false;

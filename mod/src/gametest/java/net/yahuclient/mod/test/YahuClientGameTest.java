@@ -65,11 +65,11 @@ public class YahuClientGameTest implements FabricClientGameTest {
 		context.waitForScreen(YahuScreen.class);
 		context.waitTicks(10);
 		context.takeScreenshot("yahu-menu-crosshair");
-		for (int page = 1; page <= 2; page++) {
+		for (int page = 1; page <= 3; page++) {
 			int p = page;
 			context.runOnClient(mc -> ((YahuScreen) mc.gui.screen()).select(p));
 			context.waitTicks(10);
-			context.takeScreenshot("yahu-menu-" + (page == 1 ? "lyrics" : "skybox"));
+			context.takeScreenshot("yahu-menu-" + (page == 1 ? "lyrics" : page == 2 ? "skybox" : "inventory"));
 		}
 		// scrolled down on the crosshair page, where the PvP settings are
 		context.runOnClient(mc -> ((YahuScreen) mc.gui.screen()).select(0));
@@ -118,6 +118,19 @@ public class YahuClientGameTest implements FabricClientGameTest {
 				context.waitTicks(20);
 				context.takeScreenshot("yahu-lyrics-" + style.name().toLowerCase());
 			}
+			// a look preset in the sky: a different typeface, gradient and a thin outline
+			context.runOnClient(mc -> {
+				var l = YahuMod.config().lyrics;
+				l.style = LyricsStyle.WORDS;
+				l.font = net.yahuclient.mod.config.LyricsFont.RIGHTEOUS;
+				l.sungColor = 0xFF3FD5F2;
+				l.gradientColor = 0xFFB46CFF;
+				l.upcomingColor = 0xFFE8E6FF;
+				l.outline = 0.5f;
+				l.outlineColor = 0xFF140A2A;
+			});
+			context.waitTicks(20);
+			context.takeScreenshot("yahu-lyrics-preset-neon");
 			context.runOnClient(mc -> {
 				YahuMod.config().lyrics.mode = LyricsMode.FOLLOW;
 				YahuMod.config().lyrics.style = LyricsStyle.KINETIC;
@@ -145,6 +158,18 @@ public class YahuClientGameTest implements FabricClientGameTest {
 				context.takeScreenshot("yahu-sky-" + preset.name().toLowerCase());
 			}
 			context.runOnClient(mc -> YahuMod.config().skybox.enabled = false);
+
+			// the inventory mod: the player's inventory with a few items, the hotbar under it
+			world.getServer().runCommand("give @a minecraft:diamond_sword");
+			world.getServer().runCommand("give @a minecraft:oak_log 32");
+			world.getServer().runCommand("give @a minecraft:apple 5");
+			context.waitTicks(10);
+			context.setScreen(() -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(net.minecraft.client.Minecraft.getInstance().player));
+			context.waitTicks(10);
+			context.takeScreenshot("yahu-inventory");
+			context.setScreen(() -> null);
+			context.waitTicks(5);
+			context.takeScreenshot("yahu-hotbar");
 
 			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitForScreen(PauseScreen.class);

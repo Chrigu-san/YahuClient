@@ -26,7 +26,8 @@ own account.
   buttons, fields and lists), and gives the main menu a new centered layout: the logo, a short column of slim buttons,
   an icon row at the bottom and a close X in the corner. The Yahu Mods button (in the button column of the title screen and pause menu) or Right Shift opens the Yahu menu with our own mods: a pixel-exact PvP crosshair, karaoke lyrics in the sky for
   the song you play in Spotify or your browser (line by line, word by word or kinetic), and custom skies (a black hole, a
-  real-looking day, golden hour, aurora, nebula, or a picture of your own).
+  real-looking day, golden hour, aurora, nebula, or a picture of your own), plus a hotbar and inventory look in several
+  styles.
 - **Sign-in:** Players sign in through the official Microsoft login page in their browser. The launcher receives a token
   only to verify game ownership and start Minecraft. Passwords never pass through the launcher.
 - **No cheats, no server tricks:** The launcher starts the official game; the Yahu mod only draws things for the player
