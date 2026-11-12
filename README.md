@@ -22,9 +22,9 @@ own account.
   `chris.yahuclient.net`, so friends never have to type an IP. Servers never keep running unseen after the launcher closes
   or crashes.
 - **In-game Yahu menu:** In Fabric instances for Minecraft 26.3 (with Fabric API), the launcher adds the small Yahu mod.
-  It turns all of Minecraft's menus into slim smoked glass on a dark, blurred night background, with its own Yahu logo (own font, word mark, glass
-  buttons, fields and lists), and gives the main menu a new layout: a glass panel on the left with the logo and a slim
-  navigation. The Yahu Mods button (in the button column of the title screen and pause menu) or Right Shift opens the Yahu menu with our own mods: a pixel-exact PvP crosshair, karaoke lyrics in the sky for
+  It turns all of Minecraft's menus into slim smoked glass on a dark, blurred night background, with its own Yahu logo (own crisp font, glass
+  buttons, fields and lists), and gives the main menu a new centered layout: the logo, a short column of slim buttons,
+  an icon row at the bottom and a close X in the corner. The Yahu Mods button (in the button column of the title screen and pause menu) or Right Shift opens the Yahu menu with our own mods: a pixel-exact PvP crosshair, karaoke lyrics in the sky for
   the song you play in Spotify or your browser (line by line, word by word or kinetic), and custom skies (a black hole, a
   real-looking day, golden hour, aurora, nebula, or a picture of your own).
 - **Sign-in:** Players sign in through the official Microsoft login page in their browser. The launcher receives a token
