@@ -24,7 +24,7 @@ public abstract class StyleMixin {
 	@Inject(method = "getFont", at = @At("HEAD"), cancellable = true)
 	private void yahu$menuFont(CallbackInfoReturnable<FontDescription> cir) {
 		if (font == null && MenuFont.active()) {
-			cir.setReturnValue(MenuFont.FONT);
+			cir.setReturnValue(net.yahuclient.mod.ui.Theme.uiFont());
 		}
 	}
 }

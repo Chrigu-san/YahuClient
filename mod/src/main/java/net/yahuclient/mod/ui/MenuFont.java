@@ -12,7 +12,6 @@ import net.yahuclient.mod.mixin.StyleAccessor;
  * Text is measured (StyleMixin) and recorded for drawing (GuiTextRenderStateMixin) with the same font, so centering fits.
  */
 public final class MenuFont {
-	public static final FontDescription FONT = Theme.UI_FONT;
 	private static int depth;
 
 	private MenuFont() {
@@ -32,7 +31,7 @@ public final class MenuFont {
 
 	/** The style with the UI font if it doesn't ask for a font of its own. */
 	public static Style apply(Style style) {
-		return ((StyleAccessor) (Object) style).yahu$font() == null ? style.withFont(FONT) : style;
+		return ((StyleAccessor) (Object) style).yahu$font() == null ? style.withFont(Theme.uiFont()) : style;
 	}
 
 	/** The same text, with the UI font wherever it had no font of its own. */

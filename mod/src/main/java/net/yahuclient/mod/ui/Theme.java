@@ -38,17 +38,64 @@ public final class Theme {
 	public static final FontDescription UI_FONT = new FontDescription.Resource(UI_FONT_ID);
 	public static final FontDescription DISPLAY_FONT = new FontDescription.Resource(DISPLAY_FONT_ID);
 
+	// the same fonts rasterized for each GUI scale (ui_N: N screen pixels per GUI pixel), so menu text lands 1:1 on screen
+	// pixels instead of being scaled down from a bigger raster, which looks jagged or soft
+	private static final FontDescription[] UI_BY_SCALE = new FontDescription[7];
+	private static final FontDescription[] DISPLAY_BY_SCALE = new FontDescription[7];
+	private static final FontDescription[] HEADING_BY_SCALE = new FontDescription[7];
+
+	static {
+		for (int s = 1; s <= 6; s++) {
+			UI_BY_SCALE[s] = new FontDescription.Resource(Identifier.fromNamespaceAndPath("yahu", "ui_" + s));
+			DISPLAY_BY_SCALE[s] = new FontDescription.Resource(Identifier.fromNamespaceAndPath("yahu", "display_" + s));
+			HEADING_BY_SCALE[s] = new FontDescription.Resource(Identifier.fromNamespaceAndPath("yahu", "heading_" + s));
+		}
+	}
+
 	private Theme() {
+	}
+
+	private static int guiScale() {
+		var mc = net.minecraft.client.Minecraft.getInstance();
+		if (mc == null || mc.getWindow() == null) {
+			return 2;
+		}
+		return (int) Math.max(1, Math.min(6, Math.round(mc.getWindow().getGuiScale())));
+	}
+
+	/** The UI font made for the current GUI scale. */
+	public static FontDescription uiFont() {
+		return UI_BY_SCALE[guiScale()];
+	}
+
+	/** The heading font made for the current GUI scale (rasterized twice as large, for headings drawn bigger). */
+	public static FontDescription displayFont() {
+		return DISPLAY_BY_SCALE[guiScale()];
+	}
+
+	/** Whether this font is one of the UI fonts (any scale). */
+	public static boolean isUiFont(FontDescription font) {
+		for (int s = 1; s <= 6; s++) {
+			if (UI_BY_SCALE[s].equals(font)) {
+				return true;
+			}
+		}
+		return font.equals(UI_FONT);
 	}
 
 	/** Text in the UI font. */
 	public static MutableComponent ui(String text) {
-		return Component.literal(text).withStyle(Style.EMPTY.withFont(UI_FONT));
+		return Component.literal(text).withStyle(Style.EMPTY.withFont(uiFont()));
+	}
+
+	/** A big heading (the heading font at a larger size, still 1:1 on screen pixels). */
+	public static MutableComponent heading(String text) {
+		return Component.literal(text).withStyle(Style.EMPTY.withFont(HEADING_BY_SCALE[guiScale()]));
 	}
 
 	/** Text in the heading font. */
 	public static MutableComponent display(String text) {
-		return Component.literal(text).withStyle(Style.EMPTY.withFont(DISPLAY_FONT));
+		return Component.literal(text).withStyle(Style.EMPTY.withFont(displayFont()));
 	}
 
 	public static int alpha(int color, float alpha) {

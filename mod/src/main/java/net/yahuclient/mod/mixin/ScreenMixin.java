@@ -44,7 +44,6 @@ public abstract class ScreenMixin {
 	@Inject(method = "extractRenderStateWithTooltipAndSubtitles", at = @At("HEAD"))
 	private void yahu$fontOn(GuiGraphicsExtractor g, int mouseX, int mouseY, float a, CallbackInfo ci) {
 		net.yahuclient.mod.ui.MenuFont.begin();
-		net.yahuclient.mod.ui.Backdrop.newFrame();
 	}
 
 	@Inject(method = "extractRenderStateWithTooltipAndSubtitles", at = @At("RETURN"))
@@ -60,7 +59,6 @@ public abstract class ScreenMixin {
 			g.blurBeforeThisStratum();
 			Background.tint(g, 0, 0, g.guiWidth(), g.guiHeight(), false);
 			TitleLayout.frame();
-			TitleLayout.panel(g);
 		}
 	}
 

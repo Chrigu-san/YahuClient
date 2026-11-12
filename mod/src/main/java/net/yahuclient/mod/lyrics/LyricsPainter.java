@@ -99,7 +99,7 @@ public final class LyricsPainter {
 
 		float half = layout.height() / 2f;
 		if (config.showSongTitle && frame.title() != null && !frame.title().isEmpty()) {
-			Component title = Component.literal("♪  " + frame.title()).withStyle(Style.EMPTY.withFont(Theme.UI_FONT));
+			Component title = Component.literal("♪  " + frame.title()).withStyle(Style.EMPTY.withFont(Theme.uiFont()));
 			sink.text(title, 0, -half - lineHeight * 0.9f, 0.55f, 0, Theme.alpha(0xFFFFFFFF, 0.75f), Theme.alpha(outlineColor, 0.75f),
 					Math.min(1, outline));
 		}

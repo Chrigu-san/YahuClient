@@ -8,7 +8,6 @@
 		"AbstractSliderButtonMixin",
 		"CreateWorldScreenMixin",
 		"FontTextureMixin",
-		"GameRendererBlurMixin",
 		"GuiGraphicsExtractorMixin",
 		"GuiTextRenderStateMixin",
 		"ScreenMixin",

@@ -20,7 +20,10 @@ public abstract class AbstractButtonMixin extends AbstractWidget.WithInactiveMes
 
 	@Inject(method = "extractDefaultSprite", at = @At("HEAD"), cancellable = true)
 	private void yahu$blockButton(GuiGraphicsExtractor g, CallbackInfo ci) {
-		if (net.yahuclient.mod.ui.TitleLayout.NAV.contains(this)) {
+		String icon = net.yahuclient.mod.ui.TitleLayout.ICON.get(this);
+		if (icon != null) {
+			net.yahuclient.mod.ui.TitleLayout.drawIcon(g, this, icon, isHoveredOrFocused(), alpha);
+		} else if (net.yahuclient.mod.ui.TitleLayout.NAV.contains(this)) {
 			net.yahuclient.mod.ui.TitleLayout.drawEntry(g, this, isActive(), isHoveredOrFocused(), BlockWidgets.HIGHLIGHTED.contains(this), alpha);
 		} else if (BlockWidgets.HIGHLIGHTED.contains(this)) {
 			BlockWidgets.greenButton(g, getX(), getY(), width, height, isHoveredOrFocused(), alpha);
@@ -30,10 +33,10 @@ public abstract class AbstractButtonMixin extends AbstractWidget.WithInactiveMes
 		ci.cancel();
 	}
 
-	// navigation entries on the main menu draw their own left-aligned label (TitleLayout)
+	// main menu entries and icon buttons draw their own label (TitleLayout)
 	@Inject(method = "extractDefaultLabel", at = @At("HEAD"), cancellable = true)
 	private void yahu$navLabel(net.minecraft.client.gui.ActiveTextCollector output, CallbackInfo ci) {
-		if (net.yahuclient.mod.ui.TitleLayout.NAV.contains(this)) {
+		if (net.yahuclient.mod.ui.TitleLayout.NAV.contains(this) || net.yahuclient.mod.ui.TitleLayout.ICON.containsKey(this)) {
 			ci.cancel();
 		}
 	}

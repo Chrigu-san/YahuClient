@@ -25,10 +25,4 @@ public abstract class GuiGraphicsExtractorMixin {
 			ci.cancel();
 		}
 	}
-
-	// the glass panes show the frosted backdrop only in frames where Minecraft blurs (see Backdrop)
-	@Inject(method = "blurBeforeThisStratum", at = @At("HEAD"))
-	private void yahu$blurThisFrame(CallbackInfo ci) {
-		net.yahuclient.mod.ui.Backdrop.markBlur();
-	}
 }

@@ -37,11 +37,13 @@ public final class Background {
 	 * the frosted panes have color to pick up. Lighter in a world, so the game still shows.
 	 */
 	public static void tint(GuiGraphicsExtractor g, int x, int y, int w, int h, boolean inWorld) {
-		float k = inWorld ? 0.55f : 0.8f;
-		g.fillGradient(x, y, x + w, y + h, Theme.alpha(0xFF1B1238, 0.58f * k), Theme.alpha(0xFF0B2A33, 0.58f * k));
-		lights(g, x, y, w, h, inWorld ? 0.45f : 0.8f);
-		int band = Math.max(24, h / 5);
-		g.fillGradient(x, y + h - band, x + w, y + h, 0x00000000, Theme.alpha(0xFF000000, 0.35f * k));
+		// a deep blue night over the blurred picture: it keeps the shapes and light but drowns its colors (the title
+		// panorama is warm orange), so nothing behind the glass shouts; a little darker towards the edges
+		float k = inWorld ? 0.62f : 0.84f;
+		g.fillGradient(x, y, x + w, y + h, Theme.alpha(0xFF0B1220, k), Theme.alpha(0xFF070B14, Math.min(1, k + 0.06f)));
+		int band = Math.max(24, h / 4);
+		g.fillGradient(x, y, x + w, y + band, Theme.alpha(0xFF000000, 0.25f), 0x00000000);
+		g.fillGradient(x, y + h - band, x + w, y + h, 0x00000000, Theme.alpha(0xFF000000, 0.35f));
 	}
 
 	private static void lights(GuiGraphicsExtractor g, int x, int y, int w, int h, float strength) {

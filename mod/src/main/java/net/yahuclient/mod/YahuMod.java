@@ -184,6 +184,8 @@ public class YahuMod implements ClientModInitializer {
 				if (screen instanceof TitleScreen) {
 					// the main menu gets the Yahu layout: logo top left, a slim navigation under it
 					net.yahuclient.mod.ui.TitleLayout.apply(screen, Screens.getWidgets(screen));
+				} else {
+					net.yahuclient.mod.ui.TitleLayout.restyle(Screens.getWidgets(screen));
 				}
 				ScreenKeyboardEvents.afterKeyPress(screen).register((s, key) -> {
 					if (key.key() == MENU_KEY) {
