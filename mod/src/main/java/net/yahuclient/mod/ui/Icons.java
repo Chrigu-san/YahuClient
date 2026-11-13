@@ -41,6 +41,12 @@ public final class Icons {
 		return argb(Tex.cover(d, px), 0xFFFFFF);
 	};
 
+	/** A back arrow: a chevron pointing left with a short shaft. */
+	public static final Tex.Shape BACK = (x, y, px) -> {
+		double d = Math.min(Math.min(segment(x, y, -0.5, 0, 0.0, -0.5), segment(x, y, -0.5, 0, 0.0, 0.5)), segment(x, y, -0.5, 0, 0.55, 0)) - 0.085;
+		return argb(Tex.cover(d, px), 0xFFFFFF);
+	};
+
 	/** A settings gear: eight rounded teeth around a ring. */
 	public static final Tex.Shape GEAR = (x, y, px) -> {
 		double r = Math.hypot(x, y);

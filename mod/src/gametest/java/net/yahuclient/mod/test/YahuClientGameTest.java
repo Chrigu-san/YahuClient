@@ -64,14 +64,14 @@ public class YahuClientGameTest implements FabricClientGameTest {
 		context.getInput().pressKey(InputConstants.KEY_RSHIFT);
 		context.waitForScreen(YahuScreen.class);
 		context.waitTicks(10);
-		context.takeScreenshot("yahu-menu-crosshair");
-		for (int page = 1; page <= 3; page++) {
+		context.takeScreenshot("yahu-menu-grid");
+		String[] pages = {"crosshair", "lyrics", "skybox", "inventory"};
+		for (int page = 0; page < pages.length; page++) {
 			int p = page;
 			context.runOnClient(mc -> ((YahuScreen) mc.gui.screen()).select(p));
 			context.waitTicks(10);
-			context.takeScreenshot("yahu-menu-" + (page == 1 ? "lyrics" : page == 2 ? "skybox" : "inventory"));
-		}
-		// scrolled down on the crosshair page, where the PvP settings are
+			context.takeScreenshot("yahu-menu-" + pages[page]);
+		}		// scrolled down on the crosshair page, where the PvP settings are
 		context.runOnClient(mc -> ((YahuScreen) mc.gui.screen()).select(0));
 		context.waitTicks(5);
 		context.runOnClient(mc -> {
@@ -80,6 +80,9 @@ public class YahuClientGameTest implements FabricClientGameTest {
 		});
 		context.waitTicks(15);
 		context.takeScreenshot("yahu-menu-crosshair-scrolled");
+		// Esc goes from a mod's settings back to the grid, then closes the menu
+		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
+		context.waitTicks(5);
 		context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 		context.waitForScreen(TitleScreen.class);
 

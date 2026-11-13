@@ -5,37 +5,38 @@ import java.util.List;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 /**
- * The Yahu menu: our own mods and their settings, over the game or the title screen. Dark, with a slowly drifting light in
- * the background. On the left the mods with their switches, on the right the chosen one: its name, a live preview and the
- * settings in grouped cards, scrolling smoothly when they don't fit.
+ * The Yahu menu, laid out like the big PvP clients: first every mod as a card in a grid (its icon, name, what it does, and
+ * a bar along the bottom that switches it on and off); a click on a card opens that mod's settings, with an arrow (or Esc)
+ * back to the grid. Both sit in one floating glass panel over the blurred background.
  *
- * Movement is kept short and quiet: the menu fades and settles in, the selection marker glides, the page crossfades when
- * another mod is picked.
+ * Movement is short and quiet: the panel settles in, cards brighten under the mouse, the two views crossfade.
  */
 public class YahuScreen extends Screen {
-	private static final int NAV_W = 150;
-	private static final int ITEM_H = 26;
-	private static final int LIST_Y = 46;
-	private static final int MAX_CONTENT_W = 420;
+	private static final int MAX_PANEL_W = 540;
+	private static final int CARD_MIN_W = 84;
+	private static final int CARD_H = 92;
+	private static final int GAP = 8;
 	private static final int PREVIEW_H = 70;
+	private static final int HEADER = 40;
 
 	private final Screen parent;
 	private final List<ModEntry> mods;
 	private final Runnable save;
 	private final boolean inWorld;
 
-	private int selected;
+	private int selected = -1;       // -1: the grid; otherwise the mod whose settings are open
 	private Control active;
 	private long lastFrame = System.nanoTime();
 	private float open;              // 0 -> 1 when the menu appears
-	private float page = 1;          // 0 -> 1 when another mod is picked
-	private float marker = -1;       // the selection marker's position, in items
-	private float[] navHover;
-	private float[] navOn;
+	private float page = 1;          // 0 -> 1 when the view changes
+	private final float[] cardHover;
+	private final float[] cardOn;
+	private float backHover;
 	private float scroll, scrollTarget;
 	private int contentHeight;
 
@@ -45,16 +46,16 @@ public class YahuScreen extends Screen {
 		this.mods = mods;
 		this.save = save;
 		this.inWorld = inWorld;
-		this.navHover = new float[mods.size()];
-		this.navOn = new float[mods.size()];
+		this.cardHover = new float[mods.size()];
+		this.cardOn = new float[mods.size()];
 		for (int i = 0; i < mods.size(); i++) {
-			navOn[i] = mods.get(i).enabled().get() ? 1 : 0;
+			cardOn[i] = mods.get(i).enabled().get() ? 1 : 0;
 		}
 	}
 
-	/** Shows this mod's page, as a click on it would. */
+	/** Opens this mod's settings, as a click on its card would; -1 goes back to the grid. */
 	public void select(int index) {
-		int i = Math.max(0, Math.min(mods.size() - 1, index));
+		int i = index < 0 ? -1 : Math.min(mods.size() - 1, index);
 		if (i != selected) {
 			selected = i;
 			page = 0;
@@ -62,25 +63,73 @@ public class YahuScreen extends Screen {
 		}
 	}
 
-	// full screen: the mod list as a sidebar on the left edge, the chosen mod's page to its right
-	private int contentW() {
-		return Math.min(MAX_CONTENT_W, width - NAV_W - 48);
+	// --- geometry: one panel in the middle ---
+
+	private int panelW() {
+		return Math.min(MAX_PANEL_W, width - 24);
 	}
 
-	private int contentX() {
-		return NAV_W + 24 + Math.max(0, (width - NAV_W - 48 - contentW()) / 2);
+	private int panelX() {
+		return (width - panelW()) / 2;
+	}
+
+	private int panelY() {
+		return 12;
+	}
+
+	private int panelH() {
+		return height - 24;
+	}
+
+	private int innerX() {
+		return panelX() + 16;
+	}
+
+	private int innerW() {
+		return panelW() - 32;
 	}
 
 	private int contentTop() {
-		return 18;
+		return panelY() + HEADER;
 	}
 
 	private int contentBottom() {
-		return height - 10;
+		return panelY() + panelH() - 8;
+	}
+
+	private int columns() {
+		// as many columns as fit, but never more than there are mods
+		return Math.max(1, Math.min(mods.size(), (innerW() + GAP) / (CARD_MIN_W + GAP)));
+	}
+
+	private int cardW() {
+		int cols = columns();
+		return (innerW() - GAP * (cols - 1)) / cols;
+	}
+
+	private int cardX(int i) {
+		return innerX() + (i % columns()) * (cardW() + GAP);
+	}
+
+	private int cardY(int i) {
+		return contentTop() + 4 + (i / columns()) * (CARD_H + GAP) - Math.round(scroll);
+	}
+
+	private static final int BACK = 20;
+
+	private int backX() {
+		return panelX() + 12;
+	}
+
+	private int backY() {
+		return panelY() + 11;
+	}
+
+	private int headerSwitchX() {
+		return panelX() + panelW() - 16 - 22;
 	}
 
 	// the background is Minecraft's own: the blurred game or panorama, with the Yahu tint (ScreenMixin)
-
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
@@ -93,50 +142,102 @@ public class YahuScreen extends Screen {
 		super.extractRenderState(g, mouseX, mouseY, partialTick);
 
 		float appear = Theme.easeOutCubic(open);
-		// the sidebar slides in from the left edge, the page fades in
-		float slideIn = (1 - appear) * -12;
+		float settle = (1 - appear) * 10;
 		g.pose().pushMatrix();
-		g.pose().translate(slideIn, 0);
-		Glass.panel(g, 8, 8, NAV_W - 8, height - 16, 6, appear);
-		extractNav(g, mouseX - Math.round(slideIn), mouseY, dt, appear);
-		g.pose().popMatrix();
-		if (selected < mods.size()) {
-			extractPage(g, mods.get(selected), mouseX, mouseY, dt, appear);
+		g.pose().translate(0, settle);
+		int my = Math.round(mouseY - settle);
+		Glass.panel(g, panelX(), panelY(), panelW(), panelH(), 8, appear);
+		for (int i = 0; i < mods.size(); i++) {
+			cardOn[i] = Theme.approach(cardOn[i], mods.get(i).enabled().get() ? 1 : 0, dt, 16);
 		}
+		float fade = Theme.easeOutCubic(page) * appear;
+		if (selected < 0) {
+			extractGrid(g, mouseX, my, dt, appear, fade);
+		} else {
+			extractDetail(g, mods.get(selected), mouseX, my, dt, appear, fade);
+		}
+		g.pose().popMatrix();
 	}
 
-	private void extractNav(GuiGraphicsExtractor g, int mouseX, int mouseY, float dt, float appear) {
-		int x = 20, y = 22;
-		// the word mark: YAHU in the heading font, MODS after it in the accent
+	// --- the grid ---
+
+	private void extractGrid(GuiGraphicsExtractor g, int mouseX, int mouseY, float dt, float appear, float fade) {
+		// header: the word mark, the number of mods on the right
+		int hx = innerX(), hy = panelY() + 16;
 		var mark = Theme.display("YAHU");
-		g.text(font, mark, x, y, Theme.alpha(Theme.TEXT, appear), false);
-		g.text(font, Theme.ui("MODS"), x + font.width(mark) + 5, y, Theme.alpha(Theme.ACCENT_HI, appear), false);
+		g.text(font, mark, hx, hy, Theme.alpha(Theme.TEXT, appear), false);
+		Spaced.draw(g, Theme.ui("MODS"), hx + font.width(mark) + 6, hy, 1.2f, Theme.alpha(Theme.ACCENT_HI, appear), false);
+		long on = mods.stream().filter(m -> m.enabled().get()).count();
+		var count = Theme.ui(on + " of " + mods.size() + " on");
+		g.text(font, count, innerX() + innerW() - font.width(count), hy, Theme.alpha(Theme.MUTED, appear), false);
+		Draw.hairline(g, innerX(), innerX() + innerW(), panelY() + HEADER - 6, Theme.alpha(0x1CFFFFFF, appear));
 
-		marker = marker < 0 ? selected : Theme.approach(marker, selected, dt, 16);
-		// the selection: a full-width row that glides to the chosen mod, an accent edge on the left
-		int my = Math.round(LIST_Y + marker * ITEM_H);
-		Glass.pane(g, 13, my + 1, NAV_W - 18, ITEM_H - 2, 6, Glass.FILL_HOT, 0x60FFFFFF, appear);
-
+		float rise = (1 - Theme.easeOutCubic(page)) * 6;
+		scroll = Theme.approach(scroll, scrollTarget, dt, 14);
+		int rows = (mods.size() + columns() - 1) / columns();
+		contentHeight = 4 + rows * (CARD_H + GAP);
+		scrollTarget = Math.max(0, Math.min(scrollTarget, Math.max(0, contentHeight - (contentBottom() - contentTop()))));
+		g.enableScissor(panelX(), contentTop() - 2, panelX() + panelW(), contentBottom());
+		int cw = cardW();
+		// taglines only when every card has room for its own, so the cards stay alike
+		boolean tags = mods.stream().allMatch(m -> font.width(Theme.ui(m.tagline())) <= cw - 8);
 		for (int i = 0; i < mods.size(); i++) {
 			ModEntry mod = mods.get(i);
-			int iy = LIST_Y + i * ITEM_H;
-			boolean hot = inside(mouseX, mouseY, 0, iy, NAV_W, ITEM_H);
-			navHover[i] = Theme.approach(navHover[i], hot && i != selected ? 1 : 0, dt, 18);
-			navOn[i] = Theme.approach(navOn[i], mod.enabled().get() ? 1 : 0, dt, 16);
-			if (navHover[i] > 0.01f) {
-				Draw.round(g, 13, iy + 1, NAV_W - 18, ITEM_H - 2, 6, Theme.alpha(Glass.FILL_DIM, navHover[i] * appear));
-			}
-			// a small square in the mod's color, bright while it is on
-			Draw.circle(g, x + 3, iy + ITEM_H / 2f, 3, Theme.alpha(Theme.mix(0x50FFFFFF, mod.color(), navOn[i]), appear));
-			int nameColor = i == selected ? 0xFFFFFFFF : Theme.mix(0xFFC4C9D4, 0xFFFFFFFF, navHover[i]);
-			g.text(font, Theme.ui(mod.name()), x + 13, iy + (ITEM_H - 8) / 2, Theme.alpha(nameColor, appear), false);
-			Control.switchAt(g, NAV_W - 38, iy + (ITEM_H - 11) / 2f, navOn[i], hot ? 1 : 0);
-		}
+			int x = cardX(i), y = Math.round(cardY(i) + rise);
+			boolean hot = inside(mouseX, mouseY, x, y, cw, CARD_H);
+			cardHover[i] = Theme.approach(cardHover[i], hot ? 1 : 0, dt, 18);
+			float h = cardHover[i];
+			float lift = h * 1.5f;
+			Glass.pane(g, x, y - lift, cw, CARD_H, 6, Theme.mix(Glass.FILL, Glass.FILL_HOT, h), Theme.mix(Glass.EDGE, Glass.EDGE_HOT, h), fade);
 
+			// the icon: a disk in the mod's color (dim while off), its sign on it
+			float cx = x + cw / 2f, iy = y - lift + 26;
+			float t = cardOn[i];
+			Draw.glow(g, cx, iy, 26, Theme.alpha(mod.color(), 0.22f * t * fade));
+			Draw.circle(g, cx, iy, 14, Theme.alpha(Theme.mix(0xFF2A2F3B, mod.color(), 0.35f + 0.65f * t), fade));
+			var icon = Theme.display(mod.icon());
+			g.text(font, icon, Math.round(cx - font.width(icon) / 2f), Math.round(iy - 4), Theme.alpha(0xFFFFFFFF, fade), false);
+
+			var name = Theme.ui(mod.name());
+			g.text(font, name, Math.round(cx - font.width(name) / 2f), Math.round(y - lift + 46), Theme.alpha(0xFFFFFFFF, fade), false);
+			var tag = Theme.ui(mod.tagline());
+			if (tags) {
+				g.text(font, tag, Math.round(cx - font.width(tag) / 2f), Math.round(y - lift + 57), Theme.alpha(Theme.MUTED, fade), false);
+			}
+
+			// the switch bar along the bottom
+			int bx = x + 6, by = Math.round(y - lift) + CARD_H - 22, bw = cw - 12, bh = 16;
+			boolean barHot = inside(mouseX, mouseY, bx, by, bw, bh);
+			int fill = Theme.mix(0x50202530, 0xC0249468, t);
+			if (barHot) {
+				fill = Theme.mix(fill, 0xFFFFFFFF, 0.08f);
+			}
+			Glass.pane(g, bx, by, bw, bh, 3, fill, Theme.mix(0x30FFFFFF, 0x7048E0A0, t), fade);
+			var label = Theme.ui(mod.enabled().get() ? "ENABLED" : "DISABLED");
+			Spaced.draw(g, label, bx + bw / 2f, by + 4, cw < 100 ? 0.6f : 1.2f, Theme.alpha(Theme.mix(0xFFB4B9C4, 0xFFFFFFFF, t), fade), true);
+		}
+		g.disableScissor();
 	}
-	private void extractPage(GuiGraphicsExtractor g, ModEntry mod, int mouseX, int mouseY, float dt, float appear) {
-		float fade = Theme.easeOutCubic(page) * appear;
-		int cx = contentX(), cw = contentW(), top = contentTop(), bottom = contentBottom();
+
+	// --- one mod's settings ---
+
+	private void extractDetail(GuiGraphicsExtractor g, ModEntry mod, int mouseX, int mouseY, float dt, float appear, float fade) {
+		// header: back arrow, the mod's name, its switch
+		boolean backHot = inside(mouseX, mouseY, backX(), backY(), BACK, BACK);
+		backHover = Theme.approach(backHover, backHot ? 1 : 0, dt, 18);
+		Glass.pane(g, backX(), backY(), BACK, BACK, Glass.RADIUS, Theme.mix(Glass.FILL, Glass.FILL_HOT, backHover),
+				Theme.mix(Glass.EDGE, Glass.EDGE_HOT, backHover), appear);
+		float icon = BACK * 0.45f;
+		Icons.draw(g, "back", Icons.BACK, backX() + (BACK - icon) / 2f - backHover * 1f, backY() + (BACK - icon) / 2f, icon,
+				Theme.alpha(Theme.mix(0xD0FFFFFF, 0xFFFFFFFF, backHover), appear));
+		g.text(font, Theme.heading(mod.name()), backX() + BACK + 10, backY() + 4, Theme.alpha(Theme.TEXT, fade), false);
+		int idx = mods.indexOf(mod);
+		Control.switchAt(g, headerSwitchX(), backY() + 4.5f, cardOn[idx], inside(mouseX, mouseY, headerSwitchX() - 4, backY(), 30, BACK) ? 1 : 0);
+		var state = Theme.ui(mod.enabled().get() ? "ON" : "OFF");
+		g.text(font, state, headerSwitchX() - 8 - font.width(state), backY() + 6, Theme.alpha(mod.enabled().get() ? Theme.GOOD : Theme.MUTED, fade), false);
+		Draw.hairline(g, innerX(), innerX() + innerW(), panelY() + HEADER - 6, Theme.alpha(0x1CFFFFFF, appear));
+
+		int cx = innerX(), cw = innerW(), top = contentTop(), bottom = contentBottom();
 		scroll = Theme.approach(scroll, scrollTarget, dt, 14);
 		int offset = Math.round(scroll);
 		float slide = (1 - Theme.easeOutCubic(page)) * 8;
@@ -144,16 +245,8 @@ public class YahuScreen extends Screen {
 		g.enableScissor(cx - 4, top - 2, cx + cw + 6, bottom);
 		g.pose().pushMatrix();
 		g.pose().translate(slide, 0);
-		int y = top - offset;
+		int y = top + 2 - offset;
 
-		// title and status
-		g.text(font, Theme.heading(mod.name()), cx, y + 1, Theme.alpha(Theme.TEXT, fade), false);
-		boolean on = mod.enabled().get();
-		var state = Theme.ui(on ? "ACTIVE" : "OFF");
-		int stateX = cx + cw - font.width(state);
-		Draw.circle(g, stateX - 6, y + 8, 2.5f, Theme.alpha(on ? Theme.GOOD : Theme.FAINT, fade));
-		g.text(font, state, stateX, y + 4, Theme.alpha(on ? Theme.GOOD : Theme.MUTED, fade), false);
-		y += 20;
 		var lines = font.split(Theme.ui(mod.description()), cw);
 		for (var line : lines) {
 			g.text(font, line, cx, y, Theme.alpha(0xFFD2D6DF, fade), false);
@@ -199,7 +292,7 @@ public class YahuScreen extends Screen {
 				h += gr.get(i).height();
 			}
 			if (h > 0) {
-				Glass.panel(g, cx, y, cw, h + 8, 8, fade);
+				Glass.pane(g, cx, y, cw, h + 8, 6, 0x50141820, 0x24FFFFFF, fade);
 				int ry = y + 4;
 				for (int i = start; i < gr.size(); i++) {
 					Control c = gr.get(i);
@@ -217,14 +310,12 @@ public class YahuScreen extends Screen {
 		g.pose().popMatrix();
 		g.disableScissor();
 
-		// soft edges where content scrolls out of view
 		int max = Math.max(0, contentHeight - (bottom - top));
 		if (max > 0) {
-
 			float track = bottom - top;
 			float bar = Math.max(20, track * track / Math.max(1, contentHeight));
 			float by = top + (track - bar) * (scroll / max);
-			g.fill(width - 5, Math.round(by), width - 3, Math.round(by + bar), Theme.alpha(0xFFFFFFFF, 0.2f));
+			Draw.pill(g, panelX() + panelW() - 6, by, 2, bar, Theme.alpha(0xFFFFFFFF, 0.25f));
 		}
 		scrollTarget = Math.max(0, Math.min(scrollTarget, max));
 	}
@@ -235,30 +326,45 @@ public class YahuScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (mouseX >= NAV_W + 4) {
+		// the grid and a mod's settings both scroll when they don't fit
+		{
 			scrollTarget = Math.max(0, Math.min(Math.max(0, contentHeight - (contentBottom() - contentTop())), scrollTarget - (float) scrollY * 28));
 			return true;
 		}
-		return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
 	}
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		double mx = event.x(), my = event.y();
-
-		for (int i = 0; i < mods.size(); i++) {
-			int iy = LIST_Y + i * ITEM_H;
-			if (inside(mx, my, 0, iy, NAV_W, ITEM_H)) {
-				ModEntry mod = mods.get(i);
-				if (mx >= NAV_W - 44) {
-					mod.setEnabled().accept(!mod.enabled().get());
-					save.run();
+		if (selected < 0) {
+			int cw = cardW();
+			for (int i = 0; i < mods.size(); i++) {
+				int x = cardX(i), y = cardY(i);
+				if (inside(mx, my, x, y, cw, CARD_H)) {
+					ModEntry mod = mods.get(i);
+					if (inside(mx, my, x + 6, y + CARD_H - 22, cw - 12, 16)) {
+						mod.setEnabled().accept(!mod.enabled().get());
+						save.run();
+					} else {
+						select(i);
+					}
+					return true;
 				}
-				select(i);
-				return true;
 			}
+			return super.mouseClicked(event, doubleClick);
 		}
-		if (selected < mods.size() && my >= contentTop() && my < contentBottom()) {
+
+		if (inside(mx, my, backX(), backY(), BACK, BACK)) {
+			select(-1);
+			return true;
+		}
+		if (inside(mx, my, headerSwitchX() - 4, backY(), 30, BACK)) {
+			ModEntry mod = mods.get(selected);
+			mod.setEnabled().accept(!mod.enabled().get());
+			save.run();
+			return true;
+		}
+		if (my >= contentTop() && my < contentBottom()) {
 			for (Control control : mods.get(selected).controls()) {
 				if (control.click(mx, my)) {
 					active = control;
@@ -290,6 +396,15 @@ public class YahuScreen extends Screen {
 		return super.mouseReleased(event);
 	}
 
+	@Override
+	public boolean keyPressed(KeyEvent event) {
+		// Esc in a mod's settings goes back to the grid first
+		if (event.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE && selected >= 0) {
+			select(-1);
+			return true;
+		}
+		return super.keyPressed(event);
+	}
 
 	@Override
 	public void onClose() {
