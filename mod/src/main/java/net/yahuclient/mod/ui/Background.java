@@ -32,6 +32,20 @@ public final class Background {
 		vignette(g, x, y, w, h);
 	}
 
+	/**
+	 * The tint over a blurred background, for the glass look: a soft violet to teal wash with the slow lights in it, so
+	 * the frosted panes have color to pick up. Lighter in a world, so the game still shows.
+	 */
+	public static void tint(GuiGraphicsExtractor g, int x, int y, int w, int h, boolean inWorld) {
+		// a deep blue night over the blurred picture: it keeps the shapes and light but drowns its colors (the title
+		// panorama is warm orange), so nothing behind the glass shouts; a little darker towards the edges
+		float k = inWorld ? 0.62f : 0.84f;
+		g.fillGradient(x, y, x + w, y + h, Theme.alpha(0xFF0B1220, k), Theme.alpha(0xFF070B14, Math.min(1, k + 0.06f)));
+		int band = Math.max(24, h / 4);
+		g.fillGradient(x, y, x + w, y + band, Theme.alpha(0xFF000000, 0.25f), 0x00000000);
+		g.fillGradient(x, y + h - band, x + w, y + h, 0x00000000, Theme.alpha(0xFF000000, 0.35f));
+	}
+
 	private static void lights(GuiGraphicsExtractor g, int x, int y, int w, int h, float strength) {
 		double t = seconds();
 		float size = Math.max(w, h);

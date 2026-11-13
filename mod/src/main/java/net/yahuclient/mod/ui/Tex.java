@@ -70,6 +70,110 @@ public final class Tex {
 		}), true));
 	}
 
+	private static final java.util.Map<Integer, Identifier> DISKS = new java.util.HashMap<>();
+	private static final java.util.Map<Integer, Identifier> RINGS = new java.util.HashMap<>();
+	public static final int SHADOW_SIZE = 64;
+	public static final int SHADOW_EDGE = 28;
+	public static final Identifier SHADOW = Identifier.fromNamespaceAndPath("yahu", "generated/shadow");
+	private static boolean shadowReady;
+
+	/**
+	 * A disk exactly d screen pixels wide, its edge smoothed over one pixel. Made once per size: drawn 1:1, so a corner
+	 * is as smooth as the screen allows, at any size (a big disk scaled down gets jagged without mipmaps).
+	 */
+	public static Identifier disk(int d) {
+		int size = Math.max(1, Math.min(512, d));
+		return DISKS.computeIfAbsent(size, k -> {
+			Identifier id = Identifier.fromNamespaceAndPath("yahu", "generated/disk_" + k);
+			Minecraft.getInstance().getTextureManager().register(id, new Smooth("yahu disk " + k, image(k, (x, y) -> {
+				double r = k / 2.0;
+				double dist = Math.hypot(x + 0.5 - r, y + 0.5 - r);
+				return argb(coverage(r - dist), 0xFFFFFF);
+			}), false));
+			return id;
+		});
+	}
+
+	/** A ring one screen pixel thick along the edge of a d pixel disk: the corners of hairline outlines. */
+	public static Identifier ring(int d) {
+		int size = Math.max(2, Math.min(512, d));
+		return RINGS.computeIfAbsent(size, k -> {
+			Identifier id = Identifier.fromNamespaceAndPath("yahu", "generated/ring_" + k);
+			Minecraft.getInstance().getTextureManager().register(id, new Smooth("yahu ring " + k, image(k, (x, y) -> {
+				double r = k / 2.0;
+				double dist = Math.hypot(x + 0.5 - r, y + 0.5 - r);
+				return argb(coverage(r - dist) - coverage(r - 1 - dist), 0xFFFFFF);
+			}), false));
+			return id;
+		});
+	}
+
+	/**
+	 * A soft shadow for nine-slicing: solid in the middle (SHADOW_EDGE to SIZE - SHADOW_EDGE), fading out smoothly to the
+	 * border, so it stretches to any box without steps.
+	 */
+	public static Identifier shadow() {
+		if (!shadowReady) {
+			shadowReady = true;
+			Minecraft.getInstance().getTextureManager().register(SHADOW, new Smooth("yahu shadow", image(SHADOW_SIZE, (x, y) -> {
+				double lo = SHADOW_EDGE, hi = SHADOW_SIZE - SHADOW_EDGE;
+				double dx = Math.max(0, Math.max(lo - (x + 0.5), (x + 0.5) - hi));
+				double dy = Math.max(0, Math.max(lo - (y + 0.5), (y + 0.5) - hi));
+				double t = 1 - Math.min(1, Math.hypot(dx, dy) / SHADOW_EDGE);
+				return argb(t * t * (3 - 2 * t) * t, 0x000000);
+			}), false));
+		}
+		return SHADOW;
+	}
+
+	/** A shape given as a signed distance (negative inside) at a point; coordinates from -1 to 1, y down. */
+	public interface Shape {
+		/** The color (ARGB) at a point, with its coverage already worked in; d is how big one pixel is in these units. */
+		int argb(double x, double y, double pixel);
+	}
+
+	private static final java.util.Map<String, Identifier> SHAPES = new java.util.HashMap<>();
+
+	/** A shape painted for exactly size by size screen pixels, smooth edges, made once per size. */
+	public static Identifier shape(String name, int size, Shape shape) {
+		int s = Math.max(2, Math.min(512, size));
+		return SHAPES.computeIfAbsent(name + "_" + s, key -> {
+			Identifier id = Identifier.fromNamespaceAndPath("yahu", "generated/" + key);
+			double pixel = 1.0 / s;  // half a pixel: each of the 4 samples smooths over its own half
+			Minecraft.getInstance().getTextureManager().register(id, new Smooth("yahu " + key, image(s, (x, y) -> {
+				// 4 samples per pixel, so thin strokes stay even
+				int a = 0, r = 0, g = 0, b = 0;
+				for (int sy = 0; sy < 2; sy++) {
+					for (int sx = 0; sx < 2; sx++) {
+						double px = ((x + 0.25 + 0.5 * sx) / s) * 2 - 1;
+						double py = ((y + 0.25 + 0.5 * sy) / s) * 2 - 1;
+						int c = shape.argb(px, py, pixel);
+						int ca = c >>> 24;
+						a += ca;
+						r += ((c >> 16) & 0xFF) * ca;
+						g += ((c >> 8) & 0xFF) * ca;
+						b += (c & 0xFF) * ca;
+					}
+				}
+				if (a == 0) {
+					return 0;
+				}
+				return ((a / 4) << 24) | ((r / a) << 16) | ((g / a) << 8) | (b / a);
+			}), false));
+			return id;
+		});
+	}
+
+	/** Coverage of a pixel by a shape at signed distance d (in shape units, pixel = one pixel's size). */
+	public static double cover(double d, double pixel) {
+		return Math.max(0, Math.min(1, 0.5 - d / pixel));
+	}
+
+	/** How much of a pixel an edge at this signed distance covers (0 outside, 1 inside, smooth over one pixel). */
+	private static double coverage(double distance) {
+		return Math.max(0, Math.min(1, distance + 0.5));
+	}
+
 	private static NativeImage image(int size, IntBinaryOperator pixel) {
 		NativeImage image = new NativeImage(size, size, false);
 		for (int y = 0; y < size; y++) {

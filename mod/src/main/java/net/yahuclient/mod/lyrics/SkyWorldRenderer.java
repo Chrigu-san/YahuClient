@@ -19,6 +19,8 @@ public final class SkyWorldRenderer {
 	// blocks away: near enough that even a short render distance's fog doesn't reach it; the size is scaled to match
 	private static final float DISTANCE = 20f;
 	private static final int FULL_BRIGHT = 0xF000F0;
+	// how far behind the text its outline sits, in font pixels (negative is away from the player here)
+	static float OUTLINE_DEPTH = Float.parseFloat(System.getProperty("yahu.outlineDepth", "-0.6"));
 
 	private SkyWorldRenderer() {
 	}
@@ -68,7 +70,7 @@ public final class SkyWorldRenderer {
 		}
 
 		@Override
-		public void text(Component text, float cx, float cy, float scale, float rotation, int color, int outlineColor, int outlineWidth) {
+		public void text(Component text, float cx, float cy, float scale, float rotation, int color, int outlineColor, float outlineWidth) {
 			if ((color >>> 24) < 4) {
 				return;
 			}
@@ -81,14 +83,16 @@ public final class SkyWorldRenderer {
 			}
 			pose.scale(scale, scale, scale);
 			float x = -w / 2f, y = -font.lineHeight / 2f;
-			for (int k = 1; k <= outlineWidth; k++) {
-				for (int dx = -1; dx <= 1; dx++) {
-					for (int dy = -1; dy <= 1; dy++) {
-						if (dx != 0 || dy != 0) {
-							out.submitText(pose, x + dx * k * 0.75f, y + dy * k * 0.75f, sequence, false, Font.DisplayMode.NORMAL, FULL_BRIGHT, outlineColor, 0, 0);
-						}
-					}
+			// the outline copies sit a little behind the text, not in the same plane: copies in one plane fight over the
+			// same depth and flicker as the camera moves
+			float[] ring = OutlineRing.offsets(outlineWidth);
+			if (ring.length > 0) {
+				pose.pushPose();
+				pose.translate(0, 0, OUTLINE_DEPTH);
+				for (int i = 0; i < ring.length; i += 2) {
+					out.submitText(pose, x + ring[i], y + ring[i + 1], sequence, false, Font.DisplayMode.NORMAL, FULL_BRIGHT, outlineColor, 0, 0);
 				}
+				pose.popPose();
 			}
 			out.submitText(pose, x, y, sequence, false, Font.DisplayMode.POLYGON_OFFSET, FULL_BRIGHT, color, 0, 0);
 			pose.popPose();

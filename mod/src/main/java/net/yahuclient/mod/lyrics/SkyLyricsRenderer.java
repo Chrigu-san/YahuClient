@@ -61,7 +61,7 @@ public final class SkyLyricsRenderer {
 		}
 
 		@Override
-		public void text(Component text, float cx, float cy, float scale, float rotation, int color, int outlineColor, int outlineWidth) {
+		public void text(Component text, float cx, float cy, float scale, float rotation, int color, int outlineColor, float outlineWidth) {
 			if ((color >>> 24) < 4) {
 				return;
 			}
@@ -73,14 +73,13 @@ public final class SkyLyricsRenderer {
 			}
 			g.pose().scale(scale, scale);
 			int x = -w / 2, y = -font.lineHeight / 2;
-			for (int k = 1; k <= outlineWidth; k++) {
-				for (int dx = -1; dx <= 1; dx++) {
-					for (int dy = -1; dy <= 1; dy++) {
-						if (dx != 0 || dy != 0) {
-							g.text(font, text, x + dx * k, y + dy * k, outlineColor, false);
-						}
-					}
-				}
+			// the outline: copies around a circle, offset by fractions of a pixel (the pose takes any offset)
+			float[] ring = OutlineRing.offsets(outlineWidth);
+			for (int i = 0; i < ring.length; i += 2) {
+				g.pose().pushMatrix();
+				g.pose().translate(ring[i], ring[i + 1]);
+				g.text(font, text, x, y, outlineColor, false);
+				g.pose().popMatrix();
 			}
 			g.text(font, text, x, y, color, false);
 			g.pose().popMatrix();

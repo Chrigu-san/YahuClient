@@ -16,6 +16,7 @@ public final class YahuConfig {
 	public Crosshair crosshair = new Crosshair();
 	public Lyrics lyrics = new Lyrics();
 	public Skybox skybox = new Skybox();
+	public Inventory inventory = new Inventory();
 
 	/** The crosshair is built from three parts that can be combined: arms, a center dot and a ring. Sizes are screen pixels. */
 	public static final class Crosshair {
@@ -66,15 +67,26 @@ public final class YahuConfig {
 		public float height = 0.55f;    // how high in the sky, 0 = horizon, 1 = high up
 		public float scale = 1.0f;
 		public int maxWidth = 70;       // the line wraps beyond this share of the view, in percent, so it never runs off
-		public int outline = 1;         // outline width, 0 = none
+		public float outline = 0.75f;   // outline width in font pixels, 0 = none (quarter steps)
 		public int outlineColor = 0xFF0B0C12;
 		public int sungColor = 0xFF8B6CFF;
 		public int upcomingColor = 0xFFFFFFFF;
-		public boolean gradient = true; // sung text runs from the sung color to cyan
+		public boolean gradient = true; // sung text runs from the sung color to the gradient color
+		public int gradientColor = 0xFF3FD5F2;
 		public boolean uppercase = false;
 		public boolean showNext = true;
 		public boolean showSongTitle = true;
 		public int popStrength = 60;    // how much words pop when they appear, in percent
+	}
+
+	public static final class Inventory {
+		public boolean enabled = true;
+		public InventoryStyle style = InventoryStyle.GLASS;
+		public int accent = 0xFF8B6CFF;
+		public int opacity = 100;       // percent, how solid the slots and panels are
+		public int roundness = 3;       // corner radius of the slots, in GUI pixels
+		public boolean hotbar = true;
+		public boolean containers = true;
 	}
 
 	public static final class Skybox {
@@ -85,6 +97,7 @@ public final class YahuConfig {
 		public int brightness = 100;
 		public int rotationSpeed = 10;          // degrees per minute
 		public boolean overworldOnly = true;
+		public boolean hideClouds = true;       // no clouds under a custom sky
 	}
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

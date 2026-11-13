@@ -180,9 +180,13 @@ public class YahuMod implements ClientModInitializer {
 		// (key mappings only fire while playing, not in menus)
 		ScreenEvents.AFTER_INIT.register((mc, screen, width, height) -> {
 			if (screen instanceof PauseScreen || screen instanceof TitleScreen) {
-				Button button = Button.builder(Component.literal("Yahu Mods"), b -> openMenu(mc, screen)).bounds(width / 2 - 60, 6, 120, 20).build();
-				BlockWidgets.HIGHLIGHTED.add(button);
-				Screens.getWidgets(screen).add(button);
+				addMenuButton(mc, screen, width, screen instanceof TitleScreen ? "menu.online" : "menu.returnToGame");
+				if (screen instanceof TitleScreen) {
+					// the main menu gets the Yahu layout: logo top left, a slim navigation under it
+					net.yahuclient.mod.ui.TitleLayout.apply(screen, Screens.getWidgets(screen));
+				} else {
+					net.yahuclient.mod.ui.TitleLayout.restyle(Screens.getWidgets(screen));
+				}
 				ScreenKeyboardEvents.afterKeyPress(screen).register((s, key) -> {
 					if (key.key() == MENU_KEY) {
 						openMenu(mc, s);
@@ -192,15 +196,94 @@ public class YahuMod implements ClientModInitializer {
 		});
 	}
 
+	/**
+	 * Puts "Yahu Mods" into the screen's own button column, right under the anchor button (Realms on the title screen, Back to
+	 * Game in the pause menu), as wide as it; everything below moves down a row. Without the anchor (another mod rebuilt the
+	 * screen), it goes to the top.
+	 */
+	private void addMenuButton(Minecraft mc, Screen screen, int width, String anchorKey) {
+		var widgets = Screens.getWidgets(screen);
+		net.minecraft.client.gui.components.AbstractWidget anchor = null;
+		for (var w : widgets) {
+			if (w.getMessage().getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t && t.getKey().equals(anchorKey)) {
+				anchor = w;
+				break;
+			}
+		}
+		Button button;
+		if (anchor != null) {
+			int row = anchor.getHeight() + 4;
+			int below = anchor.getY() + anchor.getHeight();
+			boolean title = screen instanceof TitleScreen;
+			for (var w : widgets) {
+				if (title && w.getY() < below) {
+					// the title screen has no room at the bottom: the buttons above make space by moving up a row
+					w.setY(w.getY() - row);
+				} else if (!title && w.getY() >= below) {
+					w.setY(w.getY() + row);
+				}
+			}
+			// right under the anchor (on the title screen the anchor moved up, so that is where it used to be)
+			button = Button.builder(Component.literal("Yahu Mods"), b -> openMenu(mc, screen))
+					.bounds(anchor.getX(), anchor.getY() + row, anchor.getWidth(), anchor.getHeight()).build();
+		} else {
+			button = Button.builder(Component.literal("Yahu Mods"), b -> openMenu(mc, screen)).bounds(width / 2 - 60, 6, 120, 20).build();
+		}
+		BlockWidgets.HIGHLIGHTED.add(button);
+		widgets.add(button);
+	}
+
 	private void openMenu(Minecraft mc, Screen parent) {
-		mc.setScreenAndShow(new YahuScreen(parent, mods(), () -> config.save(configFile), MENU_KEY, mc.level != null));
+		mc.setScreenAndShow(new YahuScreen(parent, mods(), () -> config.save(configFile), mc.level != null));
 	}
 
 	// -------------------------------------------------------------------------------------------------------------------
 	// the mods as the menu shows them
 
 	private List<ModEntry> mods() {
-		return List.of(crosshairMod(), lyricsMod(), skyboxMod());
+		return List.of(crosshairMod(), lyricsMod(), skyboxMod(), inventoryMod());
+	}
+
+	private ModEntry inventoryMod() {
+		YahuConfig.Inventory v = config.inventory;
+		List<Control> controls = List.of(
+				new Control.Section("Look"),
+				new Control.Choice<>("Style", () -> Arrays.asList(net.yahuclient.mod.config.InventoryStyle.values()), s -> s.label, () -> v.style,
+						s -> v.style = s),
+				new Control.Buttons("Presets", List.of(
+						new Control.Buttons.Action("Glass", () -> inventoryLook(v, net.yahuclient.mod.config.InventoryStyle.GLASS, 0xFF8B6CFF, 100, 3)),
+						new Control.Buttons.Action("Clean", () -> inventoryLook(v, net.yahuclient.mod.config.InventoryStyle.MINIMAL, 0xFFFFFFFF, 90, 2)),
+						new Control.Buttons.Action("Neon", () -> inventoryLook(v, net.yahuclient.mod.config.InventoryStyle.NEON, 0xFF3FD5F2, 100, 4)),
+						new Control.Buttons.Action("Candy", () -> inventoryLook(v, net.yahuclient.mod.config.InventoryStyle.SOFT, 0xFFFF6BD6, 100, 6)),
+						new Control.Buttons.Action("Toxic", () -> inventoryLook(v, net.yahuclient.mod.config.InventoryStyle.NEON, 0xFF7CFF6B, 110, 2)))),
+				new Control.Colors("Accent", () -> v.accent, c -> v.accent = c),
+				Control.Slider.ints("Opacity", 40, 150, "%", () -> v.opacity, o -> v.opacity = o),
+				Control.Slider.ints("Roundness", 0, 9, " px", () -> v.roundness, r -> v.roundness = r),
+				new Control.Section("Where"),
+				new Control.Toggle("Hotbar", () -> v.hotbar, b -> v.hotbar = b),
+				new Control.Toggle("Inventory and chests", () -> v.containers, b -> v.containers = b),
+				new Control.Note(() -> "Restyles your inventory, chests, shulker boxes, dispensers and hoppers. Other blocks keep Minecraft's look."));
+		return new ModEntry("Inventory", "Hotbar and chests", "Your hotbar and inventories in a look that matches the Yahu menus: glass, clean, neon or soft, with your own accent color.",
+				0xFF3DDC97, "▦", () -> v.enabled, b -> v.enabled = b, controls,
+				(g, font, x, y, w, h) -> {
+					g.fillGradient(x, y, x + w, y + h, 0xFF2B4A6E, 0xFF3E6B3A);
+					// a sample hotbar, slot 3 chosen
+					int barX = x + (w - 182) / 2, barY = y + (h - 22) / 2;
+					boolean was = v.enabled;
+					v.enabled = true;
+					net.yahuclient.mod.inventory.InventoryLook.hotbar(g, barX, barY);
+					net.yahuclient.mod.inventory.InventoryLook.hotbarSelection(g, barX - 1 + 2 * 20, barY - 1);
+					v.enabled = was;
+				},
+				null);
+	}
+
+	/** A ready-made inventory look. */
+	private static void inventoryLook(YahuConfig.Inventory v, net.yahuclient.mod.config.InventoryStyle style, int accent, int opacity, int roundness) {
+		v.style = style;
+		v.accent = accent;
+		v.opacity = opacity;
+		v.roundness = roundness;
 	}
 
 	private ModEntry crosshairMod() {
@@ -292,12 +375,23 @@ public class YahuMod implements ClientModInitializer {
 				new Control.Slider("Height", 0, 1, 0.01, v -> Math.round(v * 100) + "%", () -> l.height, v -> l.height = v.floatValue()),
 				Control.Slider.ints("Line width", 30, 95, "%", () -> l.maxWidth, v -> l.maxWidth = v),
 				Control.Slider.ints("Pop", 0, 100, "%", () -> l.popStrength, v -> l.popStrength = v),
+				new Control.Section("Looks"),
+				new Control.Buttons("Presets", List.of(
+						new Control.Buttons.Action("Clean", () -> look(l, LyricsFont.INSTRUMENT, false, 0xFFFFFFFF, 0xFFFFFFFF, false, 0xFF9AA3B5, 0.5f, 0xFF0B0E14)),
+						new Control.Buttons.Action("Neon", () -> look(l, LyricsFont.RIGHTEOUS, false, 0xFF3FD5F2, 0xFFB46CFF, true, 0xFFE8E6FF, 0.75f, 0xFF140A2A)),
+						new Control.Buttons.Action("Sunset", () -> look(l, LyricsFont.BEBAS, true, 0xFFFF8A5B, 0xFFFF4F9A, true, 0xFFFFE9D6, 0.5f, 0xFF2A0F1F)),
+						new Control.Buttons.Action("Poster", () -> look(l, LyricsFont.ARCHIVO, true, 0xFFFFE14D, 0xFFFFE14D, false, 0xFFFFFFFF, 1f, 0xFF000000)),
+						new Control.Buttons.Action("Dreamy", () -> look(l, LyricsFont.PACIFICO, false, 0xFFFFB3D9, 0xFFB3C7FF, true, 0xFFFFFFFF, 0.5f, 0xFF2B1A3A)),
+						new Control.Buttons.Action("Arcade", () -> look(l, LyricsFont.BUNGEE, true, 0xFF7CFF6B, 0xFF3FD5F2, true, 0xFFFFFFFF, 0.75f, 0xFF0A0A0A)),
+						new Control.Buttons.Action("Retro", () -> look(l, LyricsFont.PIXEL, true, 0xFFFFD84A, 0xFFFF8A3D, true, 0xFFFFFFFF, 1f, 0xFF000000)))),
 				new Control.Section("Text"),
-				Control.Slider.ints("Outline", 0, 4, " px", () -> l.outline, v -> l.outline = v),
+				new Control.Slider("Outline", 0, 3, 0.25, v -> v <= 0 ? "Off" : String.format(java.util.Locale.ROOT, "%.2f px", v), () -> l.outline,
+						v -> l.outline = v.floatValue()),
 				new Control.Colors("Outline color", () -> l.outlineColor, v -> l.outlineColor = v),
 				new Control.Colors("Sung color", () -> l.sungColor, v -> l.sungColor = v),
 				new Control.Colors("Text color", () -> l.upcomingColor, v -> l.upcomingColor = v),
 				new Control.Toggle("Color gradient", () -> l.gradient, v -> l.gradient = v),
+				new Control.Colors("Gradient to", () -> l.gradientColor, v -> l.gradientColor = v),
 				new Control.Toggle("Uppercase", () -> l.uppercase, v -> l.uppercase = v),
 				new Control.Section("Extras"),
 				new Control.Toggle("Next line", () -> l.showNext, v -> l.showNext = v),
@@ -316,6 +410,19 @@ public class YahuMod implements ClientModInitializer {
 				this::lyricsStatus);
 	}
 
+	/** A ready-made look for the lyrics: a typeface with colors and an outline that go together. */
+	private static void look(YahuConfig.Lyrics l, LyricsFont font, boolean uppercase, int sung, int gradientTo, boolean gradient, int text,
+			float outline, int outlineColor) {
+		l.font = font;
+		l.uppercase = uppercase;
+		l.sungColor = sung;
+		l.gradientColor = gradientTo;
+		l.gradient = gradient;
+		l.upcomingColor = text;
+		l.outline = outline;
+		l.outlineColor = outlineColor;
+	}
+
 	// the preview box is small: everything as set, the line wrapped to fit it
 	private static YahuConfig.Lyrics previewCopy(YahuConfig.Lyrics l) {
 		YahuConfig.Lyrics p = new YahuConfig.Lyrics();
@@ -326,6 +433,7 @@ public class YahuMod implements ClientModInitializer {
 		p.sungColor = l.sungColor;
 		p.upcomingColor = l.upcomingColor;
 		p.gradient = l.gradient;
+		p.gradientColor = l.gradientColor;
 		p.uppercase = l.uppercase;
 		p.showNext = false;
 		p.showSongTitle = false;
@@ -368,7 +476,8 @@ public class YahuMod implements ClientModInitializer {
 				Control.Slider.ints("Brightness", 20, 150, "%", () -> s.brightness, v -> s.brightness = v),
 				Control.Slider.ints("Rotation", 0, 60, "°/min", () -> s.rotationSpeed, v -> s.rotationSpeed = v),
 				new Control.Toggle("Darker at night", () -> s.followDayNight, v -> s.followDayNight = v),
-				new Control.Toggle("Overworld only", () -> s.overworldOnly, v -> s.overworldOnly = v));
+				new Control.Toggle("Overworld only", () -> s.overworldOnly, v -> s.overworldOnly = v),
+				new Control.Toggle("Clouds", () -> !s.hideClouds, v -> s.hideClouds = !v));
 		return new ModEntry("Skybox", "Your own sky", "Replace the sky with a black hole, a real-looking day, a golden hour, an aurora night, a nebula, or a picture of your own.",
 				0xFFFF9945, "✦", () -> s.enabled, v -> s.enabled = v, controls,
 				(g, font, x, y, w, h) -> Skybox.drawPreview(g, s, x, y, w, h),
