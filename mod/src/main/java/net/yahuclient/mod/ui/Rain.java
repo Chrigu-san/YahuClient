@@ -21,6 +21,8 @@ public final class Rain {
 	private static final float G = 420f;         // pull along the glass for a heavy drop, GUI px/s²
 
 	private final List<Drop> drops = new ArrayList<>();
+	/** How much of the rain lands on this pane (big panels get less, so it doesn't turn into grain). */
+	public float density = 1;
 	private final Random random = new Random();
 	private final float seed = new Random().nextFloat() * 100;
 	private float w, h;
@@ -47,7 +49,7 @@ public final class Rain {
 			h = height;
 			drops.clear();
 			// already wet: a dusting of tiny beads
-			int n = Math.round(w * h / 70);
+			int n = Math.round(w * h / 70 * density);
 			for (int i = 0; i < n; i++) {
 				drops.add(new Drop(random.nextFloat() * w, random.nextFloat() * h, .14f + (float) Math.pow(random.nextFloat(), 2) * .3f));
 			}
@@ -58,7 +60,7 @@ public final class Rain {
 		float gx = (float) Math.sin(Math.toRadians(tiltDeg)) * 1.4f + .06f, gy = 1;
 
 		// rain keeps landing: mostly fine beads, often a heavier drop that runs at once
-		float rate = (level == 2 ? 3f : 1.2f) * w * h / 1400f;
+		float rate = (level == 2 ? 3f : 1.2f) * w * h / 1400f * density;
 		float n = rate * dt;
 		while (n > 0) {
 			if (random.nextFloat() < n) {
@@ -126,7 +128,7 @@ public final class Rain {
 			}
 		}
 		drops.removeIf(p -> p.dead || p.y - p.r > h + 1 || p.x < -2 || p.x > w + 2);
-		int max = Math.round(w * h / 40);
+		int max = Math.round(w * h / 40 * density);
 		if (drops.size() > max) {
 			drops.subList(0, drops.size() - max).clear();
 		}

@@ -17,7 +17,9 @@ import net.minecraft.network.chat.Component;
  * Movement is short and quiet: the panel settles in, cards brighten under the mouse, the two views crossfade.
  */
 public class YahuScreen extends Screen {
-	private static final int MAX_PANEL_W = 620;
+	private static final int MAX_PANEL_W = 440;
+	private static final float RADIUS = 2.5f;
+	private static final Object PANEL_KEY = new Object();
 	private static final int CARD_MIN_W = 104;
 	private static final int CARD_H = 66;
 	private static final int GAP = 8;
@@ -37,6 +39,7 @@ public class YahuScreen extends Screen {
 	private final float[] cardHover;
 	private final float[] cardOn;
 	private float backHover;
+	private float closeHover;
 	private float scroll, scrollTarget;
 	private int contentHeight;
 
@@ -74,11 +77,24 @@ public class YahuScreen extends Screen {
 	}
 
 	private int panelY() {
-		return 12;
+		return (height - panelH()) / 2;
 	}
 
+	// the grid's panel is as tall as its cards need (centered); a mod's settings use the full height
 	private int panelH() {
-		return height - 24;
+		if (selected >= 0) {
+			return height - 24;
+		}
+		int rows = (mods.size() + columns() - 1) / columns();
+		return Math.min(height - 24, HEADER + 4 + rows * (CARD_H + GAP) - GAP + 16);
+	}
+
+	private int closeX() {
+		return panelX() + panelW() - 16 - 10;
+	}
+
+	private int closeY() {
+		return panelY() + 13;
 	}
 
 	private int innerX() {
@@ -146,8 +162,11 @@ public class YahuScreen extends Screen {
 		g.pose().pushMatrix();
 		g.pose().translate(0, settle);
 		int my = Math.round(mouseY - settle);
-		// one calm panel: dark glass, small corners, a fine edge
-		Glass.pane(g, panelX(), panelY(), panelW(), panelH(), 4, 0x9A0E1016, 0x24FFFFFF, appear);
+		// one calm panel of dark glass with rain on it, small corners (it doesn't lean: it is the whole menu)
+		GlassFx.State ps = GlassFx.begin(g, PANEL_KEY, panelX(), panelY(), panelW(), panelH(), false, false, 0);
+		ps.rainDensity(.25f);
+		GlassFx.panel(g, ps, panelX(), panelY(), panelW(), panelH(), RADIUS, appear);
+		GlassFx.end();
 		for (int i = 0; i < mods.size(); i++) {
 			cardOn[i] = Theme.approach(cardOn[i], mods.get(i).enabled().get() ? 1 : 0, dt, 16);
 		}
@@ -168,9 +187,10 @@ public class YahuScreen extends Screen {
 		var mark = Theme.display("YAHU");
 		g.text(font, mark, hx, hy, Theme.alpha(0xFFDCDFE6, appear), false);
 		Spaced.draw(g, Theme.ui("MODS"), hx + font.width(mark) + 6, hy, 1.2f, Theme.alpha(0xFFA898E6, appear), false);
-		long on = mods.stream().filter(m -> m.enabled().get()).count();
-		var count = Theme.ui(on + " of " + mods.size() + " on");
-		g.text(font, count, innerX() + innerW() - font.width(count), hy, Theme.alpha(0xFF8A909C, appear), false);
+		// top right: a clean X to leave the menu, brighter under the mouse
+		boolean closeHot = inside(mouseX, mouseY, closeX() - 3, closeY() - 3, 16, 16);
+		closeHover = Theme.approach(closeHover, closeHot ? 1 : 0, dt, 18);
+		Icons.draw(g, "close", Icons.CLOSE, closeX(), closeY(), 10, Theme.alpha(Theme.mix(0xFF8A909C, 0xFFF2F4F8, closeHover), appear));
 		Draw.hairline(g, innerX(), innerX() + innerW(), panelY() + HEADER - 6, Theme.alpha(0x1CFFFFFF, appear));
 
 		float rise = (1 - Theme.easeOutCubic(page)) * 6;
@@ -189,7 +209,7 @@ public class YahuScreen extends Screen {
 			boolean hot = inside(mouseX, mouseY, x, y, cw, CARD_H);
 			// a glass card like the main menu's buttons: it leans to the cursor and the rain runs down it
 			GlassFx.State s = GlassFx.begin(g, mod, x, y, cw, CARD_H, hot, hot && pressed, 7);
-			GlassFx.button(g, s, x, y, cw, CARD_H, false, false, fade);
+			GlassFx.button(g, s, x, y, cw, CARD_H, false, false, fade, RADIUS);
 			float t = cardOn[i];
 			boolean barHot = inside(mouseX, mouseY, x + cw - 34, y + CARD_H - 20, 30, 16);
 			int cx = x, cy = y;
@@ -329,6 +349,10 @@ public class YahuScreen extends Screen {
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		double mx = event.x(), my = event.y();
 		if (selected < 0) {
+			if (inside(mx, my, closeX() - 3, closeY() - 3, 16, 16)) {
+				onClose();
+				return true;
+			}
 			int cw = cardW();
 			for (int i = 0; i < mods.size(); i++) {
 				int x = cardX(i), y = cardY(i);

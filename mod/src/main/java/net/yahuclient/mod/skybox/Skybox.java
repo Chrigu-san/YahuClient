@@ -44,7 +44,7 @@ import net.yahuclient.mod.ui.Tex;
  */
 public final class Skybox {
 	private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath("yahu", "generated/skybox");
-	private static final int FACE = 512;
+	private static final int FACE = 1024;
 	private static final long START = System.nanoTime();
 
 	private static String wantedKey = "";
@@ -167,7 +167,47 @@ public final class Skybox {
 			cube.close();
 		}
 		cube = buildCube(atlas);
+		horizon = horizonColor(atlas);
 		readyKey = paintingKey;
+	}
+
+	/** The sky's color just above the horizon, averaged all the way round (0 to 1 per channel): the fog takes it. */
+	private static volatile float[] horizon;
+	private static volatile float shownBrightness = 1;
+
+	private static float[] horizonColor(SkyboxGenerator.Atlas atlas) {
+		int cell = atlas.face() + 2 * SkyboxGenerator.PAD;
+		// the four side faces (+X, -X, +Z, -Z); a few rows from the middle up to a little above it
+		int[] sides = {0, 1, 4, 5};
+		double r = 0, g = 0, b = 0;
+		int n = 0;
+		for (int f : sides) {
+			int ox = (f % 3) * cell + SkyboxGenerator.PAD, oy = (f / 3) * cell + SkyboxGenerator.PAD;
+			for (int k = 0; k < 6; k++) {
+				int j = oy + atlas.face() / 2 - 2 - k * Math.max(1, atlas.face() / 160);
+				for (int i = 0; i < atlas.face(); i += 4) {
+					int c = atlas.pixels()[j * atlas.width() + ox + i];
+					r += (c >> 16) & 0xFF;
+					g += (c >> 8) & 0xFF;
+					b += c & 0xFF;
+					n++;
+				}
+			}
+		}
+		return new float[] {(float) (r / n / 255), (float) (g / n / 255), (float) (b / n / 255)};
+	}
+
+	/**
+	 * The fog color while the custom sky is up (the horizon's color at the sky's brightness), or null: the far land then
+	 * fades into our sky instead of Minecraft's blue, so there is no light band between the ground and the sky.
+	 */
+	public static float[] fogColor(YahuConfig.Skybox config) {
+		float[] h = horizon;
+		if (h == null || !config.enabled || System.nanoTime() - lastDrawn > 500_000_000L) {
+			return null;
+		}
+		float k = shownBrightness;
+		return new float[] {h[0] * k, h[1] * k, h[2] * k};
 	}
 
 	/** The cube: six faces, each mapped to its cell in the atlas (inside the border), drawn from both sides. */
@@ -300,6 +340,7 @@ public final class Skybox {
 			float day = Math.max(state.skyColor.x(), Math.max(state.skyColor.y(), state.skyColor.z()));
 			brightness *= Math.max(0.12f, Math.min(1f, day / 0.75f));
 		}
+		shownBrightness = brightness;
 		double minutes = (System.nanoTime() - START) / 60e9;
 		Matrix4f view = RenderSystem.getModelViewMatrixCopy().rotateY((float) Math.toRadians(minutes * config.rotationSpeed));
 		var transforms = RenderSystem.getDynamicUniforms().writeTransform(view, new Vector4f(brightness, brightness, brightness, 1f));

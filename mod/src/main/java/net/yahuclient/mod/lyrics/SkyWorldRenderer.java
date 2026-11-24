@@ -53,6 +53,8 @@ public final class SkyWorldRenderer {
 		double hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
 		float perPixel = 0.011f * Math.max(0.5f, Math.min(2.5f, config.scale));
 		float maxWidth = (float) (hFov * Math.max(20, Math.min(100, config.maxWidth)) / 100.0 / perPixel);
+		// one font pixel spans perPixel radians: on screen that many pixels (for the sharpness tier)
+		LyricsPainter.screenScale = (float) (perPixel * mc.getWindow().getHeight() / vFov);
 		LyricsPainter.paint(new WorldSink(pose, out, font), font, config, frame, maxWidth);
 		pose.popPose();
 	}

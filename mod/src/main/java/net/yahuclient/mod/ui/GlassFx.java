@@ -28,6 +28,11 @@ public final class GlassFx {
 		public float hover() {
 			return hover;
 		}
+
+		/** How much rain lands on this pane (1 = as on a button). */
+		public void rainDensity(float d) {
+			rain.density = d;
+		}
 	}
 
 	private GlassFx() {
@@ -97,7 +102,18 @@ public final class GlassFx {
 	 * {@link #label}.
 	 */
 	public static void button(GuiGraphicsExtractor g, State s, float x, float y, float w, float h, boolean accent, boolean quiet, float alpha) {
-		float r = Glass.RADIUS + 1;
+		button(g, s, x, y, w, h, accent, quiet, alpha, Glass.RADIUS + 1);
+	}
+
+	/** A big pane of dark glass with rain on it (a menu's panel): no glare, a quiet rim. */
+	public static void panel(GuiGraphicsExtractor g, State s, float x, float y, float w, float h, float r, float alpha) {
+		Draw.roundGradient(g, x, y, w, h, r, Theme.alpha(0xB0161922, alpha), Theme.alpha(0xC80C0E14, alpha));
+		Draw.roundGradient(g, x + 1, y + 1, w - 2, Math.min(h * .3f, 26), r, Theme.alpha(0x10D2D8E4, alpha), Theme.alpha(0x00D2D8E4, alpha));
+		s.rain.draw(g, x, y, alpha, r);
+		Draw.outline(g, x, y, w, h, r, Theme.alpha(0x1CC8CEDA, alpha), Theme.alpha(0x40DCE2EC, alpha));
+	}
+
+	public static void button(GuiGraphicsExtractor g, State s, float x, float y, float w, float h, boolean accent, boolean quiet, float alpha, float r) {
 		float hv = s.hover;
 		int top = accent ? Theme.mix(0x5296849C, 0x6C9C88E8, hv) : Theme.mix(0x2EBEC6D4, 0x40C8D0DC, hv);
 		int low = accent ? Theme.mix(0x4A5642B4, 0x605E48C4, hv) : Theme.mix(0x342C303A, 0x40343844, hv);

@@ -32,11 +32,19 @@ public final class LyricsPainter {
 
 	private static final long POP_MS = 240;
 
+	/** How many screen pixels one font pixel of the lyrics covers right now (set by the renderer before painting). */
+	public static float screenScale = 8;
+
+	/** The lyrics' typeface in the sharpness tier that fits their size on screen. */
+	static FontDescription face(YahuConfig.Lyrics config) {
+		return config.font.forScale(screenScale);
+	}
+
 	private LyricsPainter() {
 	}
 
 	public static Component styled(String text, YahuConfig.Lyrics config) {
-		FontDescription font = config.font.font;
+		FontDescription font = face(config);
 		return Component.literal(config.uppercase ? text.toUpperCase() : text).withStyle(Style.EMPTY.withFont(font));
 	}
 
@@ -120,7 +128,7 @@ public final class LyricsPainter {
 		float width = font.width(whole);
 		float letters = 0;
 		for (int cp : cps) {
-			letters += font.width(Component.literal(new String(Character.toChars(cp))).withStyle(Style.EMPTY.withFont(config.font.font)));
+			letters += font.width(Component.literal(new String(Character.toChars(cp))).withStyle(Style.EMPTY.withFont(face(config))));
 		}
 		// letters measured alone add up a little wider than the word (kerning); squeeze them to the word's width
 		float fit = letters > 0 ? width / letters : 1f;
@@ -128,7 +136,7 @@ public final class LyricsPainter {
 		double sungLetters = done * cps.length;
 		for (int i = 0; i < cps.length; i++) {
 			String letter = new String(Character.toChars(cps[i]));
-			Component c = Component.literal(letter).withStyle(Style.EMPTY.withFont(config.font.font));
+			Component c = Component.literal(letter).withStyle(Style.EMPTY.withFont(face(config)));
 			float w = font.width(c) * fit;
 			int color;
 			float lift = 0;

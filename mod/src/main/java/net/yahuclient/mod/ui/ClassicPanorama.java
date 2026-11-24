@@ -35,8 +35,11 @@ public final class ClassicPanorama {
 	private static final String INNER = "minecraft/textures/gui/title/background/panorama_%d.png";
 	private static final String RESOURCES = "https://resources.download.minecraft.net/";
 	private static volatile boolean started;
-	/** Whether the panorama texture currently shows our faces (set by CubeMapTextureMixin). */
+	/** Whether the panorama texture currently shows our faces (set when a picture is put in, ReloadableTextureMixin). */
 	public static volatile boolean shown;
+	/** The last stacked picture we made, to tell it apart from Minecraft's own when the texture takes one. */
+	public static volatile Object ours;
+	private static long lastTry;
 
 	private ClassicPanorama() {
 	}
@@ -82,11 +85,12 @@ public final class ClassicPanorama {
 	 * before the download was done), load it again now.
 	 */
 	public static void showWhenReady(boolean wanted) {
-		if (wanted && !shown && ready()) {
-			shown = true;  // once; CubeMapTextureMixin confirms it
-			reload();
-		} else if (!wanted && shown) {
-			shown = false;
+		long now = System.currentTimeMillis();
+		if (now - lastTry < 2000) {
+			return;  // a reload may still be under way: give it time
+		}
+		if ((wanted && !shown && ready()) || (!wanted && shown)) {
+			lastTry = now;
 			reload();
 		}
 	}

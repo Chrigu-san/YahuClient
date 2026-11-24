@@ -46,6 +46,7 @@ public final class SkyLyricsRenderer {
 		g.pose().pushMatrix();
 		g.pose().translate(cx, cy);
 		g.pose().scale(scale, scale);
+		LyricsPainter.screenScale = (float) (scale * net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale());
 		LyricsPainter.paint(new HudSink(g, font), font, config, frame, availableWidth * Math.max(20, Math.min(100, config.maxWidth)) / 100f / scale);
 		g.pose().popMatrix();
 	}

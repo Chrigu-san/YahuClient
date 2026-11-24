@@ -100,10 +100,11 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
 **Nächste Version:**
   - Ganz neues Menü im Spiel: Knöpfe aus Glas, auf denen Regentropfen echt herunterlaufen, die sich zur Maus hin neigen und beim Klicken eindrücken
   - Hintergrund: das Panorama von 1.18 in Schwarz-Weiss, neues Yahu Logo, Quit direkt im Menü, Realms ausgeblendet
-  - Yahu Mods: sauberes Raster aus Glas-Karten wie bei Feather und Lunar, Klick öffnet die Einstellungen, Pfeil zurück
+  - Yahu Mods: schmales Glas-Panel mit Regen, Karten wie bei Feather und Lunar, X zum Schliessen
   - Neuer Mod **Inventory** für Hotbar, Inventar und Truhen, mehrere Looks
-  - Lyrics: 5 neue Schriften, feine Umrandung ohne Flackern, fertige Looks
-  - Skybox: Wolken ausschaltbar
+  - Lyrics: 5 neue Schriften, schärferer Text, feine Umrandung ohne Flackern, fertige Looks
+  - Skybox: schärfere Himmel, neues schwarzes Loch mit echter Lichtablenkung, keine blaue Linie mehr am Horizont, Wolken ausschaltbar
+  - Crosshair: glatter Kreis statt Pixeltreppe
   - Alle Knöpfe in allen Menüs aus Glas mit Regen, auch die kleinen Icons
   - Alles gestochen scharf, ohne Pixel
 

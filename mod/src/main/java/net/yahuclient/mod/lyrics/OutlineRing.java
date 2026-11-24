@@ -14,12 +14,18 @@ final class OutlineRing {
 		if (width <= 0.01f) {
 			return new float[0];
 		}
-		int copies = width <= 0.6f ? 8 : width <= 1.5f ? 12 : 16;
-		float[] out = new float[copies * 2];
-		for (int i = 0; i < copies; i++) {
-			double a = Math.PI * 2 * i / copies;
+		// a dense outer ring keeps the edge round; an inner ring at half the width fills between it and the letter
+		int outer = width <= 0.6f ? 16 : 20, inner = 10;
+		float[] out = new float[(outer + inner) * 2];
+		for (int i = 0; i < outer; i++) {
+			double a = Math.PI * 2 * i / outer;
 			out[i * 2] = (float) (Math.cos(a) * width);
 			out[i * 2 + 1] = (float) (Math.sin(a) * width);
+		}
+		for (int i = 0; i < inner; i++) {
+			double a = Math.PI * 2 * (i + .5) / inner;
+			out[(outer + i) * 2] = (float) (Math.cos(a) * width * .55);
+			out[(outer + i) * 2 + 1] = (float) (Math.sin(a) * width * .55);
 		}
 		return out;
 	}
