@@ -90,6 +90,7 @@ public final class YahuConfig {
 
 	public static final class Inventory {
 		public boolean enabled = true;
+		public boolean menuLook = true;     // drawn like the Yahu menu: glass panel with rain, glass slots
 		public InventoryStyle style = InventoryStyle.GLASS;
 		public int accent = 0xFF8B6CFF;
 		public int opacity = 100;       // percent, how solid the slots and panels are

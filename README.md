@@ -21,6 +21,8 @@ own account.
   set up port forwarding. The port is closed again when the server stops. Each server can get its own address like
   `chris.yahuclient.net`, so friends never have to type an IP. Servers never keep running unseen after the launcher closes
   or crashes.
+- **Settings profiles:** Make profiles like PvP or Building and pick one per instance: Minecraft settings, key bindings
+  and the Yahu mod's settings are then the same in every instance on that profile.
 - **In-game Yahu menu:** In Fabric instances for Minecraft 26.3 (with Fabric API), the launcher adds the small Yahu mod.
   It turns Minecraft's menus into glass buttons with real rain running down them, leaning towards the cursor, over the 1.18 panorama in black and white, with its own Yahu logo (own crisp font, glass
   buttons, fields and lists), and gives the main menu a new centered layout: the logo, a short column of slim buttons,

@@ -272,6 +272,8 @@ public class YahuMod implements ClientModInitializer {
 		YahuConfig.Inventory v = config.inventory;
 		List<Control> controls = List.of(
 				new Control.Section("Look"),
+				new Control.Toggle("Like the Yahu menu", () -> v.menuLook, b -> v.menuLook = b),
+				new Control.Note(() -> v.menuLook ? "Glass with rain like the menus. Turn it off to pick one of the styles below." : ""),
 				new Control.Choice<>("Style", () -> Arrays.asList(net.yahuclient.mod.config.InventoryStyle.values()), s -> s.label, () -> v.style,
 						s -> v.style = s),
 				new Control.Buttons("Presets", List.of(
@@ -304,6 +306,7 @@ public class YahuMod implements ClientModInitializer {
 
 	/** A ready-made inventory look. */
 	private static void inventoryLook(YahuConfig.Inventory v, net.yahuclient.mod.config.InventoryStyle style, int accent, int opacity, int roundness) {
+		v.menuLook = false;  // a preset is one of the styles
 		v.style = style;
 		v.accent = accent;
 		v.opacity = opacity;

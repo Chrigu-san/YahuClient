@@ -27,7 +27,8 @@ import net.yahuclient.mod.ui.Theme;
 public final class InventoryLook {
 	/** Container textures that are nothing but a panel and slots, so they can be redrawn from the menu's slots. */
 	private static final Set<String> SIMPLE = Set.of("textures/gui/container/inventory.png", "textures/gui/container/generic_54.png",
-			"textures/gui/container/shulker_box.png", "textures/gui/container/dispenser.png", "textures/gui/container/hopper.png");
+			"textures/gui/container/shulker_box.png", "textures/gui/container/dispenser.png", "textures/gui/container/hopper.png",
+			"textures/gui/container/crafting_table.png");
 
 	private static boolean redrawnThisFrame;
 
@@ -67,6 +68,12 @@ public final class InventoryLook {
 	public static void slot(GuiGraphicsExtractor g, float x, float y, float size) {
 		YahuConfig.Inventory c = config();
 		float r = radius(size);
+		if (c.menuLook) {
+			// like the menu's glass buttons, small: lighter at the top, darker below, a rim bright along the top
+			Draw.roundGradient(g, x, y, size, size, r, fade(0x24BEC6D4), fade(0x382C303A));
+			Draw.outline(g, x, y, size, size, r, fade(0x18C8CEDA), fade(0x50DCE2EC));
+			return;
+		}
 		switch (c.style) {
 			case GLASS -> Glass.pane(g, x, y, size, size, r, fade(0x7A1C2230), fade(0x2EFFFFFF), 1f);
 			case MINIMAL -> Draw.round(g, x, y, size, size, r, fade(0x46000000));
@@ -83,6 +90,12 @@ public final class InventoryLook {
 		YahuConfig.Inventory c = config();
 		float r = radius(size) + 1;
 		float o = 1;
+		if (c.menuLook) {
+			Draw.roundGradient(g, x - o, y - o, size + 2 * o, size + 2 * o, r, 0x40C8D0DC, 0x30343844);
+			Draw.outline(g, x - o, y - o, size + 2 * o, size + 2 * o, r, 0x50DCE2EC, 0xC8E6EAF2);
+			Draw.pill(g, x + size * 0.3f, y + size - 1.2f, size * 0.4f, 1.2f, c.accent | 0xFF000000);
+			return;
+		}
 		switch (c.style) {
 			case GLASS -> {
 				Glass.pane(g, x - o, y - o, size + 2 * o, size + 2 * o, r, 0x24FFFFFF, 0xD0FFFFFF, 1f);
@@ -102,8 +115,16 @@ public final class InventoryLook {
 	}
 
 	/** A container's panel. */
-	public static void panel(GuiGraphicsExtractor g, float x, float y, float w, float h) {
+	public static void panel(GuiGraphicsExtractor g, Object key, float x, float y, float w, float h) {
 		YahuConfig.Inventory c = config();
+		if (c.menuLook) {
+			// the Yahu menu's panel: dark glass with a light rain on it
+			net.yahuclient.mod.ui.GlassFx.State s = net.yahuclient.mod.ui.GlassFx.begin(g, key, x, y, w, h, false, false, 0);
+			s.rainDensity(.3f);
+			net.yahuclient.mod.ui.GlassFx.panel(g, s, x, y, w, h, 3, 1f);
+			net.yahuclient.mod.ui.GlassFx.end();
+			return;
+		}
 		switch (c.style) {
 			case GLASS -> Glass.panel(g, x, y, w, h, 6, 1f);
 			case MINIMAL -> Draw.round(g, x, y, w, h, 4, fade(0xD80C0E13));
@@ -177,7 +198,7 @@ public final class InventoryLook {
 			return true;  // the lower half of a chest: already drawn
 		}
 		redrawnThisFrame = true;
-		panel(g, left, top, access.yahu$imageWidth(), access.yahu$imageHeight());
+		panel(g, screen, left, top, access.yahu$imageWidth(), access.yahu$imageHeight());
 		for (Slot slot : screen.getMenu().slots) {
 			if (slot.isActive()) {
 				slot(g, left + slot.x - 1, top + slot.y - 1, 18);
@@ -187,6 +208,8 @@ public final class InventoryLook {
 			// the player's frame and the crafting arrow, which were part of the texture
 			Glass.pane(g, left + 26, top + 8, 49, 70, radius(18) + 1, 0x8C0C0E14, 0x24FFFFFF, 1f);
 			arrow(g, left + 135, top + 29);
+		} else if (texture.getPath().endsWith("crafting_table.png")) {
+			arrow(g, left + 90, top + 35);
 		}
 		return true;
 	}

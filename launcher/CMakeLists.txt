@@ -277,6 +277,8 @@ set(MINECRAFT_SOURCES
     minecraft/MinecraftInstance.h
     minecraft/YahuMods.cpp
     minecraft/YahuMods.h
+    minecraft/SettingsProfiles.cpp
+    minecraft/SettingsProfiles.h
     LaunchProgress.cpp
     LaunchProgress.h
     minecraft/LaunchProfile.cpp
@@ -948,6 +950,8 @@ SET(LAUNCHER_SOURCES
     ui/pages/instance/LogPage.cpp
     ui/pages/instance/LogPage.h
     ui/pages/instance/InstanceSettingsPage.h
+    ui/pages/instance/SettingsProfilePage.cpp
+    ui/pages/instance/SettingsProfilePage.h
     ui/pages/instance/ScreenshotsPage.cpp
     ui/pages/instance/ScreenshotsPage.h
     ui/pages/instance/OtherLogsPage.cpp

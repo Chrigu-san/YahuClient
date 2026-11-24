@@ -5,6 +5,7 @@
 #include "ui/pages/BasePage.h"
 #include "ui/pages/BasePageProvider.h"
 #include "ui/pages/instance/InstanceSettingsPage.h"
+#include "ui/pages/instance/SettingsProfilePage.h"
 #include "ui/pages/instance/LogPage.h"
 #include "ui/pages/instance/ManagedPackPage.h"
 #include "ui/pages/instance/ModFolderPage.h"
@@ -44,6 +45,7 @@ class InstancePageProvider : protected QObject, public BasePageProvider {
         values.append(new ServersPage(inst));
         values.append(new ScreenshotsPage(FS::PathCombine(inst->gameRoot(), "screenshots")));
         values.append(new InstanceSettingsPage(inst));
+        values.append(new SettingsProfilePage(inst));
         values.append(new OtherLogsPage("logs", tr("Other Logs"), "Other-Logs", inst));
         return values;
     }

@@ -42,6 +42,7 @@
 #include "minecraft/auth/AccountList.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/YahuMods.h"
+#include "minecraft/SettingsProfiles.h"
 
 #include "net/NetUtils.h"
 #include "ui/InstanceWindow.h"
@@ -391,6 +392,18 @@ void LaunchController::launchInstance()
 
     // the Yahu mod goes into fitting Fabric instances before the game starts (see minecraft/YahuMods.h)
     const QString yahuModNote = YahuMods::install(m_instance, YahuMods::bundledJar());
+    // the instance's settings profile comes in before the start and goes back when the game ends (minecraft/SettingsProfiles.h)
+    const QString profileNote = SettingsProfiles::beforeStart(m_instance);
+    {
+        auto* instance = m_instance;
+        auto connection = std::make_shared<QMetaObject::Connection>();
+        *connection = connect(instance, &BaseInstance::runningStatusChanged, instance, [instance, connection](bool running) {
+            if (!running) {
+                SettingsProfiles::afterGame(instance);
+                QObject::disconnect(*connection);
+            }
+        });
+    }
 
     m_launcher = m_instance->createLaunchTask(m_session, m_targetToJoin);
     if (!m_launcher) {
@@ -421,6 +434,9 @@ void LaunchController::launchInstance()
         online_mode = m_actualLaunchMode == LaunchMode::Demo ? "demo" : "offline";
     }
 
+    if (!profileNote.isEmpty()) {
+        m_launcher->prependStep(makeShared<TextPrint>(m_launcher, profileNote + "\n", MessageLevel::Launcher));
+    }
     if (!yahuModNote.isEmpty()) {
         m_launcher->prependStep(makeShared<TextPrint>(m_launcher, yahuModNote + "\n", MessageLevel::Launcher));
     }
