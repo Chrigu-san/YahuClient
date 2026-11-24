@@ -14,6 +14,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 public final class GlassFx {
 	/** Whether elements lean towards the cursor. */
 	public static boolean tilt = true;
+	/** An icon button's glass is drawn and its warp still open: its icon comes next (SpriteIconButtonMixin closes it). */
+	public static boolean iconPending;
 
 	private static final Map<Object, State> STATES = new WeakHashMap<>();
 
@@ -22,6 +24,10 @@ public final class GlassFx {
 		float glareX = .5f, glareY = .5f;
 		long last = System.nanoTime();
 		final Rain rain = new Rain();
+
+		public float hover() {
+			return hover;
+		}
 	}
 
 	private GlassFx() {
@@ -45,6 +51,11 @@ public final class GlassFx {
 	 * leans at its edge, in degrees.
 	 */
 	public static State begin(GuiGraphicsExtractor g, Object key, float x, float y, float w, float h, boolean hot, boolean pressed, float strength) {
+		if (iconPending) {
+			// an icon button didn't close its warp (a button of another mod): close it now
+			iconPending = false;
+			Warp.end();
+		}
 		State s = of(key);
 		long now = System.nanoTime();
 		float dt = Math.min(1 / 20f, (now - s.last) / 1e9f);
@@ -98,14 +109,28 @@ public final class GlassFx {
 		Draw.roundGradient(g, x, y, w, h, r, Theme.alpha(top, alpha), Theme.alpha(low, alpha));
 		// a lip of light just under the top edge
 		Draw.roundGradient(g, x + 1, y + 1, w - 2, Math.min(h * .45f, 14), r, Theme.alpha(0x16D2D8E4, alpha), Theme.alpha(0x00D2D8E4, alpha));
-		// the glare under the cursor
+		// a soft glare under the cursor, kept inside the pane
 		if (hv > .01f) {
-			Draw.glow(g, x + s.glareX * w, y + s.glareY * h, Math.max(w, h) * .45f, Theme.alpha(0xFFD6DCE8, .16f * hv * alpha));
+			float[] b = bounds(x, y, w, h);
+			g.enableScissor((int) Math.floor(b[0]), (int) Math.floor(b[1]), (int) Math.ceil(b[2]), (int) Math.ceil(b[3]));
+			Draw.glow(g, x + s.glareX * w, y + s.glareY * h, Math.min(h * 1.1f, w * .5f), Theme.alpha(0xFFD6DCE8, .09f * hv * alpha));
+			g.disableScissor();
 		}
 		// the rain on it
 		s.rain.draw(g, x, y, alpha);
 		// the rim: bright along the top, fading down the sides, faint at the bottom
 		Draw.outline(g, x, y, w, h, r, Theme.alpha(Theme.mix(0x1CC8CEDA, 0x40DCE2EC, hv), alpha), Theme.alpha(Theme.mix(0x60DCE2EC, 0x90E6EAF2, hv), alpha));
+	}
+
+	/** Where a rectangle lands under the current warp: x0, y0, x1, y1. */
+	private static float[] bounds(float x, float y, float w, float h) {
+		Warp wp = Warp.current();
+		if (wp == null) {
+			return new float[] {x, y, x + w, y + h};
+		}
+		float[] a = wp.project(x, y), b = wp.project(x + w, y), c = wp.project(x, y + h), d = wp.project(x + w, y + h);
+		return new float[] {Math.min(Math.min(a[0], b[0]), Math.min(c[0], d[0])), Math.min(Math.min(a[1], b[1]), Math.min(c[1], d[1])),
+			Math.max(Math.max(a[0], b[0]), Math.max(c[0], d[0])), Math.max(Math.max(a[1], b[1]), Math.max(c[1], d[1]))};
 	}
 
 	/** Draws a label centered on (cx, cy) so it sits on the leaned glass: placed and scaled like the glass there. */

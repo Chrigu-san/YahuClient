@@ -15,7 +15,7 @@ public abstract class PlainTextButtonMixin {
 	@Inject(method = "extractContents", at = @At("HEAD"), cancellable = true)
 	private void yahu$quietCorner(GuiGraphicsExtractor g, int mouseX, int mouseY, float a, CallbackInfo ci) {
 		PlainTextButton self = (PlainTextButton) (Object) this;
-		if (TitleLayout.onTitle()) {
+		if (TitleLayout.CORNER.contains(self)) {
 			TitleLayout.corner(g, self.getMessage().getString(), 4, true, self.isHoveredOrFocused() ? 255 : 200);
 			ci.cancel();
 		}

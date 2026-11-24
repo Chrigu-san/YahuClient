@@ -34,6 +34,8 @@ public final class TitleLayout {
 	public static final Map<Object, String> ICON = new WeakHashMap<>();
 	/** Column buttons drawn a little quieter (Quit). */
 	public static final Set<Object> QUIET = Collections.newSetFromMap(new WeakHashMap<>());
+	/** The main menu's corner lines (copyright), drawn small and faint wherever the main menu shows. */
+	public static final Set<Object> CORNER = Collections.newSetFromMap(new WeakHashMap<>());
 	private static final Map<Object, float[]> HOVER = new WeakHashMap<>();
 
 	public static final int ITEM_H = 20;
@@ -65,6 +67,7 @@ public final class TitleLayout {
 		for (AbstractWidget w : widgets) {
 			if (w instanceof PlainTextButton) {
 				w.setPosition(screen.width - w.getWidth() - 4, screen.height - 12);
+				CORNER.add(w);
 			} else if (w.getWidth() <= 24 && w.getHeight() <= 24) {
 				icons.add(w);
 			} else if (w instanceof AbstractButton) {

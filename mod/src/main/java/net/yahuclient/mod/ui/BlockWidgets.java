@@ -37,6 +37,14 @@ public final class BlockWidgets {
 		}
 	}
 
+	/** The frost up to the slider's value, over the glass. */
+	public static void sliderFill(GuiGraphicsExtractor g, int x, int y, int w, int h, double value, boolean active, float alpha) {
+		if (active) {
+			float t = (float) Math.max(0, Math.min(1, value));
+			Draw.round(g, x, y, Math.max(8, 4 + (w - 8) * t), h, Glass.RADIUS + 1, Theme.alpha(0x16FFFFFF, alpha));
+		}
+	}
+
 	/** The slider's handle: a short white pill along the bottom edge, under the label instead of over it. */
 	public static void sliderHandle(GuiGraphicsExtractor g, int x, int y, int w, int h, boolean hot, float alpha) {
 		float cx = x + w / 2f;

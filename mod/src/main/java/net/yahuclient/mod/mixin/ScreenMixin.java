@@ -53,6 +53,9 @@ public abstract class ScreenMixin {
 	@Inject(method = "extractRenderStateWithTooltipAndSubtitles", at = @At("RETURN"))
 	private void yahu$fontOff(GuiGraphicsExtractor g, int mouseX, int mouseY, float a, CallbackInfo ci) {
 		net.yahuclient.mod.ui.MenuFont.end();
+		// never leave a warp open past the screen
+		net.yahuclient.mod.ui.GlassFx.iconPending = false;
+		net.yahuclient.mod.ui.Warp.end();
 	}
 
 	// the title screen draws its panorama without blur or menu background: blur it here, tint it, and put the glass

@@ -104,6 +104,7 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Neuer Mod **Inventory** für Hotbar, Inventar und Truhen, mehrere Looks
   - Lyrics: 5 neue Schriften, feine Umrandung ohne Flackern, fertige Looks
   - Skybox: Wolken ausschaltbar
+  - Alle Knöpfe in allen Menüs aus Glas mit Regen, auch die kleinen Icons
   - Alles gestochen scharf, ohne Pixel
 
 ## 🔜 Bald

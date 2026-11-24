@@ -46,6 +46,13 @@ public class YahuClientGameTest implements FabricClientGameTest {
 		context.waitTicks(10);
 		context.takeScreenshot("yahu-title-hover");
 		context.getInput().setCursorPos(0, 0);
+		// the Friends overlay over the main menu: it blurs again on top of our blurred panorama (used to crash)
+		context.setScreen(() -> new net.minecraft.client.gui.screens.friends.FriendsOverlayScreen(new TitleScreen()));
+		context.waitTicks(20);
+		context.takeScreenshot("yahu-friends-over-title");
+		context.setScreen(() -> new TitleScreen());
+		context.waitForScreen(TitleScreen.class);
+		context.waitTicks(10);
 		context.clickScreenButton("menu.options");
 		context.waitTicks(5);
 		context.takeScreenshot("yahu-options");
