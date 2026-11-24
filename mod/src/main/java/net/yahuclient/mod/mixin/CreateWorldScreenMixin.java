@@ -15,6 +15,9 @@ import net.yahuclient.mod.ui.Background;
 public abstract class CreateWorldScreenMixin {
 	@Inject(method = "extractMenuBackground(Lnet/minecraft/client/gui/GuiGraphicsExtractor;)V", at = @At("HEAD"), cancellable = true)
 	private void yahu$background(GuiGraphicsExtractor g, CallbackInfo ci) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			return;
+		}
 		Background.tint(g, 0, 0, g.guiWidth(), g.guiHeight(), Minecraft.getInstance().level != null);
 		ci.cancel();
 	}

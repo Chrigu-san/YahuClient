@@ -13,7 +13,7 @@ public final class ModernSprites {
 		if ("minecraft".equals(sprite.getNamespace()) && inventorySprite(g, sprite.getPath(), x, y)) {
 			return true;
 		}
-		if (!"minecraft".equals(sprite.getNamespace()) || !sprite.getPath().startsWith("widget/")) {
+		if (!Look.on() || !"minecraft".equals(sprite.getNamespace()) || !sprite.getPath().startsWith("widget/")) {
 			return false;
 		}
 		float alpha = (color >>> 24) / 255f;

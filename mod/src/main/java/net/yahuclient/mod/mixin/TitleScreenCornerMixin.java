@@ -15,6 +15,10 @@ public abstract class TitleScreenCornerMixin {
 	@Redirect(method = "extractRenderState", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;text(Lnet/minecraft/client/gui/Font;Ljava/lang/String;III)V"))
 	private void yahu$quietVersion(GuiGraphicsExtractor g, Font font, String text, int x, int y, int color) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			g.text(font, text, x, y, color);
+			return;
+		}
 		TitleLayout.corner(g, text, 4, false, color >>> 24);
 	}
 }

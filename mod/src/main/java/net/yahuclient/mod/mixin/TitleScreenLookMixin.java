@@ -17,6 +17,9 @@ import net.yahuclient.mod.ui.TitleLayout;
 public abstract class TitleScreenLookMixin {
 	@Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IFI)V", at = @At("HEAD"), cancellable = true)
 	private void yahu$logo(GuiGraphicsExtractor g, int width, float alpha, int heightOffset, CallbackInfo ci) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			return;
+		}
 		if (TitleLayout.onTitle()) {
 			TitleLayout.drawLogo(g, width, alpha);
 		} else {

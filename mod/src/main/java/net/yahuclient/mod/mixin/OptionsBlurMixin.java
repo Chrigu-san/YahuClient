@@ -15,6 +15,9 @@ import net.minecraft.client.Options;
 public abstract class OptionsBlurMixin {
 	@Inject(method = "getMenuBackgroundBlurriness", at = @At("RETURN"), cancellable = true)
 	private void yahu$frosted(CallbackInfoReturnable<Integer> cir) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			return;
+		}
 		int value = cir.getReturnValue();
 		if (value > 0 && value < 6) {
 			cir.setReturnValue(6);

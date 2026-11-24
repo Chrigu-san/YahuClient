@@ -26,12 +26,18 @@ public abstract class SelectionListMixin extends AbstractWidget {
 
 	@Inject(method = "extractListBackground", at = @At("HEAD"), cancellable = true)
 	private void yahu$background(GuiGraphicsExtractor g, CallbackInfo ci) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			return;
+		}
 		g.fill(getX(), getY(), getRight(), getBottom(), Theme.alpha(0xFF000000, 0.14f));
 		ci.cancel();
 	}
 
 	@Inject(method = "extractListSeparators", at = @At("HEAD"), cancellable = true)
 	private void yahu$separators(GuiGraphicsExtractor g, CallbackInfo ci) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			return;
+		}
 		g.fill(getX(), getY() - 1, getRight(), getY(), Theme.BORDER);
 		g.fill(getX(), getBottom(), getRight(), getBottom() + 1, Theme.BORDER);
 		ci.cancel();
@@ -39,6 +45,9 @@ public abstract class SelectionListMixin extends AbstractWidget {
 
 	@Inject(method = "extractSelection", at = @At("HEAD"), cancellable = true)
 	private void yahu$selection(GuiGraphicsExtractor g, @Coerce LayoutElement entry, int outlineColor, CallbackInfo ci) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			return;
+		}
 		int x = entry.getX(), y = entry.getY(), w = entry.getWidth(), h = entry.getHeight();
 		net.yahuclient.mod.ui.Glass.pane(g, x, y, w, h, 5, 0x2AFFFFFF, isFocused() ? 0x90FFFFFF : 0x50FFFFFF, 1f);
 		ci.cancel();

@@ -184,8 +184,10 @@ public class YahuMod implements ClientModInitializer {
 		ScreenEvents.AFTER_INIT.register((mc, screen, width, height) -> {
 			if (screen instanceof PauseScreen || screen instanceof TitleScreen) {
 				addMenuButton(mc, screen, width, screen instanceof TitleScreen ? "menu.online" : "menu.returnToGame");
-				if (screen instanceof TitleScreen) {
-					// the main menu gets the Yahu layout: logo top left, a slim navigation under it
+				if (!net.yahuclient.mod.ui.Look.on()) {
+					// the menu look is off: Minecraft's own layout, only the Yahu Mods button added
+				} else if (screen instanceof TitleScreen) {
+					// the main menu gets the Yahu layout: logo, a column of glass buttons
 					net.yahuclient.mod.ui.TitleLayout.apply(screen, Screens.getWidgets(screen));
 				} else {
 					net.yahuclient.mod.ui.TitleLayout.restyle(Screens.getWidgets(screen));
@@ -264,7 +266,7 @@ public class YahuMod implements ClientModInitializer {
 				new Control.Note(() -> net.yahuclient.mod.ui.ClassicPanorama.ready()
 						? "The 1.18 panorama is shown in black and white."
 						: "The 1.18 panorama is downloaded once from Mojang, then shown in black and white."));
-		return new ModEntry("Menu", "Glass and rain", "The look of the menus: glass buttons with rain running down them, leaning towards the cursor, and the classic panorama behind.",
+		return new ModEntry("Menu", "Glass and rain", "The look of Minecraft's menus: glass buttons with rain running down them, leaning towards the cursor, and the classic panorama behind. Off: Minecraft's own menus (this menu keeps its look).",
 				0xFF9AA3B5, "◆", () -> m.glass, b -> m.glass = b, controls, null, null);
 	}
 

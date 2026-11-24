@@ -53,7 +53,25 @@ public class YahuClientGameTest implements FabricClientGameTest {
 		context.setScreen(() -> new TitleScreen());
 		context.waitForScreen(TitleScreen.class);
 		context.waitTicks(10);
-		context.clickScreenButton("menu.options");
+		// the menu look switched off: Minecraft's own menus, the Yahu menu keeps its look
+		context.runOnClient(mc -> YahuMod.config().menu.glass = false);
+		context.setScreen(() -> new TitleScreen());
+		context.waitForScreen(TitleScreen.class);
+		context.waitTicks(40);
+		context.takeScreenshot("yahu-look-off-title");
+		context.setScreen(() -> new net.minecraft.client.gui.screens.options.OptionsScreen(new TitleScreen(), net.minecraft.client.Minecraft.getInstance().options));
+		context.waitTicks(10);
+		context.takeScreenshot("yahu-look-off-options");
+		context.setScreen(() -> new TitleScreen());
+		context.waitForScreen(TitleScreen.class);
+		context.getInput().pressKey(InputConstants.KEY_RSHIFT);
+		context.waitForScreen(YahuScreen.class);
+		context.waitTicks(10);
+		context.takeScreenshot("yahu-look-off-yahu-menu");
+		context.runOnClient(mc -> YahuMod.config().menu.glass = true);
+		context.setScreen(() -> new TitleScreen());
+		context.waitForScreen(TitleScreen.class);
+		context.waitTicks(40);		context.clickScreenButton("menu.options");
 		context.waitTicks(5);
 		context.takeScreenshot("yahu-options");
 		context.clickScreenButton("options.video");

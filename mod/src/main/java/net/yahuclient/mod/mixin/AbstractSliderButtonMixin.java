@@ -31,6 +31,10 @@ public abstract class AbstractSliderButtonMixin extends AbstractWidget.WithInact
 			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V",
 			ordinal = 0))
 	private void yahu$track(GuiGraphicsExtractor g, RenderPipeline pipeline, Identifier sprite, int x, int y, int w, int h, int color) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			g.blitSprite(pipeline, sprite, x, y, w, h, color);
+			return;
+		}
 		// glass with rain like the buttons, but it doesn't lean: that would fight the dragging
 		net.yahuclient.mod.ui.GlassFx.State s = net.yahuclient.mod.ui.GlassFx.begin(g, this, x, y, w, h, false, false, 0);
 		net.yahuclient.mod.ui.GlassFx.button(g, s, x, y, w, h, false, !isActive(), alpha);
@@ -42,6 +46,10 @@ public abstract class AbstractSliderButtonMixin extends AbstractWidget.WithInact
 			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V",
 			ordinal = 1))
 	private void yahu$handle(GuiGraphicsExtractor g, RenderPipeline pipeline, Identifier sprite, int x, int y, int w, int h, int color) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			g.blitSprite(pipeline, sprite, x, y, w, h, color);
+			return;
+		}
 		BlockWidgets.sliderHandle(g, x, y, w, h, isHoveredOrFocused(), alpha);
 	}
 }

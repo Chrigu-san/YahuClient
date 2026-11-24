@@ -14,6 +14,9 @@ import net.minecraft.client.gui.components.SplashRenderer;
 public abstract class SplashRendererMixin {
 	@Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
 	private void yahu$noSplash(GuiGraphicsExtractor g, int screenWidth, Font font, float alpha, CallbackInfo ci) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			return;
+		}
 		ci.cancel();
 	}
 }

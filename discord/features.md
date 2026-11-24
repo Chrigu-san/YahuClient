@@ -97,8 +97,9 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Der Launcher legt die Mod automatisch in Fabric Instanzen für 26.3
   - Beim Spielstart kein Fenster mit Ladebalken mehr: unter dem Play Knopf steht, was gerade geladen wird und wie lange es noch etwa dauert
 
-**Nächste Version:**
-  - Ganz neues Menü im Spiel: Knöpfe aus Glas, auf denen Regentropfen echt herunterlaufen, die sich zur Maus hin neigen und beim Klicken eindrücken
+**24.11.2026**
+- **Version 0.1.8:**
+  - Ganz neues Menü: Glasknöpfe mit echtem Regen, die sich zur Maus neigen (im Yahu Menü abschaltbar, dann kommt das normale Minecraft Menü)
   - Hintergrund: das Panorama von 1.18 in Schwarz-Weiss, neues Yahu Logo, Quit direkt im Menü, Realms ausgeblendet
   - Yahu Mods: schmales Glas-Panel mit Regen, Karten wie bei Feather und Lunar, X zum Schliessen
   - **Einstellungs-Profile** wie PvP oder Building: Einstellungen, Tasten und Mods gelten in jeder Instanz damit

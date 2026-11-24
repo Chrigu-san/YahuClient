@@ -36,6 +36,9 @@ public abstract class AbstractButtonMixin extends AbstractWidget.WithInactiveMes
 
 	@Inject(method = "extractDefaultSprite", at = @At("HEAD"), cancellable = true)
 	private void yahu$glassButton(GuiGraphicsExtractor g, CallbackInfo ci) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			return;  // Minecraft's own button
+		}
 		String icon = TitleLayout.ICON.get(this);
 		if (icon != null) {
 			TitleLayout.drawIcon(g, this, icon, isHoveredOrFocused(), alpha);
@@ -78,7 +81,7 @@ public abstract class AbstractButtonMixin extends AbstractWidget.WithInactiveMes
 	// our own label replaces Minecraft's
 	@Inject(method = "extractDefaultLabel", at = @At("HEAD"), cancellable = true)
 	private void yahu$label(net.minecraft.client.gui.ActiveTextCollector output, CallbackInfo ci) {
-		if (TitleLayout.NAV.contains(this) || TitleLayout.ICON.containsKey(this) || LABELLED.contains(this)) {
+		if (net.yahuclient.mod.ui.Look.on() && (TitleLayout.NAV.contains(this) || TitleLayout.ICON.containsKey(this) || LABELLED.contains(this))) {
 			ci.cancel();
 		}
 	}

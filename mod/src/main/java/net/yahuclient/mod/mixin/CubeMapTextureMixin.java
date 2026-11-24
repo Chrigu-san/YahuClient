@@ -31,7 +31,7 @@ public abstract class CubeMapTextureMixin {
 	@Inject(method = "loadContents", at = @At("HEAD"), cancellable = true)
 	private void yahu$classicPanorama(ResourceManager resources, CallbackInfoReturnable<TextureContents> cir) throws IOException {
 		CubeMapTexture self = (CubeMapTexture) (Object) this;
-		if (!ClassicPanorama.PANORAMA.equals(self.resourceId()) || !YahuMod.config().menu.classicPanorama || !ClassicPanorama.ready()) {
+		if (!ClassicPanorama.PANORAMA.equals(self.resourceId()) || !YahuMod.config().menu.classicPanorama || !net.yahuclient.mod.ui.Look.on() || !ClassicPanorama.ready()) {
 			return;
 		}
 		NativeImage stacked = null;
