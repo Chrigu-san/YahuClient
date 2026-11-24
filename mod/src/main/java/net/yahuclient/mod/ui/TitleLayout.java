@@ -168,8 +168,8 @@ public final class TitleLayout {
 		boolean hot = m[0] >= x && m[0] < x + LOGO && m[1] >= y && m[1] < y + LOGO;
 		GlassFx.State s = GlassFx.begin(g, LOGO_KEY, x, y, LOGO, LOGO, hot, false, 26);
 		Icons.draw(g, "logo_a", Icons.LOGO_A, x, y, LOGO, Theme.alpha(0xFFFFFFFF, alpha));
-		float inset = LOGO * .08f;
-		s.rain.draw(g, x + inset, y + inset, alpha);
+		// only on the tile itself: the rounded square inside the logo (8 % in from each side, corners of 26 %)
+		s.rain.draw(g, x, y, alpha, x + LOGO * .08f, y + LOGO * .08f, LOGO * .84f, LOGO * .84f, LOGO * .26f);
 		GlassFx.end();
 		Spaced.draw(g, Theme.display("YAHU"), width / 2f, logoTop + LOGO + 7, 2.6f, Theme.alpha(0xFFDCDFE6, alpha), true);
 		Spaced.draw(g, Theme.ui("CLIENT"), width / 2f, logoTop + LOGO + 18, 3.2f, Theme.alpha(0x8CCDD2DC, alpha), true);

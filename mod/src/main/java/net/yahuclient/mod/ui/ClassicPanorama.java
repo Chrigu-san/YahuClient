@@ -35,6 +35,8 @@ public final class ClassicPanorama {
 	private static final String INNER = "minecraft/textures/gui/title/background/panorama_%d.png";
 	private static final String RESOURCES = "https://resources.download.minecraft.net/";
 	private static volatile boolean started;
+	/** Whether the panorama texture currently shows our faces (set by CubeMapTextureMixin). */
+	public static volatile boolean shown;
 
 	private ClassicPanorama() {
 	}
@@ -75,6 +77,19 @@ public final class ClassicPanorama {
 		t.start();
 	}
 
+	/**
+	 * Called while the main menu draws: if the faces are there but the panorama still shows Minecraft's own (it loaded
+	 * before the download was done), load it again now.
+	 */
+	public static void showWhenReady(boolean wanted) {
+		if (wanted && !shown && ready()) {
+			shown = true;  // once; CubeMapTextureMixin confirms it
+			reload();
+		} else if (!wanted && shown) {
+			shown = false;
+			reload();
+		}
+	}
 	/** Makes the title panorama load again (picks up our faces, see CubeMapTextureMixin). */
 	public static void reload() {
 		Minecraft mc = Minecraft.getInstance();

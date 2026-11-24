@@ -117,7 +117,7 @@ public final class GlassFx {
 			g.disableScissor();
 		}
 		// the rain on it
-		s.rain.draw(g, x, y, alpha);
+		s.rain.draw(g, x, y, alpha, r);
 		// the rim: bright along the top, fading down the sides, faint at the bottom
 		Draw.outline(g, x, y, w, h, r, Theme.alpha(Theme.mix(0x1CC8CEDA, 0x40DCE2EC, hv), alpha), Theme.alpha(Theme.mix(0x60DCE2EC, 0x90E6EAF2, hv), alpha));
 	}

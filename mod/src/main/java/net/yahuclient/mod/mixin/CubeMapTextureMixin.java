@@ -49,6 +49,7 @@ public abstract class CubeMapTextureMixin {
 				part.copyRect(stacked, 0, 0, 0, i * height, width, height, false, true);
 			}
 		}
+		ClassicPanorama.shown = true;
 		cir.setReturnValue(new TextureContents(stacked, new TextureMetadataSection(true, false, MipmapStrategy.MEAN, 0.0F)));
 	}
 }

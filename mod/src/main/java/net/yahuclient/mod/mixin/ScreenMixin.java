@@ -66,6 +66,7 @@ public abstract class ScreenMixin {
 			g.blurBeforeThisStratum();
 			Background.tint(g, 0, 0, g.guiWidth(), g.guiHeight(), false);
 			TitleLayout.frame();
+			net.yahuclient.mod.ui.ClassicPanorama.showWhenReady(net.yahuclient.mod.YahuMod.config().menu.classicPanorama);
 		}
 	}
 

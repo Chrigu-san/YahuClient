@@ -132,13 +132,29 @@ public final class Rain {
 		}
 	}
 
-	/** Draws the drops with the pane's top left corner at (x, y); under a warp they follow its tilt. */
-	public void draw(GuiGraphicsExtractor g, float x, float y, float alpha) {
+	/** Draws the drops with the pane's top left corner at (x, y); only those lying wholly on the pane (corner radius). */
+	public void draw(GuiGraphicsExtractor g, float x, float y, float alpha, float corner) {
+		draw(g, x, y, alpha, x, y, w, h, corner);
+	}
+
+	/**
+	 * Draws the drops with their area's top left corner at (x, y), only those lying wholly inside the rounded rectangle
+	 * (cx, cy, cw, ch, corner): a drop never hangs over the edge of the glass into the air. Under a warp they follow its tilt.
+	 */
+	public void draw(GuiGraphicsExtractor g, float x, float y, float alpha, float clipX, float clipY, float clipW, float clipH, float corner) {
 		if (level == 0) {
 			return;
 		}
+		float hx = clipW / 2f, hy = clipH / 2f, mx = clipX + hx, my = clipY + hy;
+		float cr = Math.min(corner, Math.min(hx, hy));
 		for (Drop p : drops) {
 			float cx = x + p.x, cy = y + p.y, r = p.r;
+			// distance from the drop's middle to the glass's rounded edge (negative inside); the whole drop must fit
+			float qx = Math.abs(cx - mx) - hx + cr, qy = Math.abs(cy - my) - hy + cr;
+			float edge = (float) Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - cr;
+			if (edge > -(r + .35f)) {
+				continue;
+			}
 			if (r < .26f) {
 				// a fine bead: a faint dark speck with a soft glint, so it reads as water, not as dust
 				Draw.circle(g, cx, cy, Math.max(.22f, r), Theme.alpha(0x2806080E, alpha));

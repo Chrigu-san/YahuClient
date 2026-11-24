@@ -259,7 +259,6 @@ public class YahuMod implements ClientModInitializer {
 					if (b) {
 						net.yahuclient.mod.ui.ClassicPanorama.fetchIfNeeded();
 					}
-					net.yahuclient.mod.ui.ClassicPanorama.reload();
 				}),
 				new Control.Toggle("Realms button", () -> m.showRealms, b -> m.showRealms = b),
 				new Control.Note(() -> net.yahuclient.mod.ui.ClassicPanorama.ready()
