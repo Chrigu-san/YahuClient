@@ -17,6 +17,7 @@ public final class YahuConfig {
 	public Lyrics lyrics = new Lyrics();
 	public Skybox skybox = new Skybox();
 	public Inventory inventory = new Inventory();
+	public Menu menu = new Menu();
 
 	/** The crosshair is built from three parts that can be combined: arms, a center dot and a ring. Sizes are screen pixels. */
 	public static final class Crosshair {
@@ -77,6 +78,14 @@ public final class YahuConfig {
 		public boolean showNext = true;
 		public boolean showSongTitle = true;
 		public int popStrength = 60;    // how much words pop when they appear, in percent
+	}
+
+	public static final class Menu {
+		public boolean glass = true;        // the glass look with rain and leaning
+		public int rain = 2;                // 0 none, 1 light, 2 strong
+		public boolean tilt = true;         // buttons lean towards the cursor
+		public boolean showRealms = false;  // Realms button on the title screen
+		public boolean classicPanorama = true;  // the 1.18 panorama in black and white behind the menus
 	}
 
 	public static final class Inventory {

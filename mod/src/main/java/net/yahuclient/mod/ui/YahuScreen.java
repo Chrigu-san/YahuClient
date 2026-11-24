@@ -17,9 +17,9 @@ import net.minecraft.network.chat.Component;
  * Movement is short and quiet: the panel settles in, cards brighten under the mouse, the two views crossfade.
  */
 public class YahuScreen extends Screen {
-	private static final int MAX_PANEL_W = 540;
-	private static final int CARD_MIN_W = 84;
-	private static final int CARD_H = 92;
+	private static final int MAX_PANEL_W = 620;
+	private static final int CARD_MIN_W = 104;
+	private static final int CARD_H = 66;
 	private static final int GAP = 8;
 	private static final int PREVIEW_H = 70;
 	private static final int HEADER = 40;
@@ -146,7 +146,8 @@ public class YahuScreen extends Screen {
 		g.pose().pushMatrix();
 		g.pose().translate(0, settle);
 		int my = Math.round(mouseY - settle);
-		Glass.panel(g, panelX(), panelY(), panelW(), panelH(), 8, appear);
+		// one calm panel: dark glass, small corners, a fine edge
+		Glass.pane(g, panelX(), panelY(), panelW(), panelH(), 4, 0x9A0E1016, 0x24FFFFFF, appear);
 		for (int i = 0; i < mods.size(); i++) {
 			cardOn[i] = Theme.approach(cardOn[i], mods.get(i).enabled().get() ? 1 : 0, dt, 16);
 		}
@@ -165,11 +166,11 @@ public class YahuScreen extends Screen {
 		// header: the word mark, the number of mods on the right
 		int hx = innerX(), hy = panelY() + 16;
 		var mark = Theme.display("YAHU");
-		g.text(font, mark, hx, hy, Theme.alpha(Theme.TEXT, appear), false);
-		Spaced.draw(g, Theme.ui("MODS"), hx + font.width(mark) + 6, hy, 1.2f, Theme.alpha(Theme.ACCENT_HI, appear), false);
+		g.text(font, mark, hx, hy, Theme.alpha(0xFFDCDFE6, appear), false);
+		Spaced.draw(g, Theme.ui("MODS"), hx + font.width(mark) + 6, hy, 1.2f, Theme.alpha(0xFFA898E6, appear), false);
 		long on = mods.stream().filter(m -> m.enabled().get()).count();
 		var count = Theme.ui(on + " of " + mods.size() + " on");
-		g.text(font, count, innerX() + innerW() - font.width(count), hy, Theme.alpha(Theme.MUTED, appear), false);
+		g.text(font, count, innerX() + innerW() - font.width(count), hy, Theme.alpha(0xFF8A909C, appear), false);
 		Draw.hairline(g, innerX(), innerX() + innerW(), panelY() + HEADER - 6, Theme.alpha(0x1CFFFFFF, appear));
 
 		float rise = (1 - Theme.easeOutCubic(page)) * 6;
@@ -180,45 +181,36 @@ public class YahuScreen extends Screen {
 		g.enableScissor(panelX(), contentTop() - 2, panelX() + panelW(), contentBottom());
 		int cw = cardW();
 		// taglines only when every card has room for its own, so the cards stay alike
-		boolean tags = mods.stream().allMatch(m -> font.width(Theme.ui(m.tagline())) <= cw - 8);
+		boolean tags = mods.stream().allMatch(m -> font.width(Theme.ui(m.tagline())) <= cw - 16);
+		boolean pressed = minecraft.mouseHandler.isLeftPressed();
 		for (int i = 0; i < mods.size(); i++) {
 			ModEntry mod = mods.get(i);
 			int x = cardX(i), y = Math.round(cardY(i) + rise);
 			boolean hot = inside(mouseX, mouseY, x, y, cw, CARD_H);
-			cardHover[i] = Theme.approach(cardHover[i], hot ? 1 : 0, dt, 18);
-			float h = cardHover[i];
-			float lift = h * 1.5f;
-			Glass.pane(g, x, y - lift, cw, CARD_H, 6, Theme.mix(Glass.FILL, Glass.FILL_HOT, h), Theme.mix(Glass.EDGE, Glass.EDGE_HOT, h), fade);
-
-			// the icon: a disk in the mod's color (dim while off), its sign on it
-			float cx = x + cw / 2f, iy = y - lift + 26;
+			// a glass card like the main menu's buttons: it leans to the cursor and the rain runs down it
+			GlassFx.State s = GlassFx.begin(g, mod, x, y, cw, CARD_H, hot, hot && pressed, 7);
+			GlassFx.button(g, s, x, y, cw, CARD_H, false, false, fade);
 			float t = cardOn[i];
-			Draw.glow(g, cx, iy, 26, Theme.alpha(mod.color(), 0.22f * t * fade));
-			Draw.circle(g, cx, iy, 14, Theme.alpha(Theme.mix(0xFF2A2F3B, mod.color(), 0.35f + 0.65f * t), fade));
-			var icon = Theme.display(mod.icon());
-			g.text(font, icon, Math.round(cx - font.width(icon) / 2f), Math.round(iy - 4), Theme.alpha(0xFFFFFFFF, fade), false);
-
-			var name = Theme.ui(mod.name());
-			g.text(font, name, Math.round(cx - font.width(name) / 2f), Math.round(y - lift + 46), Theme.alpha(0xFFFFFFFF, fade), false);
-			var tag = Theme.ui(mod.tagline());
-			if (tags) {
-				g.text(font, tag, Math.round(cx - font.width(tag) / 2f), Math.round(y - lift + 57), Theme.alpha(Theme.MUTED, fade), false);
-			}
-
-			// the switch bar along the bottom
-			int bx = x + 6, by = Math.round(y - lift) + CARD_H - 22, bw = cw - 12, bh = 16;
-			boolean barHot = inside(mouseX, mouseY, bx, by, bw, bh);
-			int fill = Theme.mix(0x50202530, 0xC0249468, t);
-			if (barHot) {
-				fill = Theme.mix(fill, 0xFFFFFFFF, 0.08f);
-			}
-			Glass.pane(g, bx, by, bw, bh, 3, fill, Theme.mix(0x30FFFFFF, 0x7048E0A0, t), fade);
-			var label = Theme.ui(mod.enabled().get() ? "ENABLED" : "DISABLED");
-			Spaced.draw(g, label, bx + bw / 2f, by + 4, cw < 100 ? 0.6f : 1.2f, Theme.alpha(Theme.mix(0xFFB4B9C4, 0xFFFFFFFF, t), fade), true);
+			boolean barHot = inside(mouseX, mouseY, x + cw - 34, y + CARD_H - 20, 30, 16);
+			int cx = x, cy = y;
+			GlassFx.label(g, x + cw / 2f, y + CARD_H / 2f, () -> {
+				// the mod's sign in its color, its name, what it does
+				var icon = Theme.display(mod.icon());
+				g.text(font, icon, cx + 10, cy + 10, Theme.alpha(Theme.mix(0xFF6C7280, mod.color(), .35f + .65f * t), fade), false);
+				g.text(font, Theme.ui(mod.name()), cx + 24, cy + 10, Theme.alpha(0xFFE2E5EB, fade), false);
+				if (tags) {
+					g.text(font, Theme.ui(mod.tagline()), cx + 10, cy + 24, Theme.alpha(0xFF8F95A1, fade), false);
+				}
+				// along the bottom: on or off, and the switch
+				Draw.hairline(g, cx + 8, cx + cw - 8, cy + CARD_H - 23, Theme.alpha(0x14FFFFFF, fade));
+				Draw.circle(g, cx + 12, cy + CARD_H - 12, 2, Theme.alpha(Theme.mix(0xFF5A606C, 0xFF4EE0A4, t), fade));
+				g.text(font, Theme.ui(mod.enabled().get() ? "On" : "Off"), cx + 18, cy + CARD_H - 16, Theme.alpha(Theme.mix(0xFF8F95A1, 0xFFCFEFDF, t), fade), false);
+				Control.switchAt(g, cx + cw - 32, cy + CARD_H - 17.5f, t, barHot ? 1 : 0);
+			});
+			GlassFx.end();
 		}
 		g.disableScissor();
 	}
-
 	// --- one mod's settings ---
 
 	private void extractDetail(GuiGraphicsExtractor g, ModEntry mod, int mouseX, int mouseY, float dt, float appear, float fade) {
@@ -292,7 +284,7 @@ public class YahuScreen extends Screen {
 				h += gr.get(i).height();
 			}
 			if (h > 0) {
-				Glass.pane(g, cx, y, cw, h + 8, 6, 0x50141820, 0x24FFFFFF, fade);
+				Glass.pane(g, cx, y, cw, h + 8, 3, 0x50141820, 0x20FFFFFF, fade);
 				int ry = y + 4;
 				for (int i = start; i < gr.size(); i++) {
 					Control c = gr.get(i);
@@ -342,7 +334,7 @@ public class YahuScreen extends Screen {
 				int x = cardX(i), y = cardY(i);
 				if (inside(mx, my, x, y, cw, CARD_H)) {
 					ModEntry mod = mods.get(i);
-					if (inside(mx, my, x + 6, y + CARD_H - 22, cw - 12, 16)) {
+					if (inside(mx, my, x + cw - 34, y + CARD_H - 20, 30, 16)) {
 						mod.setEnabled().accept(!mod.enabled().get());
 						save.run();
 					} else {

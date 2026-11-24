@@ -111,6 +111,9 @@ public class YahuMod implements ClientModInitializer {
 		instance = this;
 		configFile = FabricLoader.getInstance().getConfigDir().resolve("yahu.json");
 		config = YahuConfig.load(configFile);
+		if (config.menu.classicPanorama) {
+			net.yahuclient.mod.ui.ClassicPanorama.fetchIfNeeded();
+		}
 		String version = FabricLoader.getInstance().getModContainer(ID).map(m -> m.getMetadata().getVersion().getFriendlyString()).orElse("dev");
 		lyrics = new LyricsController("YahuClient/" + version + " (https://github.com/Chrigu-san/YahuClient)");
 
@@ -241,7 +244,29 @@ public class YahuMod implements ClientModInitializer {
 	// the mods as the menu shows them
 
 	private List<ModEntry> mods() {
-		return List.of(crosshairMod(), lyricsMod(), skyboxMod(), inventoryMod());
+		return List.of(crosshairMod(), lyricsMod(), skyboxMod(), inventoryMod(), menuMod());
+	}
+
+	private ModEntry menuMod() {
+		YahuConfig.Menu m = config.menu;
+		List<Control> controls = List.of(
+				new Control.Section("Glass"),
+				new Control.Choice<>("Rain", () -> List.of(0, 1, 2), r -> r == 0 ? "Off" : r == 1 ? "Light" : "Strong", () -> m.rain, r -> m.rain = r),
+				new Control.Toggle("Lean towards the cursor", () -> m.tilt, b -> m.tilt = b),
+				new Control.Section("Main menu"),
+				new Control.Toggle("Classic panorama (1.18)", () -> m.classicPanorama, b -> {
+					m.classicPanorama = b;
+					if (b) {
+						net.yahuclient.mod.ui.ClassicPanorama.fetchIfNeeded();
+					}
+					net.yahuclient.mod.ui.ClassicPanorama.reload();
+				}),
+				new Control.Toggle("Realms button", () -> m.showRealms, b -> m.showRealms = b),
+				new Control.Note(() -> net.yahuclient.mod.ui.ClassicPanorama.ready()
+						? "The 1.18 panorama is shown in black and white."
+						: "The 1.18 panorama is downloaded once from Mojang, then shown in black and white."));
+		return new ModEntry("Menu", "Glass and rain", "The look of the menus: glass buttons with rain running down them, leaning towards the cursor, and the classic panorama behind.",
+				0xFF9AA3B5, "◆", () -> m.glass, b -> m.glass = b, controls, null, null);
 	}
 
 	private ModEntry inventoryMod() {

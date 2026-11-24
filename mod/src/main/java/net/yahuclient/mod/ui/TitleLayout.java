@@ -32,6 +32,8 @@ public final class TitleLayout {
 	public static final Set<Object> NAV = Collections.newSetFromMap(new WeakHashMap<>());
 	/** Buttons shown as an icon instead of their label. */
 	public static final Map<Object, String> ICON = new WeakHashMap<>();
+	/** Column buttons drawn a little quieter (Quit). */
+	public static final Set<Object> QUIET = Collections.newSetFromMap(new WeakHashMap<>());
 	private static final Map<Object, float[]> HOVER = new WeakHashMap<>();
 
 	public static final int ITEM_H = 20;
@@ -71,6 +73,10 @@ public final class TitleLayout {
 					options = w;
 				} else if ("menu.quit".equals(key)) {
 					quit = w;
+				} else if ("menu.online".equals(key) && !net.yahuclient.mod.YahuMod.config().menu.showRealms) {
+					// Realms is a paid Mojang subscription few people use: hidden unless turned on in the Yahu menu
+					w.visible = false;
+					w.active = false;
 				} else {
 					column.add(w);
 				}
@@ -79,6 +85,11 @@ public final class TitleLayout {
 		Comparator<AbstractWidget> order = Comparator.comparingInt(AbstractWidget::getY).thenComparingInt(AbstractWidget::getX);
 		column.sort(order);
 		icons.sort(order);
+		// Quit at the end of the column, a little quieter than the rest
+		if (quit != null) {
+			column.add(quit);
+			QUIET.add(quit);
+		}
 
 		int width = Math.min(200, screen.width - 40);
 		int cx = screen.width / 2;
@@ -104,10 +115,6 @@ public final class TitleLayout {
 			w.setPosition(x, screen.height - 34);
 			x += w.getWidth() + 6;
 		}
-		if (quit != null) {
-			icon(quit, "close");
-			quit.setPosition(screen.width - ICON_SIZE - 8, 8);
-		}
 	}
 
 	/** Gives a screen's text buttons the main menu's look (spaced capitals) without moving them: the pause menu. */
@@ -129,6 +136,20 @@ public final class TitleLayout {
 		return message.getContents() instanceof TranslatableContents t ? t.getKey() : "";
 	}
 
+	/** A corner line (version, copyright): small, faint, in the bottom left or right corner. */
+	public static void corner(GuiGraphicsExtractor g, String text, int margin, boolean right, int alpha) {
+		var font = Minecraft.getInstance().font;
+		var line = Theme.ui(text);
+		float scale = .72f;
+		float w = font.width(line) * scale;
+		float x = right ? g.guiWidth() - margin - w : margin, y = g.guiHeight() - margin - 7 * scale;
+		g.pose().pushMatrix();
+		g.pose().translate(x, y);
+		g.pose().scale(scale, scale);
+		g.text(font, line, 0, 0, Theme.alpha(0xFFC8CDD7, .32f * alpha / 255f), false);
+		g.pose().popMatrix();
+	}
+
 	/** Called once per drawn frame for the hover animation. */
 	public static void frame() {
 		long now = System.nanoTime();
@@ -138,42 +159,48 @@ public final class TitleLayout {
 
 	/** The logo and the word mark, centered above the column. */
 	public static void drawLogo(GuiGraphicsExtractor g, int width, float alpha) {
-		float x = (width - LOGO) / 2f;
-		Icons.draw(g, "logo", Icons.LOGO, x, logoTop, LOGO, Theme.alpha(0xFFFFFFFF, alpha));
-		Spaced.draw(g, Theme.display("YAHU CLIENT"), width / 2f, logoTop + LOGO + 7, 1.2f, Theme.alpha(0xFFFFFFFF, alpha), true);
+		float x = (width - LOGO) / 2f, y = logoTop;
+		// the glass tile leans to the cursor like the buttons, and gets rained on too
+		double[] m = GlassFx.mouse();
+		boolean hot = m[0] >= x && m[0] < x + LOGO && m[1] >= y && m[1] < y + LOGO;
+		GlassFx.State s = GlassFx.begin(g, LOGO_KEY, x, y, LOGO, LOGO, hot, false, 26);
+		Icons.draw(g, "logo_a", Icons.LOGO_A, x, y, LOGO, Theme.alpha(0xFFFFFFFF, alpha));
+		float inset = LOGO * .08f;
+		s.rain.draw(g, x + inset, y + inset, alpha);
+		GlassFx.end();
+		Spaced.draw(g, Theme.display("YAHU"), width / 2f, logoTop + LOGO + 7, 2.6f, Theme.alpha(0xFFDCDFE6, alpha), true);
+		Spaced.draw(g, Theme.ui("CLIENT"), width / 2f, logoTop + LOGO + 18, 3.2f, Theme.alpha(0x8CCDD2DC, alpha), true);
 	}
+
+	private static final Object LOGO_KEY = new Object();
 
 	/** One column entry: a slim glass button, its label in spaced capitals; the edge brightens under the mouse. */
 	public static void drawEntry(GuiGraphicsExtractor g, AbstractWidget w, boolean active, boolean hot, boolean highlighted, float alpha) {
-		float[] h = HOVER.computeIfAbsent(w, k -> new float[1]);
-		h[0] = Theme.approach(h[0], hot && active ? 1 : 0, dt, 18);
-		float t = h[0];
 		int x = w.getX(), y = w.getY(), wd = w.getWidth(), ht = w.getHeight();
-		if (highlighted) {
-			Glass.pane(g, x, y, wd, ht, Glass.RADIUS, Theme.mix(Theme.alpha(Glass.TINT, 0.40f), Theme.alpha(Glass.TINT, 0.6f), t),
-					Theme.mix(0x70B9A8FF, 0xC0D8CEFF, t), alpha);
-		} else {
-			Glass.pane(g, x, y, wd, ht, Glass.RADIUS, Theme.mix(Glass.FILL, Glass.FILL_HOT, t), Theme.mix(Glass.EDGE, Glass.EDGE_HOT, t), alpha);
-		}
-		int color = active ? Theme.mix(0xE0FFFFFF, 0xFFFFFFFF, t) : 0x80FFFFFF;
+		boolean pressed = hot && active && Minecraft.getInstance().mouseHandler.isLeftPressed();
+		GlassFx.State s = GlassFx.begin(g, w, x, y, wd, ht, hot && active, pressed, 9);
+		float t = s.hover;
+		GlassFx.button(g, s, x, y, wd, ht, highlighted, QUIET.contains(w), alpha);
+		int color = active ? Theme.mix(QUIET.contains(w) ? 0xFFB9BDC7 : 0xFFDFE2E9, 0xFFF2F4F8, t) : 0x80DFE2E9;
 		// spaced capitals; the trailing dots of "Options..." go, they only crowd the label
 		var label = Theme.ui(w.getMessage().getString().replaceAll("(\\.\\.\\.|…)$", "").trim().toUpperCase(Locale.ROOT));
 		// as much spacing as fits (narrow buttons get tighter letters)
 		int letters = label.getString().codePointCount(0, label.getString().length());
 		float plain = Spaced.width(label, 0);
 		float spacing = letters > 1 ? Math.max(0.2f, Math.min(1.4f, (wd - 12 - plain) / (letters - 1))) : 0;
-		Spaced.draw(g, label, x + wd / 2f, y + (ht - 8) / 2f, spacing, Theme.alpha(color, alpha), true);
+		float sp = spacing;
+		GlassFx.label(g, x + wd / 2f, y + ht / 2f, () -> Spaced.draw(g, label, x + wd / 2f, y + (ht - 8) / 2f, sp, Theme.alpha(color, alpha), true));
+		GlassFx.end();
 	}
 
 	/** A button shown as one of our icons: a square glass button, the icon in the middle. */
 	public static void drawIcon(GuiGraphicsExtractor g, AbstractWidget w, String name, boolean hot, float alpha) {
-		float[] h = HOVER.computeIfAbsent(w, k -> new float[1]);
-		h[0] = Theme.approach(h[0], hot ? 1 : 0, dt, 18);
-		float t = h[0];
 		int x = w.getX(), y = w.getY(), s = w.getWidth();
-		Glass.pane(g, x, y, s, w.getHeight(), Glass.RADIUS, Theme.mix(Glass.FILL, Glass.FILL_HOT, t), Theme.mix(Glass.EDGE, Glass.EDGE_HOT, t), alpha);
+		GlassFx.State st = GlassFx.begin(g, w, x, y, s, w.getHeight(), hot, hot && Minecraft.getInstance().mouseHandler.isLeftPressed(), 22);
+		GlassFx.button(g, st, x, y, s, w.getHeight(), false, false, alpha);
 		float icon = s * 0.5f;
 		Tex.Shape shape = "close".equals(name) ? Icons.CLOSE : Icons.GEAR;
-		Icons.draw(g, name, shape, x + (s - icon) / 2f, y + (w.getHeight() - icon) / 2f, icon, Theme.alpha(Theme.mix(0xD0FFFFFF, 0xFFFFFFFF, t), alpha));
+		Icons.draw(g, name, shape, x + (s - icon) / 2f, y + (w.getHeight() - icon) / 2f, icon, Theme.alpha(Theme.mix(0xFFCDD1DA, 0xFFF2F4F8, st.hover), alpha));
+		GlassFx.end();
 	}
 }

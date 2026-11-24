@@ -35,6 +35,31 @@ public final class Icons {
 		return argb(white * (1 - gap), 0xFFFFFF);
 	};
 
+	/**
+	 * The Yahu logo: a glass tile (a rounded square, faintly filled, its edge bright at the top left and violet at the
+	 * bottom right), a Y of three round strokes light at the top and lilac at the foot, a violet dot where they meet.
+	 */
+	public static final Tex.Shape LOGO_A = (x, y, px) -> {
+		double box = roundBox(x, y, .84, .84, .52);
+		double tile = Tex.cover(box, px);
+		double rim = Tex.cover(Math.abs(box + .025) - .03, px);
+		double armL = segment(x, y, -.38, -.44, 0, .02), armR = segment(x, y, .38, -.44, 0, .02), stem = segment(x, y, 0, .02, 0, .48);
+		double letter = Tex.cover(Math.min(Math.min(armL, armR), stem) - .1, px);
+		double ring = Tex.cover(Math.hypot(x, y - .02) - .18, px);
+		double dot = Tex.cover(Math.hypot(x, y - .02) - .13, px);
+		// where light falls: top left bright, bottom right violet
+		double k = Math.max(0, Math.min(1, (x + y + 1.2) / 2.4));
+		int rimColor = mixRgb(0xF2F4F8, 0xB9A8FF, k);
+		int letterColor = mixRgb(0xF4F5F8, 0xD9D2FF, Math.max(0, Math.min(1, (y + .5))));
+		// layers, bottom up: the faint tile, its rim, the letter (cut around the dot), the dark ring, the violet dot
+		int out = argb(tile * .09, 0xFFFFFF);
+		out = over(out, argb(rim * (.55 + .2 * (1 - k)), rimColor));
+		out = over(out, argb(letter * (1 - ring), letterColor));
+		out = over(out, argb(ring * (1 - dot) * .85, 0x0B0B12));
+		out = over(out, argb(dot, 0xA892FF));
+		return out;
+	};
+
 	/** A close X: two rounded strokes. */
 	public static final Tex.Shape CLOSE = (x, y, px) -> {
 		double d = Math.min(segment(x, y, -0.42, -0.42, 0.42, 0.42), segment(x, y, -0.42, 0.42, 0.42, -0.42)) - 0.085;
@@ -60,8 +85,13 @@ public final class Icons {
 	/** Draws a shape size by size GUI units at (x, y), tinted with color, painted for the exact screen pixels. */
 	public static void draw(GuiGraphicsExtractor g, String name, Tex.Shape shape, float x, float y, float size, int color) {
 		float s = Draw.scale();
-		int d = Math.max(2, Math.round(size * s));
+		Warp wp = Warp.current();
+		int d = Math.max(2, Math.round(size * s * (wp != null ? wp.project(x + size / 2f, y + size / 2f)[2] : 1)));
 		Identifier tex = Tex.shape(name, d, shape);
+		if (wp != null) {
+			wp.texture(g, tex, x, y, x + size, y + size, 0, 0, 1, 1, color);
+			return;
+		}
 		g.pose().pushMatrix();
 		g.pose().scale(1f / s, 1f / s);
 		g.blit(RenderPipelines.GUI_TEXTURED, tex, Math.round(x * s), Math.round(y * s), 0, 0, d, d, d, d, d, d, color);
@@ -69,6 +99,32 @@ public final class Icons {
 	}
 
 	// --- signed distances (negative inside) ---
+
+	/** A rounded box of half size (hx, hy) with corner radius r. */
+	private static double roundBox(double x, double y, double hx, double hy, double r) {
+		double qx = Math.abs(x) - hx + r, qy = Math.abs(y) - hy + r;
+		return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+	}
+
+	private static int mixRgb(int a, int b, double t) {
+		int r = (int) Math.round(((a >> 16) & 0xFF) + (((b >> 16) & 0xFF) - ((a >> 16) & 0xFF)) * t);
+		int gg = (int) Math.round(((a >> 8) & 0xFF) + (((b >> 8) & 0xFF) - ((a >> 8) & 0xFF)) * t);
+		int bb = (int) Math.round((a & 0xFF) + ((b & 0xFF) - (a & 0xFF)) * t);
+		return (r << 16) | (gg << 8) | bb;
+	}
+
+	/** Color b (ARGB, straight alpha) over color a. */
+	private static int over(int a, int b) {
+		double ab = (b >>> 24) / 255.0, aa = (a >>> 24) / 255.0;
+		double out = ab + aa * (1 - ab);
+		if (out <= 0) {
+			return 0;
+		}
+		int r = (int) Math.round((((b >> 16) & 0xFF) * ab + ((a >> 16) & 0xFF) * aa * (1 - ab)) / out);
+		int gg = (int) Math.round((((b >> 8) & 0xFF) * ab + ((a >> 8) & 0xFF) * aa * (1 - ab)) / out);
+		int bb = (int) Math.round(((b & 0xFF) * ab + (a & 0xFF) * aa * (1 - ab)) / out);
+		return argb(out, (r << 16) | (gg << 8) | bb);
+	}
 
 	private static double segment(double x, double y, double ax, double ay, double bx, double by) {
 		double pax = x - ax, pay = y - ay, bax = bx - ax, bay = by - ay;

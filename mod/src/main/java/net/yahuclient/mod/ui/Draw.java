@@ -36,6 +36,10 @@ public final class Draw {
 		if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
 			return;
 		}
+		if (Warp.current() != null) {
+			roundWarped(Warp.current(), g, x, y, w, h, radius, color, color);
+			return;
+		}
 		float s = begin(g);
 		int x0 = Math.round(x * s), y0 = Math.round(y * s), x1 = Math.round((x + w) * s), y1 = Math.round((y + h) * s);
 		int r = Math.round(Math.max(0, Math.min(radius * s, Math.min(x1 - x0, y1 - y0) / 2f)));
@@ -54,6 +58,72 @@ public final class Draw {
 		end(g);
 	}
 
+	/** A filled rounded rectangle whose color runs from top to bottom. */
+	public static void roundGradient(GuiGraphicsExtractor g, float x, float y, float w, float h, float radius, int top, int bottom) {
+		if (w <= 0 || h <= 0) {
+			return;
+		}
+		if (Warp.current() != null) {
+			roundWarped(Warp.current(), g, x, y, w, h, radius, top, bottom);
+			return;
+		}
+		float s = begin(g);
+		int x0 = Math.round(x * s), y0 = Math.round(y * s), x1 = Math.round((x + w) * s), y1 = Math.round((y + h) * s);
+		int r = Math.round(Math.max(0, Math.min(radius * s, Math.min(x1 - x0, y1 - y0) / 2f)));
+		int hh = Math.max(1, y1 - y0);
+		java.util.function.IntUnaryOperator at = yy -> Theme.mix(top, bottom, (yy - y0) / (float) hh);
+		g.fillGradient(x0 + r, y0, x1 - r, y1, top, bottom);
+		if (r > 0) {
+			g.fillGradient(x0, y0 + r, x0 + r, y1 - r, at.applyAsInt(y0 + r), at.applyAsInt(y1 - r));
+			g.fillGradient(x1 - r, y0 + r, x1, y1 - r, at.applyAsInt(y0 + r), at.applyAsInt(y1 - r));
+			Identifier disk = Tex.disk(2 * r);
+			quarter(g, disk, x0, y0, r, 0, 0, at.applyAsInt(y0 + r / 2));
+			quarter(g, disk, x1 - r, y0, r, r, 0, at.applyAsInt(y0 + r / 2));
+			quarter(g, disk, x0, y1 - r, r, 0, r, at.applyAsInt(y1 - r / 2));
+			quarter(g, disk, x1 - r, y1 - r, r, r, r, at.applyAsInt(y1 - r / 2));
+		}
+		end(g);
+	}
+
+	/** A rounded rectangle under a warp: quads for the body, disk quarters for the corners, all projected. */
+	private static void roundWarped(Warp wp, GuiGraphicsExtractor g, float x, float y, float w, float h, float radius, int top, int bottom) {
+		float s = scale();
+		float r = Math.max(0, Math.min(radius, Math.min(w, h) / 2f));
+		java.util.function.DoubleUnaryOperator t = yy -> (yy - y) / h;
+		int cTop = top, cBot = bottom;
+		java.util.function.DoubleFunction<Integer> at = yy -> Theme.mix(cTop, cBot, (float) Math.max(0, Math.min(1, t.applyAsDouble(yy))));
+		wp.quad(g, x + r, y, x + w - r, y + h, top, bottom);
+		if (r > 0) {
+			wp.quad(g, x, y + r, x + r, y + h - r, at.apply(y + r), at.apply(y + h - r));
+			wp.quad(g, x + w - r, y + r, x + w, y + h - r, at.apply(y + r), at.apply(y + h - r));
+			int d = Math.max(2, Math.round(2 * r * s));
+			Identifier disk = Tex.disk(d);
+			wp.texture(g, disk, x, y, x + r, y + r, 0, 0, .5f, .5f, at.apply(y + r / 2));
+			wp.texture(g, disk, x + w - r, y, x + w, y + r, .5f, 0, 1, .5f, at.apply(y + r / 2));
+			wp.texture(g, disk, x, y + h - r, x + r, y + h, 0, .5f, .5f, 1, at.apply(y + h - r / 2));
+			wp.texture(g, disk, x + w - r, y + h - r, x + w, y + h, .5f, .5f, 1, 1, at.apply(y + h - r / 2));
+		}
+	}
+
+	/** An outline under a warp: thin projected quads and ring quarters. */
+	private static void outlineWarped(Warp wp, GuiGraphicsExtractor g, float x, float y, float w, float h, float radius, int color, int top) {
+		float s = scale();
+		float px = 1f / s;
+		float r = Math.max(0, Math.min(radius, Math.min(w, h) / 2f));
+		wp.quad(g, x + r, y, x + w - r, y + px, top, top);
+		wp.quad(g, x + r, y + h - px, x + w - r, y + h, color, color);
+		wp.quad(g, x, y + Math.max(r, px), x + px, y + h - Math.max(r, px), top, color);
+		wp.quad(g, x + w - px, y + Math.max(r, px), x + w, y + h - Math.max(r, px), top, color);
+		if (r > 0) {
+			int d = Math.max(2, Math.round(2 * r * s));
+			Identifier ring = Tex.ring(d);
+			wp.texture(g, ring, x, y, x + r, y + r, 0, 0, .5f, .5f, top);
+			wp.texture(g, ring, x + w - r, y, x + w, y + r, .5f, 0, 1, .5f, top);
+			wp.texture(g, ring, x, y + h - r, x + r, y + h, 0, .5f, .5f, 1, color);
+			wp.texture(g, ring, x + w - r, y + h - r, x + w, y + h, .5f, .5f, 1, 1, color);
+		}
+	}
+
 	/** A one screen pixel outline of a rounded rectangle (lines and thin ring corners, so it never adds up under glass). */
 	public static void outline(GuiGraphicsExtractor g, float x, float y, float w, float h, float radius, int color) {
 		outline(g, x, y, w, h, radius, color, color);
@@ -62,6 +132,10 @@ public final class Draw {
 	/** An outline whose top edge (and top corners) has its own color: light catching the top of a pane. */
 	public static void outline(GuiGraphicsExtractor g, float x, float y, float w, float h, float radius, int color, int top) {
 		if (w <= 0 || h <= 0 || ((color | top) >>> 24) == 0) {
+			return;
+		}
+		if (Warp.current() != null) {
+			outlineWarped(Warp.current(), g, x, y, w, h, radius, color, top);
 			return;
 		}
 		float s = begin(g);
@@ -99,6 +173,13 @@ public final class Draw {
 		if ((color >>> 24) == 0) {
 			return;
 		}
+		Warp wp = Warp.current();
+		if (wp != null) {
+			// small and round: placed where its middle lands, shrunk with distance
+			float[] p = wp.project(cx, cy);
+			Warp.flat(() -> circle(g, p[0], p[1], radius * p[2], color));
+			return;
+		}
 		float s = begin(g);
 		int d = Math.max(1, Math.round(radius * 2 * s));
 		int x = Math.round(cx * s - d / 2f), y = Math.round(cy * s - d / 2f);
@@ -116,6 +197,12 @@ public final class Draw {
 
 	/** A soft light centered on (cx, cy). */
 	public static void glow(GuiGraphicsExtractor g, float cx, float cy, float radius, int color) {
+		Warp wp = Warp.current();
+		if (wp != null) {
+			float[] p = wp.project(cx, cy);
+			Warp.flat(() -> glow(g, p[0], p[1], radius * p[2], color));
+			return;
+		}
 		Tex.ensure();
 		int d = Math.max(1, Math.round(radius * 2));
 		g.blit(RenderPipelines.GUI_TEXTURED, Tex.GLOW, Math.round(cx - radius), Math.round(cy - radius), 0, 0, d, d, Tex.GLOW_SIZE, Tex.GLOW_SIZE,

@@ -45,6 +45,9 @@ public abstract class ScreenMixin {
 	private void yahu$fontOn(GuiGraphicsExtractor g, int mouseX, int mouseY, float a, CallbackInfo ci) {
 		net.yahuclient.mod.ui.MenuFont.begin();
 		net.yahuclient.mod.inventory.InventoryLook.newFrame();
+		var menu = net.yahuclient.mod.YahuMod.config().menu;
+		net.yahuclient.mod.ui.Rain.level = menu.glass ? menu.rain : 0;
+		net.yahuclient.mod.ui.GlassFx.tilt = menu.glass && menu.tilt;
 	}
 
 	@Inject(method = "extractRenderStateWithTooltipAndSubtitles", at = @At("RETURN"))

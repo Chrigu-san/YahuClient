@@ -31,7 +31,9 @@ public class YahuClientGameTest implements FabricClientGameTest {
 		});
 
 		context.waitForScreen(TitleScreen.class);
-		context.waitTicks(60);  // the title screen fades its buttons in
+		// the classic panorama is downloaded once from Mojang on start: wait for it (up to a minute)
+		context.waitFor(mc -> net.yahuclient.mod.ui.ClassicPanorama.ready(), 1200);
+		context.waitTicks(80);  // the title screen fades its buttons in, the panorama reloads
 		context.takeScreenshot("yahu-title-screen");
 		// the mouse over the first entry: the hover look of the navigation
 		double[] at = context.computeOnClient(mc -> {
