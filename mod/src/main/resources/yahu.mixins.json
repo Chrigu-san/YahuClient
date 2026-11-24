@@ -5,9 +5,29 @@
 	"compatibilityLevel": "JAVA_25",
 	"client": [
 		"AbstractButtonMixin",
+		"AbstractContainerScreenAccessor",
 		"AbstractSliderButtonMixin",
+		"CloudRendererMixin",
+		"ContainerLabelsMixin",
+		"CreateWorldScreenMixin",
+		"CubeMapTextureMixin",
+		"FogRendererMixin",
+		"FontTextureMixin",
+		"GuiGraphicsExtractorMixin",
+		"GuiRenderStateMixin",
+		"GuiTextRenderStateMixin",
+		"ReloadableTextureMixin",
 		"ScreenMixin",
-		"SkyRendererMixin"
+		"OptionsBlurMixin",
+		"PlainTextButtonMixin",
+		"SelectionListMixin",
+		"SkyRendererMixin",
+		"SplashRendererMixin",
+		"SpriteIconButtonMixin",
+		"StyleAccessor",
+		"StyleMixin",
+		"TitleScreenCornerMixin",
+		"TitleScreenLookMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

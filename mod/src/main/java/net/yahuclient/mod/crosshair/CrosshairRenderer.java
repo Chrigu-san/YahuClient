@@ -46,9 +46,7 @@ public final class CrosshairRenderer {
 				dot(g, c, ow, outlineColor);
 			}
 			if (c.ring) {
-				for (var r : CrosshairGeometry.ring(c.ringRadius + ow, c.ringThickness + 2 * ow)) {
-					fill(g, r, outlineColor);
-				}
+				ring(g, c, c.ringRadius, c.ringThickness + 2 * ow, outlineColor);
 			}
 		}
 		arms(g, c, gap, 0, color);
@@ -56,9 +54,7 @@ public final class CrosshairRenderer {
 			dot(g, c, 0, dotColor);
 		}
 		if (c.ring) {
-			for (var r : CrosshairGeometry.ring(c.ringRadius, c.ringThickness)) {
-				fill(g, r, color);
-			}
+			ring(g, c, c.ringRadius, c.ringThickness, color);
 		}
 
 		int reach = Math.max(c.arms == YahuConfig.Arms.NONE ? 0 : gap + c.armLength, c.ring ? c.ringRadius : 0);
@@ -108,6 +104,28 @@ public final class CrosshairRenderer {
 		}
 	}
 
+	/**
+	 * A ring of this radius and thickness in screen pixels, smooth: painted for exactly its size (its edges smoothed over a
+	 * pixel), not stacked from squares. Centered like the arms (on a pixel's middle when they are an odd width).
+	 */
+	private static void ring(GuiGraphicsExtractor g, YahuConfig.Crosshair c, int radius, int thickness, int color) {
+		// the ring's middle, in screen pixels around the crosshair's center: on a pixel's middle when the arms are odd
+		float cx = (c.armThickness % 2 == 1) ? 0.5f : 0f;
+		float outer = radius + thickness / 2f;
+		int size = (int) Math.ceil(outer * 2) + 4;
+		int x0 = (int) Math.floor(cx - size / 2f);
+		float local = cx - x0;   // the middle inside the texture, in pixels from its corner
+		float r = radius, half = thickness / 2f;
+		String name = "crosshair_ring_" + radius + "_" + thickness + "_" + (cx == 0.5f ? "c" : "e");
+		var tex = net.yahuclient.mod.ui.Tex.shape(name, size, (x, y, px) -> {
+			// x, y run from -1 to 1 across the texture: back to pixels from its corner
+			double lx = (x + 1) / 2 * size, ly = (y + 1) / 2 * size;
+			double edge = Math.abs(Math.hypot(lx - local, ly - local) - r) - half;
+			// px is half a pixel in the shape's units; in pixels that is half a pixel too
+			return ((int) Math.round(net.yahuclient.mod.ui.Tex.cover(edge, .5) * 255) << 24) | 0xFFFFFF;
+		});
+		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, tex, x0, x0, 0, 0, size, size, size, size, size, size, color);
+	}
 	private static void hitMarker(GuiGraphicsExtractor g, int radius, int size, int color, int outline, float fade) {
 		g.pose().pushMatrix();
 		g.pose().rotate((float) Math.toRadians(45));

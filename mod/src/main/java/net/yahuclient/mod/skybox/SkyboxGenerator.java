@@ -24,6 +24,11 @@ public final class SkyboxGenerator {
 	/** A sky: the color (0xRRGGBB) seen in a direction (unit vector). */
 	public interface Sky {
 		int color(double x, double y, double z);
+
+		/** Whether this direction has fine detail (thin rings, sharp edges) worth several samples per pixel. */
+		default boolean detailed(double x, double y, double z) {
+			return false;
+		}
 	}
 
 	/** The finished atlas: ARGB pixels, its size and the size of one face without the border. */
@@ -37,28 +42,50 @@ public final class SkyboxGenerator {
 		int cell = face + 2 * PAD;
 		int width = cell * 3, height = cell * 2;
 		int[] pixels = new int[width * height];
-		for (int f = 0; f < 6; f++) {
+		// rows in parallel: a 1024 face sky is six million pixels
+		java.util.stream.IntStream.range(0, 6 * cell).parallel().forEach(row -> {
+			int f = row / cell, j = row % cell;
 			double[] n = FACES[f][0], r = FACES[f][1], u = FACES[f][2];
 			int ox = (f % 3) * cell, oy = (f / 3) * cell;
-			for (int j = 0; j < cell; j++) {
+			for (int i = 0; i < cell; i++) {
 				// the border pixels look a little beyond the face's edge, which is the neighbouring face's sky
-				double t = 1 - (j - PAD + 0.5) / face * 2;
-				for (int i = 0; i < cell; i++) {
-					double s = (i - PAD + 0.5) / face * 2 - 1;
-					double x = n[0] + s * r[0] + t * u[0];
-					double y = n[1] + s * r[1] + t * u[1];
-					double z = n[2] + s * r[2] + t * u[2];
-					double len = Math.sqrt(x * x + y * y + z * z);
-					pixels[(oy + j) * width + ox + i] = 0xFF000000 | sky.color(x / len, y / len, z / len);
-				}
+				pixels[(oy + j) * width + ox + i] = 0xFF000000 | sample(sky, n, r, u, i, j, face);
 			}
-		}
+		});
 		return new Atlas(pixels, width, height, face);
 	}
 
+	/** One pixel: one look in its direction, or 3 by 3 looks averaged where the sky has fine detail. */
+	private static int sample(Sky sky, double[] n, double[] r, double[] u, int i, int j, int face) {
+		double[] d = dir(n, r, u, i + .5, j + .5, face);
+		if (!sky.detailed(d[0], d[1], d[2])) {
+			return sky.color(d[0], d[1], d[2]);
+		}
+		int rr = 0, gg = 0, bb = 0;
+		for (int sj = 0; sj < 3; sj++) {
+			for (int si = 0; si < 3; si++) {
+				double[] e = dir(n, r, u, i + (si + .5) / 3, j + (sj + .5) / 3, face);
+				int c = sky.color(e[0], e[1], e[2]);
+				rr += (c >> 16) & 0xFF;
+				gg += (c >> 8) & 0xFF;
+				bb += c & 0xFF;
+			}
+		}
+		return ((rr / 9) << 16) | ((gg / 9) << 8) | (bb / 9);
+	}
+
+	private static double[] dir(double[] n, double[] r, double[] u, double i, double j, int face) {
+		double t = 1 - (j - PAD) / face * 2;
+		double s = (i - PAD) / face * 2 - 1;
+		double x = n[0] + s * r[0] + t * u[0];
+		double y = n[1] + s * r[1] + t * u[1];
+		double z = n[2] + s * r[2] + t * u[2];
+		double len = Math.sqrt(x * x + y * y + z * z);
+		return new double[] {x / len, y / len, z / len};
+	}
 	public static Sky preset(SkyPreset preset) {
 		return switch (preset) {
-			case BLACK_HOLE -> SkyboxGenerator::blackHole;
+			case BLACK_HOLE -> new BlackHole();
 			case CLEAR_DAY -> (x, y, z) -> day(x, y, z, false);
 			case GOLDEN_HOUR -> (x, y, z) -> day(x, y, z, true);
 			case AURORA -> SkyboxGenerator::aurora;
@@ -110,7 +137,7 @@ public final class SkyboxGenerator {
 		}
 		double px = cx + hash(cx + 11, cy, cz), py = cy + hash(cx, cy + 7, cz), pz = cz + hash(cx, cy, cz + 3);
 		double d = Math.sqrt((sx - px) * (sx - px) + (sy - py) * (sy - py) + (sz - pz) * (sz - pz));
-		double size = 0.05 + 0.1 * hash(cx + 5, cy + 5, cz);
+		double size = 0.08 + 0.13 * hash(cx + 5, cy + 5, cz);
 		double b = Math.max(0, 1 - d / size);
 		b = b * b * (0.4 + 0.6 * hash(cx + 2, cy + 9, cz + 4));
 		double tint = hash(cx + 13, cy + 1, cz + 7);
@@ -142,87 +169,146 @@ public final class SkyboxGenerator {
 	// ---------------------------------------------------------------------------------------------------------------
 	// the skies
 
-	/** Deep space with a black hole: bent starlight, a bright photon ring and a glowing, tilted disk around it. */
-	static int blackHole(double x, double y, double z) {
-		// where the hole is: up and to the north-east
-		double hx = 0.42, hy = 0.38, hz = -0.82;
-		double hl = Math.sqrt(hx * hx + hy * hy + hz * hz);
-		hx /= hl;
-		hy /= hl;
-		hz /= hl;
-		double cos = x * hx + y * hy + z * hz;
-		double angle = Math.acos(Math.max(-1, Math.min(1, cos)));
-		double horizon = 0.085;
+	/**
+	 * Deep space with a black hole, in the style of the well known renderings: the dark shadow, a thin blinding photon ring,
+	 * a hot disk seen almost edge on crossing in front of the hole, and the disk's far side bent by gravity into a bright
+	 * arc over the top (and a fainter one under the bottom). The stars behind are lensed with the lens equation: near the
+	 * hole they are pulled into a ring and doubled. The side of the disk turning towards us is brighter and whiter.
+	 */
+	public static final class BlackHole implements Sky {
+		// where the hole is (up and to the north-east), and a frame around it: a sideways, b up along the disk's tilt
+		private static final double HX, HY, HZ, AX, AY, AZ, BX, BY, BZ;
+		private static final double SHADOW = 0.075;            // radius of the shadow, radians
+		private static final double EINSTEIN = SHADOW * 1.32;  // Einstein ring of the lens
+		private static final double INNER = SHADOW * 1.55, OUTER = SHADOW * 6.5;
+		private static final double TILT = 0.16;               // how open the disk looks (cos of the view angle)
 
-		// a frame around the hole: a = sideways, b = up along the disk's tilt
-		double ax = hz, ay = 0, az = -hx;
-		double al = Math.sqrt(ax * ax + az * az);
-		ax /= al;
-		az /= al;
-		double bx = hy * az - hz * ay, by = hz * ax - hx * az, bz = hx * ay - hy * ax;
-		double px = x * ax + y * ay + z * az, py = x * bx + y * by + z * bz;
+		static {
+			double hx = 0.42, hy = 0.34, hz = -0.84, hl = Math.sqrt(hx * hx + hy * hy + hz * hz);
+			HX = hx / hl;
+			HY = hy / hl;
+			HZ = hz / hl;
+			double ax = HZ, az = -HX, al = Math.sqrt(ax * ax + az * az);
+			// a slight roll of the disk
+			double roll = 0.12;
+			double ax0 = ax / al, ay0 = 0, az0 = az / al;
+			double bx0 = HY * az0 - HZ * ay0, by0 = HZ * ax0 - HX * az0, bz0 = HX * ay0 - HY * ax0;
+			AX = ax0 * Math.cos(roll) + bx0 * Math.sin(roll);
+			AY = ay0 * Math.cos(roll) + by0 * Math.sin(roll);
+			AZ = az0 * Math.cos(roll) + bz0 * Math.sin(roll);
+			BX = bx0 * Math.cos(roll) - ax0 * Math.sin(roll);
+			BY = by0 * Math.cos(roll) - ay0 * Math.sin(roll);
+			BZ = bz0 * Math.cos(roll) - az0 * Math.sin(roll);
+		}
 
-		// starlight bends around the hole: look a little further out than the pixel does
-		double bend = angle > horizon ? horizon * horizon * 1.6 / angle : 0;
-		double lx = x - hx * bend * 3, ly = y - hy * bend * 3, lz = z - hz * bend * 3;
-		double ll = Math.sqrt(lx * lx + ly * ly + lz * lz);
-		lx /= ll;
-		ly /= ll;
-		lz /= ll;
+		@Override
+		public boolean detailed(double x, double y, double z) {
+			return x * HX + y * HY + z * HZ > Math.cos(0.75);
+		}
 
-		double[] s = stars(lx, ly, lz, 0.045, 140);
-		double[] s2 = stars(lx, ly, lz, 0.12, 60);
-		double r = s[0] + s2[0] * 0.5, g = s[1] + s2[1] * 0.5, b = s[2] + s2[2] * 0.5;
+		@Override
+		public int color(double x, double y, double z) {
+			double cos = Math.max(-1, Math.min(1, x * HX + y * HY + z * HZ));
+			double theta = Math.acos(cos);
+			// position in the plane around the hole (radians, small angles): along the disk and across it
+			double px = x * AX + y * AY + z * AZ, py = x * BX + y * BY + z * BZ;
+			double pr = Math.max(1e-9, Math.hypot(px, py));
+			double ux = px / pr, uy = py / pr;
+			double r = 0, g = 0, b = 0;
 
-		// faint blue and violet gas far behind
-		double gas = fbm(lx * 2.2 + 3, ly * 2.2, lz * 2.2, 5);
-		gas = smooth(0.45, 0.85, gas);
-		r += gas * 0.10;
-		g += gas * 0.05;
-		b += gas * 0.20;
-		double milky = Math.exp(-Math.pow((ly * 0.9 + lx * 0.3) / 0.25, 2)) * fbm(lx * 6, ly * 6, lz * 6, 4);
-		r += milky * 0.10;
-		g += milky * 0.09;
-		b += milky * 0.13;
-
-		// the disk, seen from slightly above: an ellipse in the hole's frame
-		double dy = py / 0.22;
-		double disk = Math.sqrt(px * px + dy * dy);
-		if (angle < 0.6) {
-			double band = smooth(horizon * 1.25, horizon * 1.6, disk) * (1 - smooth(horizon * 2.4, horizon * 5.5, disk));
-			double turbulence = 0.6 + 0.4 * fbm(px * 40, py * 40, disk * 30, 3);
-			double doppler = 1 + 0.75 * clamp(-px / (horizon * 4));  // the side coming towards us is brighter
-			double heat = 1 - smooth(horizon * 1.3, horizon * 4.5, disk);  // white-hot inside, orange, then red
-			double light = band * turbulence * doppler * 2.4;
-			// in front of the hole only on the near (lower) half, it disappears behind it on the far half
-			boolean behind = py > 0 && angle < horizon;
-			if (!behind) {
-				r += light * (1.0);
-				g += light * (0.45 + 0.45 * heat);
-				b += light * (0.15 + 0.55 * heat * heat);
+			// the sky behind, lensed: a ray passing at theta comes from beta = theta - E^2 / theta (negative: the far side)
+			if (theta > SHADOW) {
+				double beta = theta - EINSTEIN * EINSTEIN / theta;
+				double[] d = theta < 1.2 ? toward(x, y, z, cos, theta, beta) : new double[] {x, y, z};
+				double magnify = theta < 1.2 ? Math.min(3, Math.max(1, theta / Math.max(1e-4, Math.abs(beta)))) : 1;
+				double[] s = stars(d[0], d[1], d[2], 0.05, 150);
+				double[] s2 = stars(d[0], d[1], d[2], 0.14, 62);
+				r += (s[0] + s2[0] * 0.5) * magnify;
+				g += (s[1] + s2[1] * 0.5) * magnify;
+				b += (s[2] + s2[2] * 0.5) * magnify;
+				double gas = smooth(0.48, 0.86, fbm(d[0] * 2.2 + 3, d[1] * 2.2, d[2] * 2.2, 6));
+				r += gas * 0.07;
+				g += gas * 0.04;
+				b += gas * 0.16;
+				double band = Math.exp(-Math.pow((d[1] * 0.9 + d[0] * 0.3) / 0.22, 2)) * fbm(d[0] * 7, d[1] * 7, d[2] * 7, 5);
+				r += band * 0.09;
+				g += band * 0.08;
+				b += band * 0.12;
 			}
-			// the far side of the disk, bent over the top of the hole into an arc
-			double arcR = Math.sqrt(px * px + Math.pow(py - horizon * 0.15, 2));
-			double arc = Math.exp(-Math.pow((arcR - horizon * 1.45) / (horizon * 0.22), 2)) * (py > -horizon * 0.2 ? 1 : 0.25);
-			r += arc * 1.4;
-			g += arc * 0.75;
-			b += arc * 0.35;
-		}
-		// the photon ring: a thin bright circle right at the edge
-		double ring = Math.exp(-Math.pow((angle - horizon * 1.08) / (horizon * 0.06), 2));
-		r += ring * 1.6;
-		g += ring * 1.2;
-		b += ring * 0.8;
-		// the hole itself
-		if (angle < horizon) {
-			double edge = smooth(horizon * 0.94, horizon, angle);
-			r *= edge;
-			g *= edge;
-			b *= edge;
-		}
-		return rgb(r, g, b);
-	}
 
+			if (theta < 0.75) {
+				// the disk seen directly: an ellipse; its far half hides behind the shadow
+				double rd = Math.hypot(px, py / TILT);
+				boolean hidden = theta < SHADOW && py > 0;
+				if (!hidden) {
+					double[] c = disk(rd, px, Math.atan2(py / TILT, px));
+					r += c[0];
+					g += c[1];
+					b += c[2];
+				}
+				// the far side of the disk, lensed into a ring around the shadow: brightest over the top
+				if (theta > SHADOW && theta < SHADOW * 2.4) {
+					// rays just outside the shadow went round the hole and see the disk behind it: a narrow band hugging the
+					// shadow, the disk's inner edge right at it; bright over the top, a faint second image under the bottom
+					double rv = INNER + (theta - SHADOW * 1.02) / (SHADOW * 1.2) * (OUTER - INNER) * 0.35;
+					double fade = Math.exp(-Math.pow((theta - SHADOW * 1.1) / (SHADOW * 0.36), 2));
+					double top = smooth(-0.15, 0.75, uy), bottom = smooth(0.25, 0.95, -uy);
+					double[] c = disk(rv, px, Math.atan2(uy, ux) * 3);
+					double halo = (top * 1.05 + bottom * 0.4) * fade;
+					r += c[0] * halo;
+					g += c[1] * halo;
+					b += c[2] * halo;
+				}
+			}
+
+			// the photon ring: thin, right at the edge of the shadow
+			double ring = Math.exp(-Math.pow((theta - SHADOW * 1.015) / (SHADOW * 0.018), 2));
+			double ringDoppler = 1 + 0.5 * clamp(-ux);
+			r += ring * 2.2 * ringDoppler;
+			g += ring * 1.75 * ringDoppler;
+			b += ring * 1.2 * ringDoppler;
+
+			// the shadow itself, with an edge a fraction of a pixel soft
+			if (theta < SHADOW) {
+				double edge = smooth(SHADOW * 0.985, SHADOW, theta);
+				r *= edge;
+				g *= edge;
+				b *= edge;
+			}
+			return rgb(r, g, b);
+		}
+
+		/** A point of the disk at radius rd: brighter inside, streaky, the side coming towards us brighter and whiter. */
+		private static double[] disk(double rd, double px, double phi) {
+			if (rd < INNER * 0.9 || rd > OUTER) {
+				return new double[] {0, 0, 0};
+			}
+			double edge = smooth(INNER * 0.9, INNER * 1.08, rd) * (1 - smooth(OUTER * 0.55, OUTER, rd));
+			double falloff = Math.pow(INNER / rd, 1.9);
+			// streaks: fine in radius, long around the disk
+			double streak = 0.55 + 0.45 * fbm(rd * 230, Math.cos(phi) * 2.2, Math.sin(phi) * 2.2, 4);
+			streak *= 0.8 + 0.2 * noise(rd * 900, phi * 3, 7.3);
+			double doppler = 1 + 0.85 * clamp(-px / (rd + 1e-6));     // approaching on the left
+			double dim = 1 - 0.45 * clamp(px / (rd + 1e-6));           // receding on the right
+			double light = edge * falloff * streak * doppler * dim * 2.6;
+			double heat = clamp(Math.pow(INNER / rd, 1.3)) * (0.75 + 0.25 * doppler / 1.85);
+			return new double[] {light * 1.0, light * (0.5 + 0.42 * heat), light * (0.2 + 0.62 * heat * heat)};
+		}
+
+		/** The direction at angle beta from the hole on the pixel's side (or the opposite side if beta is negative). */
+		private static double[] toward(double x, double y, double z, double cos, double theta, double beta) {
+			double tx = x - HX * cos, ty = y - HY * cos, tz = z - HZ * cos;
+			double tl = Math.sqrt(tx * tx + ty * ty + tz * tz);
+			if (tl < 1e-9) {
+				return new double[] {x, y, z};
+			}
+			tx /= tl;
+			ty /= tl;
+			tz /= tl;
+			double c = Math.cos(beta), s = Math.sin(beta);
+			return new double[] {HX * c + tx * s, HY * c + ty * s, HZ * c + tz * s};
+		}
+	}
 	/** A clear day (or golden hour): a sky that brightens towards the horizon, the sun, soft clouds. */
 	static int day(double x, double y, double z, boolean golden) {
 		double sunElev = golden ? Math.toRadians(5) : Math.toRadians(48);

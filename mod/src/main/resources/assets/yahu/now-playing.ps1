@@ -22,7 +22,14 @@ $manager = Await ($managerType::RequestAsync()) $managerType
 
 $last = ''
 $lastSent = [DateTime]::MinValue
+# the game that started this script: when it is gone (closed or crashed), stop too instead of running on unseen
+$game = (Get-CimInstance Win32_Process -Filter "ProcessId=$PID").ParentProcessId
+$checked = [DateTime]::Now
 while ($true) {
+    if (([DateTime]::Now - $checked).TotalSeconds -ge 3) {
+        $checked = [DateTime]::Now
+        if (-not (Get-Process -Id $game -ErrorAction SilentlyContinue)) { exit }
+    }
     $line = '{}'
     try {
         $session = $manager.GetCurrentSession()

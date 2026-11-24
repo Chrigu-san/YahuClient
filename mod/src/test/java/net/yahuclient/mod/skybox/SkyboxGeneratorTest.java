@@ -62,8 +62,8 @@ class SkyboxGeneratorTest {
 
 	@Test
 	void theBlackHoleIsBlackInTheMiddle() {
-		double hx = 0.42, hy = 0.38, hz = -0.82, l = Math.sqrt(hx * hx + hy * hy + hz * hz);
-		int center = SkyboxGenerator.blackHole(hx / l, hy / l, hz / l);
+		double hx = 0.42, hy = 0.34, hz = -0.84, l = Math.sqrt(hx * hx + hy * hy + hz * hz);
+		int center = new SkyboxGenerator.BlackHole().color(hx / l, hy / l, hz / l);
 		assertEquals(0, center & 0xFFFFFF);
 	}
 }

@@ -21,11 +21,15 @@ own account.
   set up port forwarding. The port is closed again when the server stops. Each server can get its own address like
   `chris.yahuclient.net`, so friends never have to type an IP. Servers never keep running unseen after the launcher closes
   or crashes.
+- **Settings profiles:** Make profiles like PvP or Building and pick one per instance: Minecraft settings, key bindings
+  and the Yahu mod's settings are then the same in every instance on that profile.
 - **In-game Yahu menu:** In Fabric instances for Minecraft 26.3 (with Fabric API), the launcher adds the small Yahu mod.
-  It gives Minecraft's menus a dark, modern look with a softly moving background. The Yahu Mods button (title screen and
-  pause menu) or Right Shift opens the Yahu menu with our own mods: a pixel-exact PvP crosshair, karaoke lyrics in the sky for
+  It turns Minecraft's menus into glass buttons with real rain running down them, leaning towards the cursor, over the 1.18 panorama in black and white, with its own Yahu logo (own crisp font, glass
+  buttons, fields and lists), and gives the main menu a new centered layout: the logo, a short column of slim buttons,
+  an icon row at the bottom and a close X in the corner. The Yahu Mods button (in the button column of the title screen and pause menu) or Right Shift opens the Yahu menu with our own mods: a pixel-exact PvP crosshair, karaoke lyrics in the sky for
   the song you play in Spotify or your browser (line by line, word by word or kinetic), and custom skies (a black hole, a
-  real-looking day, golden hour, aurora, nebula, or a picture of your own).
+  real-looking day, golden hour, aurora, nebula, or a picture of your own), plus a hotbar and inventory look in several
+  styles.
 - **Sign-in:** Players sign in through the official Microsoft login page in their browser. The launcher receives a token
   only to verify game ownership and start Minecraft. Passwords never pass through the launcher.
 - **No cheats, no server tricks:** The launcher starts the official game; the Yahu mod only draws things for the player

@@ -15,8 +15,8 @@ import net.minecraft.resources.Identifier;
 import net.yahuclient.mod.ui.BlockWidgets;
 
 /**
- * Vanilla sliders (FOV, volume, render distance...) get a sunk track that fills with grass and a block handle. Only the two
- * sprite calls are swapped; the label on top stays vanilla's.
+ * Vanilla sliders (FOV, volume, render distance...) are glass like the buttons (with rain, without leaning), filled with a
+ * faint frost up to the value, with a slim handle. Only the two sprite calls are swapped; the label on top stays vanilla's.
  */
 @Mixin(AbstractSliderButton.class)
 public abstract class AbstractSliderButtonMixin extends AbstractWidget.WithInactiveMessage {
@@ -31,13 +31,25 @@ public abstract class AbstractSliderButtonMixin extends AbstractWidget.WithInact
 			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V",
 			ordinal = 0))
 	private void yahu$track(GuiGraphicsExtractor g, RenderPipeline pipeline, Identifier sprite, int x, int y, int w, int h, int color) {
-		BlockWidgets.sliderTrack(g, x, y, w, h, value, isActive(), alpha);
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			g.blitSprite(pipeline, sprite, x, y, w, h, color);
+			return;
+		}
+		// glass with rain like the buttons, but it doesn't lean: that would fight the dragging
+		net.yahuclient.mod.ui.GlassFx.State s = net.yahuclient.mod.ui.GlassFx.begin(g, this, x, y, w, h, false, false, 0);
+		net.yahuclient.mod.ui.GlassFx.button(g, s, x, y, w, h, false, !isActive(), alpha);
+		net.yahuclient.mod.ui.GlassFx.end();
+		BlockWidgets.sliderFill(g, x, y, w, h, value, isActive(), alpha);
 	}
 
 	@Redirect(method = "extractWidgetRenderState", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V",
 			ordinal = 1))
 	private void yahu$handle(GuiGraphicsExtractor g, RenderPipeline pipeline, Identifier sprite, int x, int y, int w, int h, int color) {
+		if (!net.yahuclient.mod.ui.Look.on()) {
+			g.blitSprite(pipeline, sprite, x, y, w, h, color);
+			return;
+		}
 		BlockWidgets.sliderHandle(g, x, y, w, h, isHoveredOrFocused(), alpha);
 	}
 }

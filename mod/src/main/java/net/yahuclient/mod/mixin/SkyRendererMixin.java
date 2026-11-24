@@ -29,6 +29,7 @@ public abstract class SkyRendererMixin {
 		if (Skybox.shouldDraw(config, state)) {
 			RenderSystem.setShaderFog(skyFog);
 			Skybox.render(config, state, renderTarget);
+			Skybox.markDrawn();
 			ci.cancel();
 		}
 	}

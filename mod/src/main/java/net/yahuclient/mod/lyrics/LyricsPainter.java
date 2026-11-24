@@ -23,7 +23,7 @@ import net.yahuclient.mod.ui.Theme;
 public final class LyricsPainter {
 	/** Where text goes: a text at a center point, scaled and tilted, with an outline of the given width. */
 	public interface Sink {
-		void text(Component text, float centerX, float centerY, float scale, float rotation, int color, int outlineColor, int outlineWidth);
+		void text(Component text, float centerX, float centerY, float scale, float rotation, int color, int outlineColor, float outlineWidth);
 	}
 
 	/** What to show: the moment of the song, or sample text for previews and tests. */
@@ -32,11 +32,19 @@ public final class LyricsPainter {
 
 	private static final long POP_MS = 240;
 
+	/** How many screen pixels one font pixel of the lyrics covers right now (set by the renderer before painting). */
+	public static float screenScale = 8;
+
+	/** The lyrics' typeface in the sharpness tier that fits their size on screen. */
+	static FontDescription face(YahuConfig.Lyrics config) {
+		return config.font.forScale(screenScale);
+	}
+
 	private LyricsPainter() {
 	}
 
 	public static Component styled(String text, YahuConfig.Lyrics config) {
-		FontDescription font = config.font.font;
+		FontDescription font = face(config);
 		return Component.literal(config.uppercase ? text.toUpperCase() : text).withStyle(Style.EMPTY.withFont(font));
 	}
 
@@ -52,7 +60,7 @@ public final class LyricsPainter {
 		int lineHeight = font.lineHeight;
 		LyricLayout.Layout layout = LyricLayout.layout(texts, config.style, s -> font.width(styled(s, config)), lineHeight,
 				Math.max(40, Math.round(maxWidth)));
-		int outline = Math.max(0, config.outline);
+		float outline = Math.max(0, Math.min(3, config.outline));
 		int outlineColor = config.outlineColor | 0xFF000000;
 		int sung = config.sungColor | 0xFF000000;
 		int upcoming = config.upcomingColor | 0xFF000000;
@@ -71,7 +79,7 @@ public final class LyricsPainter {
 			long since = frame.positionMs() - word.startMs();
 			Component text = styled(p.text(), config);
 			// along the line the sung color turns towards cyan, if the gradient is on
-			int sungHere = config.gradient && count > 1 ? Theme.mix(sung, Theme.ACCENT_2, p.index() / (float) (count - 1)) : sung;
+			int sungHere = config.gradient && count > 1 ? Theme.mix(sung, config.gradientColor | 0xFF000000, p.index() / (float) (count - 1)) : sung;
 
 			if (config.style == LyricsStyle.LINE) {
 				long end = p.index() + 1 < count ? frame.words().get(p.index() + 1).startMs() : word.startMs() + 600;
@@ -99,28 +107,28 @@ public final class LyricsPainter {
 
 		float half = layout.height() / 2f;
 		if (config.showSongTitle && frame.title() != null && !frame.title().isEmpty()) {
-			Component title = Component.literal("♪  " + frame.title()).withStyle(Style.EMPTY.withFont(Theme.UI_FONT));
+			Component title = Component.literal("♪  " + frame.title()).withStyle(Style.EMPTY.withFont(Theme.uiFont()));
 			sink.text(title, 0, -half - lineHeight * 0.9f, 0.55f, 0, Theme.alpha(0xFFFFFFFF, 0.75f), Theme.alpha(outlineColor, 0.75f),
-					Math.min(1, outline));
+					Math.min(0.75f, outline));
 		}
 		if (config.showNext && frame.next() != null && !frame.next().isEmpty()) {
 			Component next = styled(frame.next(), config);
 			float scale = 0.5f;
 			// the next line wraps by being cut, it is only a hint
-			sink.text(next, 0, half + lineHeight * 0.9f, scale, 0, Theme.alpha(upcoming, 0.5f), Theme.alpha(outlineColor, 0.5f), Math.min(1, outline));
+			sink.text(next, 0, half + lineHeight * 0.9f, scale, 0, Theme.alpha(upcoming, 0.5f), Theme.alpha(outlineColor, 0.5f), Math.min(0.75f, outline));
 		}
 		return layout.height();
 	}
 
 	/** A word in the line style: the sung part in the sung color, letter by letter, the rest in the upcoming color. */
 	private static void sweepWord(Sink sink, Font font, YahuConfig.Lyrics config, LyricLayout.Placed p, Component whole, float done, int sung,
-			int upcoming, int outlineColor, int outline) {
+			int upcoming, int outlineColor, float outline) {
 		String text = config.uppercase ? p.text().toUpperCase() : p.text();
 		int[] cps = text.codePoints().toArray();
 		float width = font.width(whole);
 		float letters = 0;
 		for (int cp : cps) {
-			letters += font.width(Component.literal(new String(Character.toChars(cp))).withStyle(Style.EMPTY.withFont(config.font.font)));
+			letters += font.width(Component.literal(new String(Character.toChars(cp))).withStyle(Style.EMPTY.withFont(face(config))));
 		}
 		// letters measured alone add up a little wider than the word (kerning); squeeze them to the word's width
 		float fit = letters > 0 ? width / letters : 1f;
@@ -128,7 +136,7 @@ public final class LyricsPainter {
 		double sungLetters = done * cps.length;
 		for (int i = 0; i < cps.length; i++) {
 			String letter = new String(Character.toChars(cps[i]));
-			Component c = Component.literal(letter).withStyle(Style.EMPTY.withFont(config.font.font));
+			Component c = Component.literal(letter).withStyle(Style.EMPTY.withFont(face(config)));
 			float w = font.width(c) * fit;
 			int color;
 			float lift = 0;

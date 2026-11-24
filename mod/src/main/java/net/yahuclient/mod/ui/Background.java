@@ -32,6 +32,19 @@ public final class Background {
 		vignette(g, x, y, w, h);
 	}
 
+	/**
+	 * The veil over a blurred background (the black and white panorama, or the game): neutral and dark, lighter in a
+	 * world so the game still shows.
+	 */
+	public static void tint(GuiGraphicsExtractor g, int x, int y, int w, int h, boolean inWorld) {
+		// a neutral dark veil over the blurred picture (the panorama is black and white), so nothing behind the glass
+		// shouts; a little darker towards the top and bottom
+		float k = inWorld ? .5f : .4f;
+		g.fill(x, y, x + w, y + h, Theme.alpha(0xFF05060A, k));
+		int band = Math.max(24, h / 4);
+		g.fillGradient(x, y, x + w, y + band, Theme.alpha(0xFF000000, 0.3f), 0x00000000);
+		g.fillGradient(x, y + h - band, x + w, y + h, 0x00000000, Theme.alpha(0xFF000000, 0.4f));
+	}
 	private static void lights(GuiGraphicsExtractor g, int x, int y, int w, int h, float strength) {
 		double t = seconds();
 		float size = Math.max(w, h);

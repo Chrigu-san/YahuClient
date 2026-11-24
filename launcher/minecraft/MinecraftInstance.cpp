@@ -191,6 +191,8 @@ void MinecraftInstance::loadSpecificSettings()
     m_settings->registerSetting("AutomaticJava", false);
     m_settings->registerSetting("UseLatestMinecraftVersion", false);
     m_settings->registerSetting("UseLatestMinecraftVersionType", "release");
+    // the shared settings profile this instance uses, empty for its own settings (see minecraft/SettingsProfiles.h)
+    m_settings->registerSetting("YahuSettingsProfile", "");
 
     if (auto global_settings = globalSettings()) {
         m_settings->registerOverride(global_settings->getSetting("JavaPath"), locationOverride);

@@ -33,6 +33,7 @@ set(TEST_SOURCES
     LocalHosts_test.cpp
     ServerProcesses_test.cpp
     YahuMods_test.cpp
+    SettingsProfiles_test.cpp
     LaunchProgress_test.cpp
 )
 
