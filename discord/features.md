@@ -1,7 +1,7 @@
 # 🟩 Yahu Client
 Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was Prism kann, aber mit eigenem Design und eigenen Features.
 
-**Aktuelle Version:** `0.1.7` (10. November 2026)
+**Aktuelle Version:** `0.1.9` (26. November 2026)
 **Download:** [YahuClient-Setup.exe](https://github.com/Chrigu-san/YahuClient/releases/latest/download/YahuClient-Setup.exe)
 -# Windows 10/11, 64 Bit. Falls Windows "Der Computer wurde durch Windows geschützt" anzeigt: **Weitere Informationen** und dann **Trotzdem ausführen**.
 
@@ -97,6 +97,9 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Der Launcher legt die Mod automatisch in Fabric Instanzen für 26.3
   - Beim Spielstart kein Fenster mit Ladebalken mehr: unter dem Play Knopf steht, was gerade geladen wird und wie lange es noch etwa dauert
 
+---- neue Nachricht ----
+
+## 📅 Verlauf (Fortsetzung)
 **24.11.2026**
 - **Version 0.1.8:**
   - Ganz neues Menü: Glasknöpfe mit echtem Regen, die sich zur Maus neigen (im Yahu Menü abschaltbar, dann kommt das normale Minecraft Menü)
@@ -109,6 +112,18 @@ Unser eigener Minecraft Launcher. Basiert auf Prism Launcher, hat also alles was
   - Crosshair: glatter Kreis statt Pixeltreppe
   - Alle Knöpfe in allen Menüs aus Glas mit Regen
   - Alles gestochen scharf, ohne Pixel
+
+---- neue Nachricht ----
+
+## 📅 Verlauf (Fortsetzung)
+**26.11.2026**
+- **Version 0.1.9:**
+  - Neue Instanz Schritt für Schritt: Mods, Resource Packs, Shader und Einstellungs-Profil. Erweiterte Optionen sind versteckt, überspringen geht immer
+  - Neuer Knopf **Profiles**: Einstellungen einer Instanz als Profil speichern, als Datei exportieren und importieren, beim Erstellen auswählen
+  - Neue Seite **Packs** im Yahu Menü: Resource Packs und Shader von Modrinth suchen und mit einem Klick installieren
+  - Fix: Neue Instanzen verlieren ihre Mods und Versionen nicht mehr beim Installieren
+  - Downloads versuchen es bei Verbindungsproblemen automatisch nochmal
+  - Fix: Popups flackern und öffnen sich nicht mehr doppelt
 
 ## 🔜 Bald
 - Cosmetics Shop mit Umhängen, Flügeln und Hüten

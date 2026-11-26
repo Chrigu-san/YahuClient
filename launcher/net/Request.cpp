@@ -216,6 +216,25 @@ void Request::onProgress(qint64 bytesReceived, qint64 bytesTotal)
     setProgress(bytesReceived, bytesTotal);
 }
 
+bool Request::isTransient(QNetworkReply::NetworkError error) const
+{
+    switch (error) {
+        case QNetworkReply::RemoteHostClosedError:
+        case QNetworkReply::TimeoutError:
+        case QNetworkReply::TemporaryNetworkFailureError:
+        case QNetworkReply::NetworkSessionFailedError:
+        case QNetworkReply::UnknownNetworkError:
+        case QNetworkReply::ProxyTimeoutError:
+        case QNetworkReply::ServiceUnavailableError:
+        case QNetworkReply::UnknownServerError:
+            return true;
+        default:
+            break;
+    }
+    const int status = replyStatusCode();
+    return status == 500 || status == 502 || status == 503 || status == 504;
+}
+
 void Request::downloadError(QNetworkReply::NetworkError error)
 {
     if (error == QNetworkReply::OperationCanceledError) {
@@ -243,6 +262,16 @@ void Request::downloadError(QNetworkReply::NetworkError error)
             }
         }
         handleAutoRetry(delay);
+    } else if (isTransient(error) && m_transientRetries < 3 && !m_options.testFlag(Option::AcceptLocalFiles)) {
+        // A dropped connection, a timeout or a server hiccup: try again in a moment instead of failing the whole install.
+        m_transientRetries++;
+        const int delay = 2 * m_transientRetries;
+        qCWarning(m_logCat) << getUid().toString() << "Connection problem" << error << "- retrying in" << delay << "s:" << m_url.toString();
+        setStatus(tr("Connection problem: trying again in %n second(s)", "seconds", delay));
+        m_retryTimer.setTimerType(Qt::VeryCoarseTimer);
+        m_retryTimer.setSingleShot(true);
+        m_retryTimer.setInterval(delay * 1000);
+        m_retryTimer.start();
     } else {
         if (m_options.testFlag(Option::AcceptLocalFiles)) {
             if (m_sink->hasLocalData()) {

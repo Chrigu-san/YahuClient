@@ -22,6 +22,7 @@
 #include <QHash>
 #include <QObject>
 #include <QPointer>
+#include <QVariantAnimation>
 
 class QWidget;
 
@@ -54,6 +55,8 @@ class YahuSheetHost : public QObject {
         qreal enter = 1.0;  // 0 -> 1 while appearing
         QWidget* closeButton = nullptr;
         QPixmap backdrop;  // the launcher as it looked when a card opened, drawn dimmed behind it
+        QPointer<QVariantAnimation> anim;  // the running entrance, so a second one never fights it
+        bool entered = false;  // has appeared once and not been closed since (a minimize and restore must not replay it)
     };
 
     void place(QWidget* w);

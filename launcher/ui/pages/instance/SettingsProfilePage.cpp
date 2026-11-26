@@ -17,6 +17,8 @@
 
 #include "SettingsProfilePage.h"
 
+#include "ui/dialogs/SettingsProfilesDialog.h"
+
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QInputDialog>
@@ -56,7 +58,13 @@ SettingsProfilePage::SettingsProfilePage(MinecraftInstance* instance, QWidget* p
     buttons->addWidget(make);
     buttons->addWidget(m_rename);
     buttons->addWidget(m_delete);
+    auto* manage = new QPushButton(tr("Import / export..."), this);
+    buttons->addWidget(manage);
     buttons->addStretch(1);
+    connect(manage, &QPushButton::clicked, this, [this] {
+        SettingsProfilesDialog(this).exec();
+        refresh(m_profiles->currentData().toString());
+    });
     layout->addLayout(buttons);
 
     m_state = new QLabel(this);

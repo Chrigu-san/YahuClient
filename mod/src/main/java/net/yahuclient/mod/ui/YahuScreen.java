@@ -52,7 +52,7 @@ public class YahuScreen extends Screen {
 		this.cardHover = new float[mods.size()];
 		this.cardOn = new float[mods.size()];
 		for (int i = 0; i < mods.size(); i++) {
-			cardOn[i] = mods.get(i).enabled().get() ? 1 : 0;
+			cardOn[i] = mods.get(i).enabled() == null || mods.get(i).enabled().get() ? 1 : 0;
 		}
 	}
 
@@ -168,7 +168,7 @@ public class YahuScreen extends Screen {
 		GlassFx.panel(g, ps, panelX(), panelY(), panelW(), panelH(), RADIUS, appear);
 		GlassFx.end();
 		for (int i = 0; i < mods.size(); i++) {
-			cardOn[i] = Theme.approach(cardOn[i], mods.get(i).enabled().get() ? 1 : 0, dt, 16);
+			cardOn[i] = Theme.approach(cardOn[i], mods.get(i).enabled() == null || mods.get(i).enabled().get() ? 1 : 0, dt, 16);
 		}
 		float fade = Theme.easeOutCubic(page) * appear;
 		if (selected < 0) {
@@ -223,6 +223,10 @@ public class YahuScreen extends Screen {
 				}
 				// along the bottom: on or off, and the switch
 				Draw.hairline(g, cx + 8, cx + cw - 8, cy + CARD_H - 23, Theme.alpha(0x14FFFFFF, fade));
+				if (mod.enabled() == null) {
+					g.text(font, Theme.ui("Open"), cx + 10, cy + CARD_H - 16, Theme.alpha(0xFF8F95A1, fade), false);
+					return;
+				}
 				Draw.circle(g, cx + 12, cy + CARD_H - 12, 2, Theme.alpha(Theme.mix(0xFF5A606C, 0xFF4EE0A4, t), fade));
 				g.text(font, Theme.ui(mod.enabled().get() ? "On" : "Off"), cx + 18, cy + CARD_H - 16, Theme.alpha(Theme.mix(0xFF8F95A1, 0xFFCFEFDF, t), fade), false);
 				Control.switchAt(g, cx + cw - 32, cy + CARD_H - 17.5f, t, barHot ? 1 : 0);
@@ -244,9 +248,11 @@ public class YahuScreen extends Screen {
 				Theme.alpha(Theme.mix(0xD0FFFFFF, 0xFFFFFFFF, backHover), appear));
 		g.text(font, Theme.heading(mod.name()), backX() + BACK + 10, backY() + 4, Theme.alpha(Theme.TEXT, fade), false);
 		int idx = mods.indexOf(mod);
-		Control.switchAt(g, headerSwitchX(), backY() + 4.5f, cardOn[idx], inside(mouseX, mouseY, headerSwitchX() - 4, backY(), 30, BACK) ? 1 : 0);
-		var state = Theme.ui(mod.enabled().get() ? "ON" : "OFF");
-		g.text(font, state, headerSwitchX() - 8 - font.width(state), backY() + 6, Theme.alpha(mod.enabled().get() ? Theme.GOOD : Theme.MUTED, fade), false);
+		if (mod.enabled() != null) {
+			Control.switchAt(g, headerSwitchX(), backY() + 4.5f, cardOn[idx], inside(mouseX, mouseY, headerSwitchX() - 4, backY(), 30, BACK) ? 1 : 0);
+			var state = Theme.ui(mod.enabled().get() ? "ON" : "OFF");
+			g.text(font, state, headerSwitchX() - 8 - font.width(state), backY() + 6, Theme.alpha(mod.enabled().get() ? Theme.GOOD : Theme.MUTED, fade), false);
+		}
 		Draw.hairline(g, innerX(), innerX() + innerW(), panelY() + HEADER - 6, Theme.alpha(0x1CFFFFFF, appear));
 
 		int cx = innerX(), cw = innerW(), top = contentTop(), bottom = contentBottom();
@@ -358,7 +364,7 @@ public class YahuScreen extends Screen {
 				int x = cardX(i), y = cardY(i);
 				if (inside(mx, my, x, y, cw, CARD_H)) {
 					ModEntry mod = mods.get(i);
-					if (inside(mx, my, x + cw - 34, y + CARD_H - 20, 30, 16)) {
+					if (mod.enabled() != null && inside(mx, my, x + cw - 34, y + CARD_H - 20, 30, 16)) {
 						mod.setEnabled().accept(!mod.enabled().get());
 						save.run();
 					} else {
@@ -374,7 +380,7 @@ public class YahuScreen extends Screen {
 			select(-1);
 			return true;
 		}
-		if (inside(mx, my, headerSwitchX() - 4, backY(), 30, BACK)) {
+		if (mods.get(selected).enabled() != null && inside(mx, my, headerSwitchX() - 4, backY(), 30, BACK)) {
 			ModEntry mod = mods.get(selected);
 			mod.setEnabled().accept(!mod.enabled().get());
 			save.run();
@@ -412,8 +418,34 @@ public class YahuScreen extends Screen {
 		return super.mouseReleased(event);
 	}
 
+	/** The search field that has the keyboard, if any. */
+	private PackControls.Search typing() {
+		if (selected < 0) {
+			return null;
+		}
+		for (Control c : mods.get(selected).controls()) {
+			if (c instanceof PackControls.Search s && s.focused()) {
+				return s;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
+		PackControls.Search field = typing();
+		if (field != null && field.typed(event.codepoint())) {
+			return true;
+		}
+		return super.charTyped(event);
+	}
+
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		PackControls.Search field = typing();
+		if (field != null && (field.key(event.key()))) {
+			return true;  // typing keeps the keys, Esc leaves the field
+		}
 		// Esc in a mod's settings goes back to the grid first
 		if (event.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE && selected >= 0) {
 			select(-1);

@@ -68,6 +68,9 @@ class NewInstanceDialog : public QDialog, public BasePageProvider {
 
     InstanceTask* extractTask();
 
+    // Whether the instance is made from scratch (a version and a loader) rather than from a modpack or file.
+    bool isCustom() const;
+
     QString dialogTitle() override;
     QList<BasePage*> getPages() override;
 

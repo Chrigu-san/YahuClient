@@ -246,7 +246,31 @@ public class YahuMod implements ClientModInitializer {
 	// the mods as the menu shows them
 
 	private List<ModEntry> mods() {
-		return List.of(crosshairMod(), lyricsMod(), skyboxMod(), inventoryMod(), menuMod());
+		return List.of(crosshairMod(), lyricsMod(), skyboxMod(), inventoryMod(), packsMod(), menuMod());
+	}
+
+	private final net.yahuclient.mod.packs.PackBrowser packs = new net.yahuclient.mod.packs.PackBrowser();
+
+	private ModEntry packsMod() {
+		var browser = packs;
+		List<Control> controls = List.of(
+				new Control.Section("Find"),
+				new Control.Choice<>("Install", () -> Arrays.asList(net.yahuclient.mod.packs.Modrinth.Kind.values()), k -> k.label, () -> browser.kind, k -> {
+					browser.kind = k;
+					browser.search();
+				}),
+				new net.yahuclient.mod.ui.PackControls.Search("Search", () -> browser.query, q -> browser.query = q, browser::search),
+				new Control.Choice<>("Order", () -> Arrays.asList(net.yahuclient.mod.packs.Modrinth.Sort.values()), o -> o.label, () -> browser.sort, o -> {
+					browser.sort = o;
+					browser.search();
+				}),
+				new Control.Note(() -> browser.kind == net.yahuclient.mod.packs.Modrinth.Kind.SHADERS
+						? "Shaders need a shader mod such as Iris to show up in the game. Press Enter in the search field to search."
+						: "New resource packs show up in Options, Resource Packs. Press Enter in the search field to search."),
+				new Control.Section("Results"),
+				new net.yahuclient.mod.ui.PackControls.Results(browser::hits, browser::status, hit -> net.yahuclient.mod.packs.Modrinth.install(browser.kind, hit)));
+		return new ModEntry("Packs", "Resource packs and shaders", "Find resource packs and shaders on Modrinth and install them with one click. They go into this instance's folders.",
+				0xFFF2B84B, "▣", null, b -> { }, controls, null, null);
 	}
 
 	private ModEntry menuMod() {
