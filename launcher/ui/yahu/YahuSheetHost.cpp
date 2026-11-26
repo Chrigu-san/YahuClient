@@ -212,10 +212,17 @@ void YahuSheetHost::appear(QWidget* w)
         sheet.backdrop = m_window->grab();
     }
 
+    // never two entrances at once: a second one would pull the card back and forth
+    if (sheet.anim) {
+        sheet.anim->stop();
+        sheet.anim->deleteLater();
+    }
+    sheet.entered = true;
     sheet.enter = 0.0;
     place(w);
 
     auto* anim = new QVariantAnimation(w);
+    sheet.anim = anim;
     anim->setStartValue(0.0);
     anim->setEndValue(1.0);
     anim->setDuration(sheet.page ? 320 : 260);
@@ -301,12 +308,27 @@ bool YahuSheetHost::eventFilter(QObject* watched, QEvent* event)
     }
     switch (event->type()) {
         case QEvent::Show:
-            appear(w);
+            if (m_sheets[w].entered && event->spontaneous()) {
+                // the system showed it again (the launcher was minimized and restored): it is already open, so no replay
+                m_sheets[w].enter = 1.0;
+                m_sheets[w].anim = nullptr;
+                place(w);
+                w->update();
+            } else {
+                appear(w);
+            }
             break;
         case QEvent::Hide:
             // When an overlay closes while another app has focus (e.g. the browser after signing in), the launcher
             // could stay half inactive and swallow clicks. Hand focus and the mouse back to it explicitly.
-            if (w->isHidden()) {
+            if (w->isHidden() && !event->spontaneous()) {
+                // really closed (not just hidden along with a minimized launcher): the next time it opens, it enters again
+                m_sheets[w].entered = false;
+                if (m_sheets[w].anim) {
+                    m_sheets[w].anim->stop();
+                }
+            }
+            if (w->isHidden() && !event->spontaneous()) {
                 QTimer::singleShot(0, m_window, [this] {
                     if (auto* grabber = QWidget::mouseGrabber()) {
                         grabber->releaseMouse();

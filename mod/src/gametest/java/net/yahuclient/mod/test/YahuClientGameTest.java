@@ -92,13 +92,22 @@ public class YahuClientGameTest implements FabricClientGameTest {
 		context.waitForScreen(YahuScreen.class);
 		context.waitTicks(10);
 		context.takeScreenshot("yahu-menu-grid");
-		String[] pages = {"crosshair", "lyrics", "skybox", "inventory"};
+		String[] pages = {"crosshair", "lyrics", "skybox", "inventory", "packs"};
 		for (int page = 0; page < pages.length; page++) {
 			int p = page;
 			context.runOnClient(mc -> ((YahuScreen) mc.gui.screen()).select(p));
-			context.waitTicks(10);
+			context.waitTicks(pages[page].equals("packs") ? 120 : 10);  // the packs page asks Modrinth
 			context.takeScreenshot("yahu-menu-" + pages[page]);
-		}		// scrolled down on the crosshair page, where the PvP settings are
+		}
+		// the packs page, scrolled to the results Modrinth sent
+		context.runOnClient(mc -> {
+			var screen = (YahuScreen) mc.gui.screen();
+			screen.select(4);
+			screen.mouseScrolled(screen.width - 40, screen.height / 2.0, 0, -6);
+		});
+		context.waitTicks(20);
+		context.takeScreenshot("yahu-menu-packs-results");
+		// scrolled down on the crosshair page, where the PvP settings are
 		context.runOnClient(mc -> ((YahuScreen) mc.gui.screen()).select(0));
 		context.waitTicks(5);
 		context.runOnClient(mc -> {

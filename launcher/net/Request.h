@@ -152,6 +152,7 @@ class Request : public Task {
    private:
     auto handleRedirect() -> bool;
     void handleAutoRetry(int64_t delay);
+    bool isTransient(QNetworkReply::NetworkError error) const;
     virtual QNetworkReply* getReply(QNetworkRequest&);
 
    protected slots:
@@ -188,6 +189,7 @@ class Request : public Task {
     std::vector<std::unique_ptr<Net::HeaderProxy>> m_headerProxies;
 
     int m_retryCount = 0;
+    int m_transientRetries = 0;
     QTimer m_retryTimer;
 
     int m_redirectCount = 0;

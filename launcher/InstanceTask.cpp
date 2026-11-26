@@ -1,4 +1,5 @@
 #include "InstanceTask.h"
+#include "minecraft/PackProfile.h"
 #include <QApplication>
 #include <QDir>
 
@@ -145,6 +146,7 @@ void InstanceTask::downloadFiles(MinecraftInstance* inst)
 
     auto updateTasks = inst->createUpdateTask();
     if (updateTasks.isEmpty()) {
+        inst->getPackProfile()->saveNow();
         emitSucceeded();
         return;
     }
@@ -153,10 +155,14 @@ void InstanceTask::downloadFiles(MinecraftInstance* inst)
     for (const auto& t : updateTasks) {
         task->addTask(t);
     }
-    connect(task.get(), &Task::finished, this, [this, task] {
+    connect(task.get(), &Task::finished, this, [this, task, inst] {
         if (!isRunning()) {
             return;
         }
+        // Resolving the components added the ones the game needs (lwjgl, intermediary, ...). Saving those is normally
+        // delayed by a few seconds, but the instance folder is moved into place as soon as this task ends, so the delayed
+        // save would go to a folder that no longer exists and the new instance would start without them.
+        inst->getPackProfile()->saveNow();
         if (!task->wasSuccessful()) {
             CustomMessageBox::selectable(QApplication::activeWindow(), tr("Error"),
                                          tr("Could not download game files: %1").arg(task->failReason()), QMessageBox::Warning)

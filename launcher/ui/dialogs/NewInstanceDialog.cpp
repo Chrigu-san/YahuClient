@@ -53,6 +53,7 @@
 #include <QFileDialog>
 #include <QLayout>
 #include <QPushButton>
+#include <QToolButton>
 #include <QScreen>
 #include <QTimer>
 #include <QValidator>
@@ -77,6 +78,27 @@ NewInstanceDialog::NewInstanceDialog(const QString& initialGroup,
     ui->setupUi(this);
 
     ui->instNameTextBox->installEventFilter(this);
+
+    // Group and location are rarely changed: keep them behind an "Advanced options" switch.
+    {
+        auto* advanced = new QToolButton(this);
+        advanced->setText(tr("Advanced options"));
+        advanced->setCheckable(true);
+        advanced->setArrowType(Qt::RightArrow);
+        advanced->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        advanced->setAutoRaise(true);
+        ui->gridLayout_2->addWidget(advanced, 3, 1, 1, 2, Qt::AlignLeft);
+        const QList<QWidget*> extra = { ui->groupLabel, ui->groupBox, ui->instDirLabel, ui->instDirBox };
+        for (auto* widget : extra) {
+            widget->setVisible(false);
+        }
+        connect(advanced, &QToolButton::toggled, this, [advanced, extra](bool on) {
+            advanced->setArrowType(on ? Qt::DownArrow : Qt::RightArrow);
+            for (auto* widget : extra) {
+                widget->setVisible(on);
+            }
+        });
+    }
 
     refreshInstDirBox();
 
@@ -215,6 +237,12 @@ QList<BasePage*> NewInstanceDialog::getPages()
     pages.append(new TechnicPage(this));
 
     return pages;
+}
+
+bool NewInstanceDialog::isCustom() const
+{
+    auto* page = m_container ? m_container->selectedPage() : nullptr;
+    return page && page->id() == QStringLiteral("vanilla");
 }
 
 QString NewInstanceDialog::dialogTitle()

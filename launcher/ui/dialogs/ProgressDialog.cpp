@@ -40,6 +40,8 @@
 #include <QDebug>
 #include <QKeyEvent>
 #include <QLabel>
+#include <QPropertyAnimation>
+#include <QTimer>
 #include <QRegularExpression>
 #include <limits>
 
@@ -128,6 +130,10 @@ ProgressDialog::~ProgressDialog()
 
 void ProgressDialog::updateSize(bool recenterParent)
 {
+    // as an overlay card the launcher sizes and places it; resizing it on every status line made it jump while downloading
+    if (property("yahuOverlay").toBool()) {
+        return;
+    }
     QSize lastSize = this->size();
     QPoint lastPos = this->pos();
     int minHeight = ui->globalStatusDetailsLabel->minimumSize().height() + (ui->verticalLayout->spacing() * 2);
@@ -194,6 +200,19 @@ int ProgressDialog::execWithTask(Task* task)
         changeStatus(task->getStatus());
         changeProgress(task->getProgress(), task->getTotalProgress());
     }
+
+    // Short tasks finish before anyone could read the dialog; showing it for a blink looked like a glitch. So it stays
+    // invisible for a moment and only fades in if the task is still running.
+    setWindowOpacity(0.0);
+    QTimer::singleShot(400, this, [this] {
+        if (isVisible() && m_task && !m_task->isFinished()) {
+            auto* fade = new QPropertyAnimation(this, "windowOpacity", this);
+            fade->setDuration(180);
+            fade->setStartValue(0.0);
+            fade->setEndValue(1.0);
+            fade->start(QAbstractAnimation::DeleteWhenStopped);
+        }
+    });
 
     return QDialog::exec();
 }

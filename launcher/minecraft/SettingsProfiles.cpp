@@ -18,6 +18,7 @@
 #include "SettingsProfiles.h"
 
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QRegularExpression>
@@ -25,6 +26,8 @@
 #include "Application.h"
 #include "InstanceList.h"
 #include "minecraft/MinecraftInstance.h"
+#include "MMCZip.h"
+#include "archive/ArchiveWriter.h"
 #include "settings/SettingsObject.h"
 
 namespace SettingsProfiles {
@@ -43,6 +46,7 @@ QStringList names()
 {
     QDir dir(root());
     QStringList list = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name | QDir::IgnoreCase);
+    list.removeIf([](const QString& n) { return n.endsWith(QStringLiteral(".importing")); });
     return list;
 }
 
@@ -111,6 +115,85 @@ bool create(const QString& name, const QString& fromGameDir)
         copyShared(fromGameDir, dir);
     }
     return true;
+}
+
+QString exportFiles(const QString& fromDir, const QString& file)
+{
+    MMCZip::ArchiveWriter zip(file);
+    if (auto opened = zip.open(); !opened) {
+        return opened.error();
+    }
+    for (const QString& relative : sharedFiles()) {
+        const QString path = QDir(fromDir).filePath(relative);
+        if (QFileInfo(path).isFile()) {
+            if (auto added = zip.addFile(path, relative); !added) {
+                return added.error();
+            }
+        }
+    }
+    if (auto closed = zip.close(); !closed) {
+        return closed.error();
+    }
+    return {};
+}
+
+QString importFiles(const QString& file, const QString& intoDir)
+{
+    QDir().mkpath(intoDir);
+    auto extracted = MMCZip::extractDir(file, intoDir);
+    if (!extracted) {
+        return extracted.error();
+    }
+    // keep only what a profile shares, whatever else the file brought along
+    const QStringList keep = sharedFiles();
+    QDirIterator it(intoDir, QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        const QString path = it.next();
+        if (!keep.contains(QDir(intoDir).relativeFilePath(path))) {
+            QFile::remove(path);
+        }
+    }
+    if (!hasAny(intoDir)) {
+        return QObject::tr("This file has no Minecraft or Yahu settings in it.");
+    }
+    return {};
+}
+
+QString exportTo(const QString& name, const QString& file)
+{
+    const QString n = cleanName(name);
+    const QString dir = QDir(root()).filePath(n);
+    if (n.isEmpty() || !QFileInfo(dir).isDir()) {
+        return QObject::tr("The profile doesn't exist.");
+    }
+    return exportFiles(dir, file);
+}
+
+QString importFrom(const QString& file, const QString& name, QString* error)
+{
+    auto fail = [error](const QString& why) {
+        if (error) {
+            *error = why;
+        }
+        return QString();
+    };
+    const QString n = cleanName(name.isEmpty() ? QFileInfo(file).completeBaseName() : name);
+    if (n.isEmpty()) {
+        return fail(QObject::tr("Please give the profile a name."));
+    }
+    const QString target = QDir(root()).filePath(n);
+    if (QFileInfo::exists(target)) {
+        return fail(QObject::tr("A profile called \"%1\" already exists.").arg(n));
+    }
+    // read into a temporary folder first, so a broken file leaves no half profile behind
+    const QString temp = target + QStringLiteral(".importing");
+    QDir(temp).removeRecursively();
+    const QString problem = importFiles(file, temp);
+    if (!problem.isEmpty() || !QDir().rename(temp, target)) {
+        QDir(temp).removeRecursively();
+        return fail(problem.isEmpty() ? QObject::tr("Could not write to the profiles folder.") : problem);
+    }
+    return n;
 }
 
 namespace {

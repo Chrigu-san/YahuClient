@@ -49,6 +49,21 @@ QString cleanName(const QString& name);
 // Makes a profile; with a game folder, it starts from that folder's settings. False if the name is taken or unusable.
 bool create(const QString& name, const QString& fromGameDir = {});
 
+// Writes the shared files of a folder into a zip file. Returns an error text, or an empty string on success.
+QString exportFiles(const QString& fromDir, const QString& file);
+
+// Reads such a zip into a folder, keeping only the shared files. Returns an error text, or an empty string on success
+// (an error also when the zip held no settings at all).
+QString importFiles(const QString& file, const QString& intoDir);
+
+// Writes a profile into a single file (a zip with .yahuprofile as its extension) to share or keep. Returns an error text, or
+// an empty string on success.
+QString exportTo(const QString& name, const QString& file);
+
+// Reads such a file into a new profile called `name` (the file's own name when empty). Returns the name made, or an empty
+// string and the reason in `error` when it isn't a profile file, the name is taken or writing failed.
+QString importFrom(const QString& file, const QString& name, QString* error = nullptr);
+
 // Renames a profile (and every instance that uses it). False if the new name is taken or unusable.
 bool rename(const QString& from, const QString& to);
 

@@ -85,6 +85,32 @@ class SettingsProfilesTest : public QObject {
         QCOMPARE(SettingsProfiles::copyShared(from.path(), to.path()), QStringList({"config/yahu.json"}));
         QVERIFY(!QFile::exists(to.filePath("options.txt")));
     }
+
+    void exportsAndImportsAProfileFile()
+    {
+        QTemporaryDir game, out, back;
+        write(game.filePath("options.txt"), "fov:0.7\n");
+        write(game.filePath("config/yahu.json"), "{\"lyrics\":{}}");
+        write(game.filePath("config/other-mod.json"), "{}");
+        const QString file = out.filePath("PvP.yahuprofile");
+
+        QCOMPARE(SettingsProfiles::exportFiles(game.path(), file), QString());
+        QVERIFY(QFileInfo(file).size() > 0);
+        QCOMPARE(SettingsProfiles::importFiles(file, back.filePath("PvP")), QString());
+        QCOMPARE(read(back.filePath("PvP/options.txt")), QByteArray("fov:0.7\n"));
+        QCOMPARE(read(back.filePath("PvP/config/yahu.json")), QByteArray("{\"lyrics\":{}}"));
+        QVERIFY(!QFile::exists(back.filePath("PvP/config/other-mod.json")));
+    }
+
+    void importRejectsFilesWithoutSettings()
+    {
+        QTemporaryDir game, out, back;
+        write(game.filePath("servers.dat"), "x");
+        const QString file = out.filePath("nothing.yahuprofile");
+        QCOMPARE(SettingsProfiles::exportFiles(game.path(), file), QString());
+        QVERIFY(!SettingsProfiles::importFiles(file, back.filePath("x")).isEmpty());
+        QVERIFY(!SettingsProfiles::importFiles(out.filePath("missing.yahuprofile"), back.filePath("y")).isEmpty());
+    }
 };
 
 QTEST_GUILESS_MAIN(SettingsProfilesTest)

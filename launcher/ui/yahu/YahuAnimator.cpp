@@ -109,6 +109,11 @@ void YahuAnimator::reveal(QWidget* widget, int durationMs)
         effect->setProperty("_yahu_reveal", true);
         widget->setGraphicsEffect(effect);
     }
+    // a reveal already running on this widget is replaced, not stacked (quick clicks used to make the page flicker)
+    if (auto* running = effect->findChild<QPropertyAnimation*>(QString(), Qt::FindDirectChildrenOnly)) {
+        running->stop();
+        running->deleteLater();
+    }
     effect->setOpacity(0.0);
 
     auto* animation = new QPropertyAnimation(effect, "opacity", effect);

@@ -101,7 +101,9 @@
 #include "ui/dialogs/ExportPackDialog.h"
 #include "ui/dialogs/IconPickerDialog.h"
 #include "ui/dialogs/ImportResourceDialog.h"
+#include "ui/dialogs/InstanceSetupWizard.h"
 #include "ui/dialogs/NewInstanceDialog.h"
+#include "ui/dialogs/SettingsProfilesDialog.h"
 #include "ui/dialogs/NewsDialog.h"
 #include "ui/dialogs/ProgressDialog.h"
 #include "ui/dialogs/skins/SkinManageDialog.h"
@@ -384,6 +386,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         m_sidebar->addPage(tr("Shop"), QStringLiteral("yahu-shop"), [showPage] { showPage(2); }, tr("Soon"));
         m_sidebar->addAction(ui->actionAddInstance, tr("New"), QStringLiteral("new"));
         m_sidebar->addMenu(ui->foldersMenu, tr("Folders"), QStringLiteral("viewfolder"));
+        auto* profilesAction = new QAction(tr("Profiles"), this);
+        profilesAction->setToolTip(tr("Settings profiles: share Minecraft and Yahu mod settings between instances"));
+        connect(profilesAction, &QAction::triggered, this, [this] { SettingsProfilesDialog(this).exec(); });
+        m_sidebar->addAction(profilesAction, tr("Profiles"), QStringLiteral("instance-settings"));
         m_sidebar->beginBottomGroup();
         m_sidebar->addAction(ui->actionSettings, tr("Settings"), QStringLiteral("settings"));
         m_sidebar->addMenu(ui->helpMenu, tr("Help"), QStringLiteral("help"));
@@ -996,9 +1002,25 @@ void MainWindow::addInstance(const QString& url, const QMap<QString, QString>& e
     APPLICATION->settings()->set("LastUsedGroupForNewInstance", newInstDlg.instGroup());
     APPLICATION->settings()->set("LastUsedInstDirForNewInstance", newInstDlg.instDir());
 
+    const bool fromScratch = newInstDlg.isCustom();
     InstanceTask* creationTask = newInstDlg.extractTask();
     if (creationTask) {
+        QSet<QString> before;
+        for (int i = 0; i < APPLICATION->instances()->count(); i++) {
+            before.insert(APPLICATION->instances()->at(i)->id());
+        }
         instanceFromInstanceTask(creationTask);
+        if (fromScratch) {
+            // walk through mods, resource packs, shaders and the settings profile for the instance that was just made
+            for (int i = 0; i < APPLICATION->instances()->count(); i++) {
+                auto* instance = APPLICATION->instances()->at(i);
+                auto* mc = dynamic_cast<MinecraftInstance*>(instance);
+                if (mc && !before.contains(instance->id())) {
+                    InstanceSetupWizard(mc, this).exec();
+                    break;
+                }
+            }
+        }
     }
 }
 

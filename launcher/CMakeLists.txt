@@ -1102,6 +1102,10 @@ SET(LAUNCHER_SOURCES
     ui/dialogs/NewComponentDialog.cpp
     ui/dialogs/NewComponentDialog.h
     ui/dialogs/NewInstanceDialog.cpp
+    ui/dialogs/InstanceSetupWizard.cpp
+    ui/dialogs/InstanceSetupWizard.h
+    ui/dialogs/SettingsProfilesDialog.cpp
+    ui/dialogs/SettingsProfilesDialog.h
     ui/dialogs/NewInstanceDialog.h
     ui/dialogs/NewsDialog.cpp
     ui/dialogs/NewsDialog.h

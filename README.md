@@ -22,7 +22,12 @@ own account.
   `chris.yahuclient.net`, so friends never have to type an IP. Servers never keep running unseen after the launcher closes
   or crashes.
 - **Settings profiles:** Make profiles like PvP or Building and pick one per instance: Minecraft settings, key bindings
-  and the Yahu mod's settings are then the same in every instance on that profile.
+  and the Yahu mod's settings are then the same in every instance on that profile. The **Profiles** button in the side bar
+  makes a profile from any instance, exports it to a `.yahuprofile` file and imports one from a friend.
+- **Packs in the game:** The **Packs** page of the Yahu menu (Right Shift) finds resource packs and shaders on Modrinth and installs them with one click into the instance you are playing.
+- **Setup steps for a new instance:** The new-instance dialog is short (name and version; group and folder sit behind
+  "Advanced options"). For an instance made from scratch, a wizard follows: mods, resource packs, shaders (one-click
+  downloads from Modrinth, with dependencies) and the settings profile, each step can be skipped.
 - **In-game Yahu menu:** In Fabric instances for Minecraft 26.3 (with Fabric API), the launcher adds the small Yahu mod.
   It turns Minecraft's menus into glass buttons with real rain running down them, leaning towards the cursor, over the 1.18 panorama in black and white, with its own Yahu logo (own crisp font, glass
   buttons, fields and lists), and gives the main menu a new centered layout: the logo, a short column of slim buttons,
